@@ -6,14 +6,13 @@ require 'function-Installer.php';
 $comfirme = rdl("Plusieurs fichier vont être remplacé, continuer ? [oui: o | non: Enter]: ");
 
 
-$api = '../App/';
+$api = '../vendor/NoMess/';
 if(!is_null($comfirme)){
 	$tabCopyFile = array(
-			'bin/plugin/cli/prog/noMess/context/Request-dev.php' => $api . 'vendor/NoMess/Request.php',
-			'bin/plugin/cli/prog/noMess/context/Response-dev.php' => $api . 'vendor/NoMess/Response.php',
-			'bin/plugin/cli/prog/noMess/context/WorkException-dev.php' => $api . 'vendor/NoMess/WorkException.php',
+			'bin/plugin/cli/prog/noMess/context/Request-dev.php' => $api . 'HttpRequest/HttpRequest.php',
+			'bin/plugin/cli/prog/noMess/context/Response-dev.php' => $api . 'HttpResponse/HttpResponse.php',
 			'bin/plugin/cli/prog/noMess/context/index-dev.php' => '../index.php',
-			'bin/plugin/cli/prog/noMess/context/WebRooter-dev.php' => '../Web/WebRooter.php'
+			'bin/plugin/cli/prog/noMess/context/WebRooter-dev.php' => 'Web/WebRouter.php'
 	);
 
 	foreach($tabCopyFile as $key => $value){

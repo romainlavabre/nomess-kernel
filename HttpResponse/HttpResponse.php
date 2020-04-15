@@ -2,6 +2,9 @@
 
 namespace NoMess\HttpResponse;
 
+use NoMess\Web\ObserverInterface;
+use NoMess\DataManager\DataManager;
+
 
 class HttpResponse implements SubjectInterface{
 
@@ -20,9 +23,9 @@ class HttpResponse implements SubjectInterface{
     private $observer = array();
 
     /**
-     * Instance de MonitoringData
+     * Instance de DataManager
      *
-     * @var MonitoringData
+     * @var DataManager
      */
     private $monitoring;
 
@@ -30,11 +33,11 @@ class HttpResponse implements SubjectInterface{
      * Est injecté d'observeur
      *
      * @param ObserverInterface $obs
-     * @param MonitoringData $md
+     * @param DataManager $md
      * @return void
      */
     public function __construct(ObserverInterface $obs,
-                                MonitoringData $md)
+                                DataManager $md)
     {
         $this->observer[] = $obs;
         $this->monitoring = $md;

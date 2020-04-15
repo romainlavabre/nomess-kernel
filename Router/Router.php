@@ -2,11 +2,13 @@
 
 namespace NoMess\Router;
 
+use DI\Container;
 use NoMess\Launcher;
+use DI\ContainerBuilder;
 use NoMess\HttpRequest\HttpRequest;
 use NoMess\HttpResponse\HttpResponse;
-use DI\ContainerBuilder;
-use DI\Container;
+use NoMess\Router\Builder\BuildRoutes;
+use NoMess\DataManager\Builder\BuildDataManager;
 
 class Router
 {
@@ -38,6 +40,20 @@ class Router
         $builder->useAnnotations(true);
         $builder->addDefinitions(self::DEFINITION);
         $this->container = $builder->build();
+
+        $this->resetCache();
+
+        
+        if(!file_exists(ROOT . 'App/var/cache/mondata.xml')){
+            $buildMonitoring = new BuildDataManager();
+            $buildMonitoring->builderManager();
+        }
+
+
+        if(!file_exists(ROOT . "App/var/cache/routes/routing.xml")){
+            $buildRouting = new BuildRoutes(ROOT . "App/var/cache/routes/routing.xml");
+            $buildRouting->build();
+        }
 
     }
 
@@ -101,5 +117,28 @@ class Router
         }
 
         return null;
+    }
+
+    private function resetCache() : void
+    {
+        if(isset($_POST['resetCache'])){
+            opcache_reset();
+            unset($_POST);
+        }
+
+        if(isset($_POST['invalide'])){
+            opcache_invalidate($_POST['invalide'], true);
+            unset($_POST);
+        }
+
+        if(isset($_POST['resetCacheRoute'])){
+            unlink(ROOT . 'App/var/cache/routes/routing.xml');
+            unset($_POST);
+        }
+
+        if(isset($_POST['resetCacheMon'])){
+            unlink(ROOT . 'App/var/cache/mondata.xml');
+            unset($_POST);
+        }
     }
 }

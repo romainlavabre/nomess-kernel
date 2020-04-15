@@ -12,7 +12,7 @@ use NoMess\HttpResponse\{
 class WebRouter implements ObserverInterface{
 	
 	/**
-	 * Stock les datas
+	 * Stock les data
 	 *
 	 * @var array
 	 */
@@ -46,8 +46,6 @@ class WebRouter implements ObserverInterface{
 		
 
 		$param = isset($this->data['attribute']) ? $this->data['attribute'] : null;
-
-		require_once 'Web/vendor/autoload.php';
 
 		$loader = new FilesystemLoader('Web/public/');
 		$twig = new Environment($loader, [
