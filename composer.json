@@ -1,5 +1,5 @@
 {
-    "name": "nomess",
+    "name": "nomess/kernel",
     "description": "Noyau de nomess",
     "keywords": ["framework"],
     "type": "project",
