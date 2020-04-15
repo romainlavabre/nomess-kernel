@@ -2,6 +2,7 @@
     "name": "nomess/kernel",
     "description": "Noyau de nomess",
     "keywords": ["framework"],
+    "type": "project",
     "authors": [
         {
             "name": "Romain Lavabre",
@@ -24,9 +25,6 @@
             "NoMess\\Router\\": "Router/"
 		}
     },
-    "extra": {
-    "branch-alias": {
-      "dev-master": "2.15.0"
-    }
+    "minimum-stability": "stable"
   }
 }
