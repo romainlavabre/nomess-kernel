@@ -25,6 +25,6 @@
             "NoMess\\Router\\": "Router/"
 		}
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "version": "2.15.0"
 }
