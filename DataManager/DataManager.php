@@ -1,6 +1,6 @@
 <?php
 
-namespace NoMess\Core;
+namespace NoMess\DataManager;
 
 use TypeError;
 use SimpleXMLElement;
@@ -9,9 +9,9 @@ use ReflectionClass;
 use Psr\Container\ContainerInterface;
 use Closure;
 
-class MonitoringData
+class DataManager
 {
-    const CONFIG    = 'App/var/cache/mondata.xml';
+    const CONFIG    = ROOT . 'App/var/cache/mondata.xml';
     const DATABASE  = 'NoMess\Database\IPDOFactory';
 
     /**

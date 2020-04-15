@@ -31,7 +31,7 @@ class Router
         $this->HttpSession->initSession();
 
 
-        $this->HttpRequest = new HttpRequest();
+        $this->HttpRequest = new HttpRequest($this->HttpSession);
         $this->HttpResponse = new HttpResponse();
 
         $builder = new ContainerBuilder();

@@ -3,7 +3,7 @@ echo "Lancement de la configuration...\n";
 
 require 'function-Installer.php';
 
-$comfirme = rdl("Plusieurs fichier vont être remplacé (index.php, WorkException.php, Response.php), continuer ? [oui: o | non: Enter]: ");
+$comfirme = rdl("Plusieurs fichier vont être remplacé, continuer ? [oui: o | non: Enter]: ");
 
 
 $api = '../App/';

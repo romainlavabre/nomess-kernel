@@ -7,7 +7,7 @@ class BuildRoutes{
     /**
      * Chemin vers les controllers
      */
-    const DIR = 'App/src/Controllers/';
+    const DIR = ROOT . 'App/src/Controllers/';
 
 
     /**

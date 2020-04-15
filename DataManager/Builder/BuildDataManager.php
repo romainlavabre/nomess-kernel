@@ -6,7 +6,7 @@ namespace NoMess\DataManager\Builder;
 class BuilderDataManager 
 {
 
-    const DIR       = "App/src/Modules/";
+    const DIR       = ROOT . 'App/src/Modules/';
 
 
     /**

@@ -30,7 +30,7 @@ class DatabaseMysql {
     /**
      * Chemin de la class PDOFactory
      *
-     * @var [type]
+     * @var string
      */
     private $pathPdoFactory;
 
