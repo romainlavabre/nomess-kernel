@@ -23,5 +23,10 @@
             "NoMess\\DataManager\\": "DataManager/",
             "NoMess\\Router\\": "Router/"
 		}
-	}
+    },
+    "extra": {
+    "branch-alias": {
+      "dev-master": "2.15.0"
+    }
+  }
 }
