@@ -1,22 +1,24 @@
 <?php
 
+use NoMess\DiBuilder\DiBuilder;
+
 echo "Lancement de la configuration...\n";
 
 require 'function-Installer.php';
 
-$comfirme = rdl("Plusieurs fichier vont être remplacé (index.php, WorkException.php, Response.php), continuer ? [oui: o | non: Enter]: ");
+$comfirme = rdl("Plusieurs fichier system vont être remplacé, continuer ? [oui: o | non: Enter]: ");
 
 
-$api = '../vendor/NoMess';
+$api = '../vendor/nomess/kernel/';
 
 
 if(!is_null($comfirme)){
 	$tabCopyFile = array(
-			'bin/plugin/cli/prog/noMess/context/Request-prod.php' => $api . 'HttpRequest/HttpRequest.php',
-			'bin/plugin/cli/prog/noMess/context/Response-prod.php' => $api . 'HttpResponse/HttpResponse.php',
-			'bin/plugin/cli/prog/noMess/context/WorkException-prod.php' => $api . 'Exception/WorkException.php',
-			'bin/plugin/cli/prog/noMess/context/index-prod.php' => '../index.php',
-			'bin/plugin/cli/prog/noMess/context/WebRooter-prod.php' => 'Web/WebRouter.php'
+			$api . 'Tools/plugin/cli/prog/noMess/context/Response-prod.php' => $api . 'HttpResponse/HttpResponse.php',
+			$api . 'Tools/plugin/cli/prog/noMess/context/WorkException-prod.php' => $api . 'Exception/WorkException.php',
+			$api . 'Tools/plugin/cli/prog/noMess/context/Router-prod.php' => $api . 'Router/Router.php',
+			$api . 'Tools/plugin/cli/prog/noMess/context/index-prod.php' => '../index.php',
+			$api . 'Tools/plugin/cli/prog/noMess/context/WebRouter-prod.php' => $api . 'Web/WebRouter.php'
 	);
 
 	foreach($tabCopyFile as $key => $value){
@@ -29,4 +31,8 @@ if(!is_null($comfirme)){
 			echo "Error: Le fichier " . $tabFile[$tabLength - 1] . " n'a pas pu être créé\n";
 		}
 	}
+
+	require_once '../vendor/nomess/kernel/DiBuilder/DiBuilder.php';
+	$build = new DiBuilder();
+	$build->diBuilder();
 }

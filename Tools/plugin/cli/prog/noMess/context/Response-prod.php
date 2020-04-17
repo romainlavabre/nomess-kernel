@@ -1,11 +1,26 @@
 <?php
 
-namespace NoMess\Core;
+namespace NoMess\HttpResponse;
 
-class Response implements SubjectInterface{
+use NoMess\Web\ObserverInterface;
+use NoMess\DataManager\DataManager;
+use NoMess\Exception\WorkException;
+
+
+class HttpResponse implements SubjectInterface{
+
 
     /**
-     * Donnée formatté en json
+     * Session
+     */
+    private const SESSION_RENDER                = 'nomess_render';
+    private const SESSION_DATABASE              = 'nomess_db';
+    private const SESSION_PARAMETERS            = 'nomess_attribute';
+
+
+
+    /**
+     * Données formattées en json
      *
      * @var string
      */
@@ -19,26 +34,65 @@ class Response implements SubjectInterface{
     private $observer = array();
 
     /**
+     * Instance de DataManager
+     *
+     * @var DataManager
+     */
+    private $monitoring;
+
+    /**
+     * 
      * Est injecté d'observeur
      *
      * @param ObserverInterface $obs
+     * @param DataManager $md
      * @return void
      */
-    public function __construct(ObserverInterface $obs)
+    public function __construct(ObserverInterface $obs,
+                                DataManager $md)
     {
         $this->observer[] = $obs;
+        $this->monitoring = $md;
     }
     
     /**
-     * Formatte les donnée renvoyé par l'App
+     * Formatte les données renvoyé par l'App
      *
      * @param array $data
      * @return void
      */
     public function render(?array $data) : void
-    {   
+    {
+
+        $this->monitoring->database();
         $this->controlStamp($data);
+
+        if(isset($_SESSION[self::SESSION_RENDER])){
+            unset($_SESSION[self::SESSION_RENDER]);
+        }
+
+        if(isset($_SESSION[self::SESSION_DATABASE])){
+            unset($_SESSION[self::SESSION_DATABASE]);
+        }
+
+        if(!isset($_SESSION[self::SESSION_PARAMETERS])){
+            $_SESSION[self::SESSION_PARAMETERS] = array();
+        }
+
+        foreach($_SESSION as $key => $value){
+            if($key !== self::SESSION_PARAMETERS && $key !== 'private'){
+                $_SESSION[self::SESSION_PARAMETERS][$key] = $value;
+            }
+        }
+
+
+        $data['attribute'] = $_SESSION[self::SESSION_PARAMETERS];
+
+
         $this->jsondata = json_encode($data);
+        
+        unset($_SESSION[self::SESSION_PARAMETERS]);
+
         $this->notify();
     }
 
@@ -64,7 +118,7 @@ class Response implements SubjectInterface{
         }
     }
 
-    private function controlStamp(array $data)
+    public function controlStamp(array $data) : void
     {
         $find = false;
 

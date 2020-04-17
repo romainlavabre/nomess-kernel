@@ -6,7 +6,7 @@
     "authors": [
         {
             "name": "Romain Lavabre",
-            "email": "webmaster@newwebsouth"
+            "email": "webmaster@newwebsouth.fr"
         }
     ],
     "require": {
@@ -19,12 +19,17 @@
     },
     "autoload" : {
 		"psr-4" : {
+            "NoMess\\HttpSession\\": "HttpSession/",
             "NoMess\\HttpRequest\\" : "HttpRequest/",
             "NoMess\\HttpResponse\\": "HttpResponse/",
             "NoMess\\DataManager\\": "DataManager/",
-            "NoMess\\Router\\": "Router/"
+            "NoMess\\Database\\": "Database/",
+            "NoMess\\Router\\": "Router/",
+            "NoMess\\Manager\\": "Manager/",
+            "NoMess\\Web\\": "Web/",
+            "NoMess\\service\\": "Service/",
+            "NoMess\\DiBuilder\\": "DiBuilder"
 		}
     },
-    "minimum-stability": "stable",
-    "version": "2.15.0"
+    "minimum-stability": "stable"
 }

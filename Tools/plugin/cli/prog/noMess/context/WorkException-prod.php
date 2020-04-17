@@ -1,5 +1,5 @@
 <?php
-namespace NoMess\Core;
+namespace NoMess\Exception;
 
 
 class WorkException extends \ErrorException{
@@ -25,30 +25,32 @@ class WorkException extends \ErrorException{
 				break;
 		}
 		
-		
-		return '<strong>' . $type . '</strong> : [' . $this->code . '] ' . $this->message . '<br /><strong>' . $this->file . '</strong> à la ligne <strong>' . $this->line . '</strong><br>';
+		header('HTTP/1.0 500 INTERNAL SERVER ERROR');
+
+        $tabError = require ROOT . 'App/config/error.php';
+
+        include(ROOT . $tabError['500']);
+        die;
 	}
 }
 
 function error2exception($code, $message, $fichier, $ligne) {
-	global $Log;
-	file_put_contents($Log, $code . ": " . $message . "\n line" . $ligne . " dans " . $fichier . "\n---------------------------------------------------------\n", FILE_APPEND);
+	file_put_contents('App/var/log/log.txt', $code . ": " . $message . "\n line" . $ligne . " dans " . $fichier . "\n---------------------------------------------------------\n", FILE_APPEND);
 	throw new WorkException($message, 0, $code, $fichier, $ligne);
 }
 
 function customException($e) {
 
-	global $Log, $CONTEXT;
+	file_put_contents('App/var/log/log.txt', "Line " . $e->getLine() . ": " . $e->getFile() . "\nException: " . $e->getMessage() . "\n---------------------------------------------------------\n", FILE_APPEND);
 
-	echo '
-				"Ligne "' . $e->getLine() . '" dans "' . $e->getFile() . '
-				"<br /><strong>Exception lancée</strong> : "' . $e->getMessage() . '"<br>";
+	header('HTTP/1.0 500 INTERNAL SERVER ERROR');
 
-		';
+    $tabError = require ROOT . 'App/config/error.php';
+
+    include(ROOT . $tabError['500']);
+    die;
 	
-	
-	file_put_contents($Log, "Line " . $e->getLine() . ": " . $e->getFile() . "\nException: " . $e->getMessage() . "\n---------------------------------------------------------\n", FILE_APPEND);
 }
 
-set_error_handler('NoMess\Core\error2exception');
-set_exception_handler('NoMess\Core\customException');
+set_error_handler('NoMess\Exception\error2exception');
+set_exception_handler('NoMess\Exception\customException');

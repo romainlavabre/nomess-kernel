@@ -38,8 +38,6 @@ function error2exception($code, $message, $fichier, $ligne) {
 
 function customException($e) {
 
-	global $Log;
-
 	echo '
 				"Ligne "' . $e->getLine() . '" dans "' . $e->getFile() . '
 				"<br /><strong>Exception lancée</strong> : "' . $e->getMessage() . '"<br>";

@@ -85,9 +85,9 @@ class Controller
 
 namespace " . $this->getNamespace() . ";
 
-use NoMess\Core\Response;
-use NoMess\Core\Request;
-use NoMess\Core\ControllerManager;
+use NoMess\HttpResponse\HttpResponse;
+use NoMess\HttpRequest\HttpRequest;
+use NoMess\Manager\ControllerManager;
 
 
 /**
@@ -108,11 +108,11 @@ class " . ucfirst($this->controller) . " extends ControllerManager
 
     /**
      * 
-     * @param Request \$request
-     * @param Response \$response
+     * @param HttpRequest \$request
+     * @param HttpResponse \$response
      * @return void
      */
-    public function doGet(Response \$response, Request \$request) : void
+    public function doGet(HttpResponse \$response, HttpRequest \$request) : void
     {
         \$response->render([
             'stamp' => self::STAMP_GET
@@ -121,11 +121,11 @@ class " . ucfirst($this->controller) . " extends ControllerManager
 
     /**
      *
-     * @param Request \$request
-     * @param Response \$response
+     * @param HttpRequest \$request
+     * @param HttpResponse \$response
      * @return void
      */
-    public function doPost(Response \$response, Request \$request) : void
+    public function doPost(HttpResponse \$response, HttpRequest \$request) : void
     {
         \$data = \$request->getParameters();
 

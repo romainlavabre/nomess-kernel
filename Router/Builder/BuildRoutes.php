@@ -2,6 +2,8 @@
 
 namespace NoMess\Router\Builder;
 
+use NoMess\Exception\WorkException;
+
 class BuildRoutes{
 
     /**
@@ -208,9 +210,9 @@ class BuildRoutes{
                 }
             }
 
-            throw new WorkException('Le namespace de la class n\'a pas été résolue dans le fichier ' . $path . ' pour la method BuildRoutes::getClassName');
+            throw new WorkException('Le namespace de la class n\'a pas été résolue dans le fichier ' . $path);
         }else{
-            throw new WorkException('Le fichier ' . $file . ' n\'a pas été résolue dans la method BuildRoutes::getClassName');
+            throw new WorkException('Le fichier ' . $file . ' n\'a pas été résolue');
         }
     }
 }

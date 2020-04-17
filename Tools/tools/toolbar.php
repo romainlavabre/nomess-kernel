@@ -1,7 +1,7 @@
 <?php
-/*
- * @eclipse-formatter:off
- */
+
+	$version = '2.15.0';
+
 	global $vController, $action, $method, $_GET, $_POST, $time, $tree;
 	
 	$tabOpcache = null;
@@ -33,7 +33,7 @@
 
 	$fileIndex = searchReportCoverage();
 ?>
-<link rel="stylesheet" href="<?php echo WEBROOT.'Tools/bin/tools/bootstrap-toolbar.css'; ?>">
+<link rel="stylesheet" href="<?php echo WEBROOT.'vendor/nomess/kernel/Tools/tools/bootstrap-toolbar.css'; ?>">
 <style type="text/css">
 
 .nm_no-radius{
@@ -201,7 +201,7 @@
 			</div>
 		</div>
 		<button class="nm_btn nm_rouge" data-toggle="nm_modal" data-target="#phpinfo">phpinfo</button>
-		<button class="nm_btn nm_bleu nm_no-radius">noMess.2.10.2</button>
+		<button class="nm_btn nm_bleu nm_no-radius">NoMess.<?php echo $version ?></button>
 	</div>
 </div>
 
@@ -435,7 +435,7 @@ foreach($fileIndex as $key => $value){*/
 				</div>
 				<div class="nm_modal-body">
 					<div class="nm_container">
-						<iframe src="<?php echo WEBROOT . 'Tools/bin/tools/phpinfo.php'?>" style="width: 100%;" height="500"></iframe>
+						<iframe src="<?php echo WEBROOT . 'vendor/nomess/kernel/Tools/tools/phpinfo.php'?>" style="width: 100%;" height="500"></iframe>
 					</div>
 				</div>
 				<div class="nm_modal-footer">
@@ -445,6 +445,6 @@ foreach($fileIndex as $key => $value){*/
 		</div>
 	</div>
 </div>
-<script type="text/javascript" src="<?php echo WEBROOT.'Tools/bin/tools/jquery-3.4.1.slim.min.js'; ?>"></script>
-<script type="text/javascript" src="<?php echo WEBROOT.'Tools/bin/tools/popper.min.js'; ?>"></script>
-<script type="text/javascript" src="<?php echo WEBROOT.'Tools/bin/tools/bootstrap.js'; ?>"></script>
+<script type="text/javascript" src="<?php echo WEBROOT.'vendor/nomess/kernel/Tools/tools/jquery-3.4.1.slim.min.js'; ?>"></script>
+<script type="text/javascript" src="<?php echo WEBROOT.'vendor/nomess/kernel/Tools/tools/popper.min.js'; ?>"></script>
+<script type="text/javascript" src="<?php echo WEBROOT.'vendor/nomess/kernel/Tools/tools/bootstrap.js'; ?>"></script>

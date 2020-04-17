@@ -1,5 +1,4 @@
 <?php
-
 /*
 	============================================================================
 */
@@ -18,47 +17,23 @@ ini_set('error_log', ROOT .'App/var/log/error.log');
 	============================================================================
 */
 
-if(isset($_POST['resetCache'])){
-	opcache_reset();
-	unset($_POST);
-}
 
-if(isset($_POST['invalide'])){
-	opcache_invalidate($_POST['invalide'], true);
-	unset($_POST);
-}
-
-if(isset($_POST['resetCacheRoute'])){
-	unlink(ROOT . 'App/var/cache/routes/routing.xml');
-	unset($_POST);
-}
-
-require (ROOT . 'App/vendor/autoload.php');
-require (ROOT . 'App/config/config-dev.php');
-require (ROOT . 'Tools/bin/tools/time.php');
+require (ROOT . 'vendor/autoload.php');
+require (ROOT . 'vendor/nomess/kernel/Tools/tools/time.php');
 
 /*
 ===================================== Toolbar ==========================================
 */
-global  $time, $tree;
 
+global $time;
 $time = new Time();
-$time->startController();
-
-$debut = microtime(true);
 /*
 ===================================== Toolbar ==========================================
 */
 
 
-
-if(!file_exists(ROOT . "App/var/cache/routes/routing.xml")){
-	$buildRouting = new NoMess\Core\BuildRoutes(ROOT . "App/var/cache/routes/routing.xml");
-	$buildRouting->build();
-}
-
-$request = new NoMess\Core\Request();
-$tab = $request->getAction();
+$route = new NoMess\Router\Router();
+$tab = $route->getRoute();
 
 if(!is_null($tab)){
 	$vController = $tab[2];
@@ -68,6 +43,6 @@ if(!is_null($tab)){
 }
 
 
-require ROOT . 'Tools/bin/tools/toolbar.php';
+require ROOT . 'vendor/nomess/kernel/Tools/tools/toolbar.php';
 
 ?>

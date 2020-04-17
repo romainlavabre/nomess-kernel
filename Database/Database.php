@@ -6,6 +6,10 @@ namespace NoMess\Database;
 class Database
 {
 
+    private const KEY           = 'nomess_db';
+    private const CREATE        = 'create:';
+    private const UPDATE        = 'update:';
+    private const DELETE        = 'delete:';
 
     /**
      * Ajoute à la pile la créetion d'un objet et ses sous-objects
@@ -16,7 +20,7 @@ class Database
      */
     public function create(array $param, string $type = null) : void
 	{
-		$_SESSION['nomess_db'][] = ['create:' . $type => $param];
+		$_SESSION[self::KEY][] = [self::CREATE . $type => $param];
 	}
 
     /**
@@ -28,7 +32,7 @@ class Database
      */
 	public function update(array $param, string $type = null) : void
 	{
-		$_SESSION['nomess_db'][] = ['update:' . $type => $param];
+		$_SESSION[self::KEY][] = [self::UPDATE . $type => $param];
 	}
 
 
@@ -41,7 +45,7 @@ class Database
      */
 	public function delete(array $param, string $type = null) : void
 	{
-		$_SESSION['nomess_db'][] = ['delete:' . $type => $param];
+		$_SESSION[self::KEY][] = [self::DELETE . $type => $param];
 	}
 
 
@@ -55,6 +59,6 @@ class Database
      */
 	public function database(string $method, array $param, string $type = null) : void
 	{
-		$_SESSION['nomess_db'][] = [$method . ':' . $type => $param];
+		$_SESSION[self::KEY][] = [$method . ':' . $type => $param];
 	}
 }

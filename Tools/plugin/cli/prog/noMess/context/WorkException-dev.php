@@ -1,5 +1,5 @@
 <?php
-namespace NoMess\Core;
+namespace NoMess\Exception;
 
 
 class WorkException extends \ErrorException{
@@ -32,14 +32,11 @@ class WorkException extends \ErrorException{
 }
 
 function error2exception($code, $message, $fichier, $ligne) {
-	global $Log;
-	file_put_contents($Log, $code . ": " . $message . "\n line" . $ligne . " dans " . $fichier . "\n---------------------------------------------------------\n", FILE_APPEND);
+	file_put_contents('App/var/log/log.txt', $code . ": " . $message . "\n line" . $ligne . " dans " . $fichier . "\n---------------------------------------------------------\n", FILE_APPEND);
 	throw new WorkException($message, 0, $code, $fichier, $ligne);
 }
 
 function customException($e) {
-
-	global $Log, $CONTEXT;
 
 	echo '
 				"Ligne "' . $e->getLine() . '" dans "' . $e->getFile() . '
@@ -49,8 +46,8 @@ function customException($e) {
 	
 	require ROOT . 'Tools/bin/tools/toolbar.php';
 	
-	file_put_contents($Log, "Line " . $e->getLine() . ": " . $e->getFile() . "\nException: " . $e->getMessage() . "\n---------------------------------------------------------\n", FILE_APPEND);
+	file_put_contents('App/var/log/log.txt', "Line " . $e->getLine() . ": " . $e->getFile() . "\nException: " . $e->getMessage() . "\n---------------------------------------------------------\n", FILE_APPEND);
 }
 
-set_error_handler('NoMess\Core\error2exception');
-set_exception_handler('NoMess\Core\customException');
+set_error_handler('NoMess\Exception\error2exception');
+set_exception_handler('NoMess\Exception\customException');
