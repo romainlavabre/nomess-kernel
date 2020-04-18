@@ -34,7 +34,7 @@ class Main{
      *
      * @var string
      */
-    private $pathPdoFactory = '../App/vendor/NoMess/PDOFactory.php';
+    private $pathPdoFactory = '../vendor/nomess/kernel/Database/PDOFactory.php';
 
     /**
      * Nom de la table en base

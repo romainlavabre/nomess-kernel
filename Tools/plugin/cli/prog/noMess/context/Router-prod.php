@@ -8,7 +8,6 @@ use NoMess\HttpSession\HttpSession;
 use NoMess\HttpResponse\HttpResponse;
 use NoMess\Router\Builder\BuildRoutes;
 use NoMess\DataManager\Builder\BuilderDataManager;
-use NoMess\DiBuilder\DiBuilder;
 
 class Router
 {
@@ -20,7 +19,6 @@ class Router
     private $HttpResponse;
 
     private $container;
-
 
 
     private const ROUTING                   = ROOT . "App/var/cache/routes/routing.xml";
@@ -37,6 +35,8 @@ class Router
         $builder = new ContainerBuilder();
         $builder->useAnnotations(true);
         $builder->addDefinitions(self::DEFINITION);
+        $builder->enableCompilation(ROOT . 'App/var/cache/di'); 
+        $builder->writeProxiesToFile(true, ROOT . 'App/var/cache/di');
         $this->container = $builder->build();
 
         $this->HttpSession = $this->container->get(HttpSession::class);
@@ -44,8 +44,6 @@ class Router
         $this->HttpResponse = $this->container->get(HttpResponse::class);
 
         $this->HttpSession->initSession();
-
-        $this->resetCache();
 
         
         if(!file_exists(self::CACHE_DATA_MANAGER)){
@@ -65,13 +63,10 @@ class Router
     /**
      * Routeur
      *
-     * @return array|null
+     * @return void
      */
-    public function getRoute() : ?array
+    public function getRoute() : void
     {
-        
-        $vController = null;
-        $method = null;
         
         $file = simplexml_load_file(self::ROUTING);
 
@@ -96,28 +91,19 @@ class Router
 
                 if(isset($_POST) && !empty($_POST)){
                     $action = 'doPost';
-                    $method = "POST";
                 }else{
                     $action = 'doGet';
-                    $method = "GET";
                 }
                 
                 break;
             }
         } 
 
-        $result = explode('\\', $controller);
-        $vController = $result[count($result) - 1];
-
         if(file_exists($path) && !empty($controller)){	
             $controller = $this->container->get($controller);
 
             $controller->$action($this->HttpResponse, $this->HttpRequest);
-            
-            return [0 => $controller, 1 => $action, 2 => $vController, 3 => $method];
         }else{
-
-            header('HTTP/1.0 404 NOT FOUND');
 
             $tabError = require ROOT . 'App/config/error.php';
 
@@ -125,28 +111,5 @@ class Router
             die;
         }
 
-    }
-
-    private function resetCache() : void
-    {
-        if(isset($_POST['resetCache'])){
-            opcache_reset();
-            unset($_POST);
-        }
-
-        if(isset($_POST['invalide'])){
-            opcache_invalidate($_POST['invalide'], true);
-            unset($_POST);
-        }
-
-        if(isset($_POST['resetCacheRoute'])){
-            unlink(ROOT . 'App/var/cache/routes/routing.xml');
-            unset($_POST);
-        }
-
-        if(isset($_POST['resetCacheMon'])){
-            unlink(ROOT . 'App/var/cache/mondata.xml');
-            unset($_POST);
-        }
     }
 }

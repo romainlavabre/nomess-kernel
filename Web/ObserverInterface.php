@@ -1,13 +1,14 @@
 <?php
 
-namespace NoMess\Core;
+namespace NoMess\Web;
 
-use NoMess\Core\Response;
+use NoMess\HttpResponse\HttpResponse;
+
 
 interface ObserverInterface{
 
-    public function alert(Response $instance) : void;
+    public function alert(HttpResponse $instance) : void;
 
-    public function collectData(Response $instance) : void;
+    public function collectData(HttpResponse $instance) : void;
 
 }

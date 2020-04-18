@@ -2,6 +2,7 @@
     "name": "nomess/kernel",
     "description": "Noyau de nomess",
     "keywords": ["framework"],
+    "type": "project",
     "authors": [
         {
             "name": "Romain Lavabre",
@@ -18,10 +19,17 @@
     },
     "autoload" : {
 		"psr-4" : {
+            "NoMess\\HttpSession\\": "HttpSession/",
             "NoMess\\HttpRequest\\" : "HttpRequest/",
             "NoMess\\HttpResponse\\": "HttpResponse/",
             "NoMess\\DataManager\\": "DataManager/",
-            "NoMess\\Router\\": "Router/"
+            "NoMess\\Database\\": "Database/",
+            "NoMess\\Router\\": "Router/",
+            "NoMess\\Manager\\": "Manager/",
+            "NoMess\\Web\\": "Web/",
+            "NoMess\\service\\": "Service/",
+            "NoMess\\DiBuilder\\": "DiBuilder"
 		}
-	}
+    },
+    "minimum-stability": "stable"
 }

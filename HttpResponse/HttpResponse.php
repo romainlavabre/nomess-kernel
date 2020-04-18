@@ -2,8 +2,22 @@
 
 namespace NoMess\HttpResponse;
 
+use NoMess\Web\ObserverInterface;
+use NoMess\DataManager\DataManager;
+use NoMess\Exception\WorkException;
+use NoMess\HttpResponse\SubjectInterface;
+
 
 class HttpResponse implements SubjectInterface{
+
+
+    /**
+     * Session
+     */
+    private const SESSION_RENDER                = 'nomess_render';
+    private const SESSION_DATABASE              = 'nomess_db';
+    private const SESSION_PARAMETERS            = 'nomess_attribute';
+
 
     /**
      * Donnée formatté en json
@@ -20,28 +34,29 @@ class HttpResponse implements SubjectInterface{
     private $observer = array();
 
     /**
-     * Instance de MonitoringData
+     * Instance de DataManager
      *
-     * @var MonitoringData
+     * @var DataManager
      */
     private $monitoring;
 
     /**
+     * 
      * Est injecté d'observeur
      *
      * @param ObserverInterface $obs
-     * @param MonitoringData $md
-     * @return void
+     * @param DataManager $md
+     * @return void 
      */
     public function __construct(ObserverInterface $obs,
-                                MonitoringData $md)
+                                DataManager $md)
     {
         $this->observer[] = $obs;
         $this->monitoring = $md;
     }
     
     /**
-     * Formatte les donnée renvoyé par l'App
+     * Formatte les données renvoyé par l'App
      *
      * @param array $data
      * @return void
@@ -54,31 +69,31 @@ class HttpResponse implements SubjectInterface{
         $this->monitoring->database();
         $this->controlStamp($data);
 
-        if(isset($_SESSION['nomess_render'])){
-            unset($_SESSION['nomess_render']);
+        if(isset($_SESSION[self::SESSION_RENDER])){
+            unset($_SESSION[self::SESSION_RENDER]);
         }
 
-        if(isset($_SESSION['nomess_db'])){
-            unset($_SESSION['nomess_db']);
+        if(isset($_SESSION[self::SESSION_DATABASE])){
+            unset($_SESSION[self::SESSION_DATABASE]);
         }
 
-        if(!isset($_SESSION['nomess_attribute'])){
-            $_SESSION['nomess_attribute'] = array();
+        if(!isset($_SESSION[self::SESSION_PARAMETERS])){
+            $_SESSION[self::SESSION_PARAMETERS] = array();
         }
 
         foreach($_SESSION as $key => $value){
-            if($key !== 'nomess_attribute' && $key !== 'private'){
-                $_SESSION['nomess_attribute'][$key] = $value;
+            if($key !== self::SESSION_PARAMETERS && $key !== 'private'){
+                $_SESSION[self::SESSION_PARAMETERS][$key] = $value;
             }
         }
 
 
-        $data['attribute'] = $_SESSION['nomess_attribute'];
+        $data['attribute'] = $_SESSION[self::SESSION_PARAMETERS];
 
 
         $this->jsondata = json_encode($data);
         
-        unset($_SESSION['nomess_attribute']);
+        unset($_SESSION[self::SESSION_PARAMETERS]);
 
         $this->notify();
     }

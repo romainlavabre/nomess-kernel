@@ -73,7 +73,7 @@ class RegisterObject{
             }
         }
 
-        return $namespace . ";\n\nuse NoMess\\Core\\EntityManager;";
+        return $namespace . ";\n\nuse NoMess\\Manager\\EntityManager;";
     }
 
     /**

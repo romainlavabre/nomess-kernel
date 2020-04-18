@@ -2,6 +2,9 @@
 
 namespace NoMess\DataManager\Builder;
 
+use NoMess\Exception\WorkException;
+use NoMess\DataManager\Builder\DocComment;
+
 
 class BuilderDataManager 
 {

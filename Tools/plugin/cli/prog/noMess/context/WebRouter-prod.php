@@ -2,13 +2,16 @@
 
 namespace NoMess\Web;
 
-use Twig\Loader\FilesystemLoader;
 use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
+use NoMess\Web\Builder\WebBuilder;
 use NoMess\HttpResponse\HttpResponse;
 
 class WebRouter implements ObserverInterface{
 	
-	private const CONFIG_XML			= 'Web/template.xml';
+	private const CACHE_TWIG			= 'Web/cache/twig/';
+	private const CACHE_WEBROUTER		= 'Web/cache/webRouter/template.php';
+
 	private const BASE_ENVIRONMENT		= 'Web/public/';
 
 
@@ -29,45 +32,39 @@ class WebRouter implements ObserverInterface{
 	 * @return void
 	 */
 	public function buildView() : void
- 	{
-		$file = simplexml_load_file(self::CONFIG_XML);
-		
-		$path = null;
-
+ 	{	
 		$tabData = explode('/', $this->data['stamp']);
 
-		$state = isset($tabData[1]) ? $tabData[1] === '' || $tabData[1] === '0' || $tabData[1] === 'false' ? 'false' : 'true' : 'true';
+		$state = isset($tabData[1]) ? $tabData[1] === '' || $tabData[1] === '0' || $tabData[1] === '/false' ? '/false' : '/true' : '/true';
+	
 
-		foreach($file->template as $value){
-			if(strtolower((string)$value->$state) === strtolower($tabData[0])){
-				
-				$path = (string)$value->attributes()['name'];
-			}
-		}	
+		if(!file_exists(self::CACHE_WEBROUTER)){
+			$builder = new WebBuilder();
+			$builder->webBuilder();
+		}
+
+		$route = require_once self::CACHE_WEBROUTER;
 		
 
 		$param = isset($this->data['attribute']) ? $this->data['attribute'] : null;
 
 		$loader = new FilesystemLoader(self::BASE_ENVIRONMENT);
 		$twig = new Environment($loader, [
-			'debug' => true,
-			'cache' => false,
-			'strict_variables' => true
+			'cache' => self::CACHE_TWIG,
 		]);
 
-		$twig->addExtension(new \Twig\Extension\DebugExtension());
-
-		if($path === null){
+		if(!isset($route[strtolower($tabData[0]) . $state])){
 			throw new \Exception('template.xml: Le template pour ' . $tabData[0] . ' est introuvable   Requête->' . $this->data['stamp']);
 		}
 
-		echo $twig->render($path, ['WEBROOT' => WEBROOT, 'param' => isset($param) ? $param : null, 'POST' => isset($_POST) ? $_POST : null, 'GET' => isset($_GET) ? $_GET : null]);		
+		echo $twig->render($route[strtolower($tabData[0]) . $state], ['WEBROOT' => WEBROOT, 'param' => isset($param) ? $param : null, 'POST' => isset($_POST) ? $_POST : null, 'GET' => isset($_GET) ? $_GET : null]);		
 	}
 
 	
 	/**
-	 * Est informé du changement d'état de Response 
+	 * Est informé du changement d'état de HttpResponse 
 	 *
+	 * @param HttpResponse $instance
 	 * @return void
 	 */
 	public function alert(HttpResponse $instance) : void

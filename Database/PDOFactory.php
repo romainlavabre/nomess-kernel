@@ -5,7 +5,7 @@ namespace NoMess\Database;
 class PDOFactory implements IPDOFactory
 {
 
-	private const DATA = 'App/config/database.php';
+	private const DATA = ROOT . 'App/config/database.php';
 
 	/**
 	 * Insatnce de PDO
@@ -37,7 +37,7 @@ class PDOFactory implements IPDOFactory
 	{
 		$tab = require_once self::DATA;
 
-		$db = new \PDO('mysql:host=' . $tab['host'] . ';dbname=' . $tab['dbname'] . '', $data['user'], $data['password'], array(
+		$db = new \PDO('mysql:host=' . $tab['host'] . ';dbname=' . $tab['dbname'] . '', $tab['user'], $tab['password'], array(
 				\PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'
 		));
 

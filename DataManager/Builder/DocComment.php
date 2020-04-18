@@ -1,6 +1,8 @@
 <?php
 namespace NoMess\DataManager\Builder;
 
+use NoMess\Exception\WorkException;
+
 class DocComment
 {
 

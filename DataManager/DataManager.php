@@ -2,12 +2,13 @@
 
 namespace NoMess\DataManager;
 
+use Closure;
 use TypeError;
+use ReflectionClass;
 use SimpleXMLElement;
 use ReflectionProperty;
-use ReflectionClass;
+use NoMess\Exception\WorkException;
 use Psr\Container\ContainerInterface;
-use Closure;
 
 class DataManager
 {
@@ -90,7 +91,7 @@ class DataManager
     /**
      * @Inject
      *
-     * @param ContainerInterface $ci
+     * @param ContainerInterface $ci 
      */
     public function __construct(ContainerInterface $ci){
         $this->container = $ci;
@@ -450,7 +451,6 @@ class DataManager
                     $noUpdate = (string)$xmlProperty['noUpdate'];
 
                     if(empty($noUpdate)){
-                        r($supervisorKey);
                         $this->doTransaction([$value]);
                     }
                 }else if($this->method === 'delete' || $alias === 'delete'){

@@ -1,10 +1,10 @@
 <?php
 
-use NoMess\Core\PDOFactory;
+use NoMess\Database\PDOFactory;
 
 class DatabaseMysql {
 
-    const IPDOFACTORY = '../App/vendor/NoMess/IPDOFactory.php';
+    const IPDOFACTORY = '../vendor/nomess/kernel/Database/IPDOFactory.php';
 
     /**
      * Nom de la table
@@ -84,8 +84,9 @@ class DatabaseMysql {
     private function getConnexion() : \PDO
     {
         require self::IPDOFACTORY;
-        require $this->pathConfig;
         require $this->pathPdoFactory;
+
+        define('ROOT', '../');
 
         echo "Teste: Connexion avec la base de données...\n";
 
