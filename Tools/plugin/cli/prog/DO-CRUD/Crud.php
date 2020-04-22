@@ -55,7 +55,7 @@ class Crud{
      */
     private function assembler(array $property, string $name, string $dbname) : string
     {
-        $content = "<?php\n" . $this->getNamespace($name) . "\n\n\n class " . $name . "Table \n{\n\n\n\t/**\n\t* Instance de PDO\n\t*\n\t* @var \PDO\n\t*/\n\tprivate \$database;\n\n\t/**\n\t * \n\t * @Inject\n\t *\n\t * @var IPDOFactory \$db\n\t */\n\tpublic function __construct(IPDOFactory \$db)\n\t{
+        $content = "<?php\n" . $this->getNamespace($name) . "\n\n\nclass " . $name . "Table \n{\n\n\n\t/**\n\t* Instance de PDO\n\t*\n\t* @var \PDO\n\t*/\n\tprivate \$database;\n\n\t/**\n\t * \n\t * @Inject\n\t *\n\t * @var IPDOFactory \$db\n\t */\n\tpublic function __construct(IPDOFactory \$db)\n\t{
             \n\t\t\$this->database = \$db->getConnection();\n\t}\n\n\t" . $this->getRead($property, $dbname, $name) ."\n\n\n\t" . $this->getCreate($property, $dbname, $name) . "\n\n\n\t" . $this->getUpdate($property, $dbname, $name) . "\n\n\n\t" . $this->getDelete($property, $dbname, $name)
             . "\n}";
 

@@ -25,7 +25,7 @@ class WorkException extends \ErrorException{
 				break;
 		}
 		
-		require ROOT . 'Tools/bin/tools/toolbar.php';
+		require ROOT . 'vendor/nomess/kernel/Tools/tools/toolbar.php';
 		
 		return '<strong>' . $type . '</strong> : [' . $this->code . '] ' . $this->message . '<br /><strong>' . $this->file . '</strong> à la ligne <strong>' . $this->line . '</strong><br>';
 	}
@@ -44,7 +44,7 @@ function customException($e) {
 
 		';
 	
-	require ROOT . 'Tools/bin/tools/toolbar.php';
+	require ROOT . 'vendor/nomess/kernel/Tools/tools/toolbar.php';
 	
 	file_put_contents('App/var/log/log.txt', "Line " . $e->getLine() . ": " . $e->getFile() . "\nException: " . $e->getMessage() . "\n---------------------------------------------------------\n", FILE_APPEND);
 }

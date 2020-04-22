@@ -64,7 +64,7 @@ class HttpResponse implements SubjectInterface{
     public function render(?array $data) : void
     {
         global $time;
-        $time->setXdebug(xdebug_time_index());
+        @$time->setXdebug(xdebug_time_index());
 
         $this->monitoring->database();
         $this->controlStamp($data);

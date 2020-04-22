@@ -27,7 +27,7 @@
             "NoMess\\Router\\": "Router/",
             "NoMess\\Manager\\": "Manager/",
             "NoMess\\Web\\": "Web/",
-            "NoMess\\service\\": "Service/",
+            "NoMess\\Service\\": "Service/",
             "NoMess\\DiBuilder\\": "DiBuilder"
 		}
     },

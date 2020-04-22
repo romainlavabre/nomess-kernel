@@ -105,7 +105,7 @@ class HttpRequest
      * Récupère une valeur temporaire
      *
      * @param string $serviceStamp
-     * @return void
+     * @return mixed
      */
 	public function getRender(string $serviceStamp) 
 	{
@@ -115,4 +115,21 @@ class HttpRequest
 
 		throw new WorkException($serviceStamp . ' n\'a rien retourné');
 	}
+
+
+    /**
+     * Retourne les fichiers envoyé par POST (Global $_FILES)
+     *
+     * @param string $index
+     *
+     * @return array|null
+     */
+    public function getFile(string $index) : ?array
+    {
+        if(isset($_FILES[$index])){
+            return $_FILES[$index];
+        }
+
+        return null;
+    }
 }
