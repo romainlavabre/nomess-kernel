@@ -14,11 +14,12 @@ $api = '../vendor/nomess/kernel/';
 
 if(!is_null($comfirme)){
 	$tabCopyFile = array(
-			$api . 'Tools/plugin/cli/prog/noMess/context/Response-prod.php' => $api . 'HttpResponse/HttpResponse.php',
+			$api . 'Tools/plugin/cli/prog/noMess/context/Distributor-prod.php' => $api . 'Manager/Distributor.php',
 			$api . 'Tools/plugin/cli/prog/noMess/context/WorkException-prod.php' => $api . 'Exception/WorkException.php',
 			$api . 'Tools/plugin/cli/prog/noMess/context/Router-prod.php' => $api . 'Router/Router.php',
 			$api . 'Tools/plugin/cli/prog/noMess/context/index-prod.php' => '../index.php',
-			$api . 'Tools/plugin/cli/prog/noMess/context/WebRouter-prod.php' => $api . 'Web/WebRouter.php'
+			$api . 'Tools/plugin/cli/prog/noMess/context/WebRouter-prod.php' => $api . 'Web/WebRouter.php',
+			$api . 'Tools/plugin/cli/prog/noMess/context/DataManager-prod.php' => $api . 'DataManager/DataManager.php'
 	);
 
 	foreach($tabCopyFile as $key => $value){

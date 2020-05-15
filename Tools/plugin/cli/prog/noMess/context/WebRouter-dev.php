@@ -39,9 +39,13 @@ class WebRouter implements ObserverInterface{
 		$state = isset($tabData[1]) ? $tabData[1] === '' || $tabData[1] === '0' || $tabData[1] === 'false' ? 'false' : 'true' : 'true';
 
 		foreach($file->template as $value){
-			if(strtolower((string)$value->$state) === strtolower($tabData[0])){
-				
-				$path = (string)$value->attributes()['name'];
+
+			foreach($value->$state as $stamp){
+				if(strtolower((string)$stamp) === strtolower($tabData[0])){
+					
+					$path = (string)$value->attributes()['name'];
+					break;
+				}
 			}
 		}	
 		
@@ -61,7 +65,13 @@ class WebRouter implements ObserverInterface{
 			throw new \Exception('template.xml: Le template pour ' . $tabData[0] . ' est introuvable   Requête->' . $this->data['stamp']);
 		}
 
-		echo $twig->render($path, ['WEBROOT' => WEBROOT, 'param' => isset($param) ? $param : null, 'POST' => isset($_POST) ? $_POST : null, 'GET' => isset($_GET) ? $_GET : null]);		
+		echo $twig->render($path, [
+			'WEBROOT' => WEBROOT, 
+			'param' => isset($param) ? $param : null, 
+			'POST' => isset($_POST) ? $_POST : null, 
+			'GET' => isset($_GET) ? $_GET : null, 
+			'COOKIE' => $_COOKIE
+		]);	
 	}
 
 	

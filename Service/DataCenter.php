@@ -24,18 +24,18 @@ class DataCenter
     
 
     /**
-     * Retourne La valeur de $index
+     * Retourne La valeur de $index ou null si elle n'existe pas
      *
      * @param string|null $index
      *
-     * @return string
+     * @return mixed
      */
-    public function getData(?string $index) : string
+    public function getData(?string $index)
     {
         if(isset($this->data[$index])){
             return $this->data[$index];
         }else{
-            throw new Exception('DataCenter: La donnée' . $index . ' n\'éxiste pas');
+            return null;
         }
     }
 }

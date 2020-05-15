@@ -4,11 +4,12 @@ namespace NoMess\DataManager;
 
 use Closure;
 use Exception;
+use Throwable;
 use SimpleXMLElement;
+use NoMess\Service\DataCenter;
 use NoMess\Exception\WorkException;
 use NoMess\HttpRequest\HttpRequest;
 use Psr\Container\ContainerInterface;
-use Throwable;
 
 class DataManager
 {
@@ -156,12 +157,20 @@ class DataManager
                         //Si il y a une erreur, annulation des transations
                         $this->connection->rollBack();
                         unset($_SESSION['nomess_db']);
+            
+                        $request = $this->container->get(HttpRequest::class);
+                        $datacenter = $this->container->get(DataCenter::class);
 
-                        if($this->definition !== null){
-                            throw new WorkException('La transation ' . (string)$this->definition->base->attributes()['class'] .  '->' . $this->method . '() à échoué<br><br><br><span>Line ' . $e->getLine() . ' in ' . str_replace(ROOT, '', $e->getFile()) . '<br> ' . $e->getMessage() . '</span>');
+                        $message = $datacenter->getData('error_data_manager');
+                        
+                        if($message === null){
+                            $request->setError('Une erreur s\'est produite');
                         }else{
-                            throw new WorkException('<span>Line ' . $e->getLine() . ' in ' . str_replace(ROOT, '', $e->getFile()) . '<br> ' . $e->getMessage() . '</span>');
+                            $request->setError($message);
                         }
+
+                        $request->resetSuccess();
+
                         
                         return false;
                     }
@@ -728,16 +737,16 @@ class DataManager
             $keyArray = (string)$this->definition->session->keyArray;
 
             if(!empty($keyArray)){
-                    if(strpos($keyArray, 'get') !== false){
-                        try{
-                            if($delete === false){
-                                $this->unregister[$sessionKey][$this->object->$keyArray()] = $this->object;
-                            }else{
-                                $this->unregister[$sessionKey][$this->object->$keyArray()] = '&delete&';
-                            }
-                        }catch(Throwable $e){
-                            throw new WorkException($e->getMessage() . '<br><br>Controllez:<br>- La syntaxe des annotations<br>- Le retour de la methode de persistance<br>- Le typage de la fonction et son existance');
+                if(strpos($keyArray, 'get') !== false){
+                    try{
+                        if($delete === false){
+                            $this->unregister[$sessionKey][$this->object->$keyArray()] = $this->object;
+                        }else{
+                            $this->unregister[$sessionKey][$this->object->$keyArray()] = '&delete&';
                         }
+                    }catch(Throwable $e){
+                        throw new WorkException($e->getMessage() . '<br><br>Controllez:<br>- La syntaxe des annotations<br>- Le retour de la methode de persistance<br>- Le typage de la fonction et son existance');
+                    }
                 }else{
                     if($delete === false){
                         $this->unregister[$sessionKey][$this->object->$keyArray] = $this->object;

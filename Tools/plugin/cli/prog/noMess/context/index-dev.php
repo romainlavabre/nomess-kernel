@@ -19,6 +19,7 @@ ini_set('error_log', ROOT .'App/var/log/error.log');
 
 
 require (ROOT . 'vendor/autoload.php');
+require (ROOT . 'vendor/nomess/kernel/Exception/WorkException.php');
 require (ROOT . 'vendor/nomess/kernel/Tools/tools/time.php');
 
 /*
@@ -33,16 +34,7 @@ $time = new Time();
 
 
 $route = new NoMess\Router\Router();
-$tab = $route->getRoute();
+$route->getRoute();
 
-if(!is_null($tab)){
-	$vController = $tab[2];
-	$method = $tab[3];
-
-	$action = $tab[1];
-}
-
-
-require ROOT . 'vendor/nomess/kernel/Tools/tools/toolbar.php';
 
 ?>

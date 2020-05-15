@@ -71,6 +71,14 @@ class BuilderDataManager
                                     foreach($cls->getDbDepend() as $key => $value){
                                         $tabValue = explode('::', $key);
 
+                                        if(!isset($tabValue[1])){
+                                            throw new WorkException('Erreur de syntaxe dans la class ' . $cls->getClassName() . ' pour la clause @database{"depend", "' . $tabValue[0] .  '"}<br><br>Vous pourriez avoir oublié la methode ?<br>Rappel: "@database{"depend", "Full\Qualified\Class::methodName"}');
+                                        }
+
+                                        if(strpos($tabValue[1], '()') !== false){
+                                            throw new WorkException('Erreur de syntaxe dans la class ' . $cls->getClassName() . ' pour la clause @database{"depend", "' . $tabValue[0] .  '"}<br>Unexcepted "()"');
+                                        }
+
                                         $xml = $xml . "\t\t\t<depend class=\"" . $tabValue[0] .  "\" set=\"" . $value . "\" get=\"" . $tabValue[1] . "\"/>\n";
                                     }
                                 }

@@ -1,6 +1,6 @@
 <?php
 
-	$version = '2.15.0';
+	$version = '2.16.0';
 
 	global $vController, $action, $method, $_GET, $_POST, $time, $tree;
 	
@@ -11,16 +11,6 @@
 		$tabOpcache = opcache_get_configuration();
 		$tabStatus = opcache_get_status();
 	}catch(Error $e){}
-
-	function controlDirectory(string $path, array $tab): bool {
-		foreach($tab as $value){
-			if($value === $path){
-				return true;
-			}
-		}
-	
-		return false;
-	}
 
 	function searchReportCoverage()
 	{
@@ -67,7 +57,7 @@
 	color: white;
 }
 
-#toolbar{
+#nm_toolbar{
 	margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   font-size: 1rem;
@@ -83,7 +73,7 @@
 }
 
 </style>
-<div id="toolbar">
+<div id="nm_toolbar">
 <div class="nm_container-fluid nm_fixed-bottom" style="background: #333;">
 	<button class="nm_btn nm_noir nm_no-radius nm_no-cursor">Dev</button>
 	<div class="nm_btn-group nm_dropup">
@@ -445,6 +435,5 @@ foreach($fileIndex as $key => $value){*/
 		</div>
 	</div>
 </div>
-<script type="text/javascript" src="<?php echo WEBROOT.'vendor/nomess/kernel/Tools/tools/jquery-3.4.1.slim.min.js'; ?>"></script>
 <script type="text/javascript" src="<?php echo WEBROOT.'vendor/nomess/kernel/Tools/tools/popper.min.js'; ?>"></script>
 <script type="text/javascript" src="<?php echo WEBROOT.'vendor/nomess/kernel/Tools/tools/bootstrap.js'; ?>"></script>

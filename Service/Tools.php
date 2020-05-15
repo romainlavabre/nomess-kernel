@@ -8,15 +8,15 @@ class Tools {
      * Récupère une valeur du tableau par la clé
      *
      * @param mixed $key La clé recherché 
-     * @param array $array Le tableau sujet
+     * @param array|null $array Le tableau sujet
      * @return mixed
      */
-    public static function arrayByKey(string $key, array $array)
+    public static function arrayByKey(string $key, ?array $array)
     {
-        foreach($array as $keyArray => $value){
-            if($keyArray === $key){
-                return $value;
-            }
+        if(isset($array[$key])){
+            return $array[$key];
+        }else{
+            return null;
         }
     
         return null;
@@ -26,27 +26,144 @@ class Tools {
      * Recherche une valeur par valeur dans le tableau cible $tab   
      *
      * @param mixed $value La valeur rechérché 
-     * @param array $tab Le tableau cible
+     * @param array|null $tab Le tableau cible
      * @param string $method Si il s'agit d'un objet, la method ex: "getId"
      * @return mixed
      */
-    public static function arrayByValue(string $value, array $tab, ?string $method = null)
+    public static function arrayByValue(string $value, ?array $tab, ?string $method = null)
     {
-        foreach($tab as $value2){
+        if($tab !== null){
+            foreach($tab as $value2){
 
-            if($method !== null){
-                if(trim($value2->$method()) === trim($value)){
-                    return $value2;
-                }
-            }else{
-                if($value === $value2){
-                    return $value2;
+                if($method !== null){
+                    if(trim($value2->$method()) === trim($value)){
+                        return $value2;
+                    }
+                }else{
+                    if($value === $value2){
+                        return $value2;
+                    }
                 }
             }
         }
     
         return null;
     }
+
+
+
+
+    /**
+     * ### Trie un tableau d'objet par la valeur d'un attribut dans l'ordre croissant
+     *
+     * @param array|null $arrayObject Tableau d'objet a trie 
+     * @param string $method getter des objets
+     *
+     * @return array
+     */
+    public static function asortObjectArrayByValue(?array $arrayObject, string $method) : array
+    {
+
+        $result = array();
+
+        if($arrayObject !== null){
+            $tab = array();
+
+            $i = 0;
+
+            foreach($arrayObject as $key => $object){
+                $tab[$i] = [$key => $object];
+
+                $i++;
+            }
+
+            $iter = count($tab);
+
+            do{
+
+                $update = false;
+                for($i = 1; $i < $iter; $i++){
+                    if(current($tab[$i])->$method() < current($tab[$i - 1])->$method()){
+                        $tmp = $tab[$i];
+
+                        $tab[$i] = $tab[$i - 1];
+                        $tab[$i - 1] = $tmp;
+                        
+                        if($update === false){
+                            $update = true;
+                        }
+                    }
+                }
+            }while($update === true);
+
+            foreach ($tab as $key => $value) {
+                $result[key($value)] = current($value);
+            }
+
+        }
+
+        return $result;
+    }
+
+
+    /**
+     * ### Trie un tableau d'objet par la valeur d'un attribut dans l'ordre décroissant
+     *
+     * @param array|null $arrayObject Tableau d'objet a trie 
+     * @param string $method getter des objets
+     *
+     * @return array
+     */
+    public static function arsortObjectArrayByValue(?array $arrayObject, string $method) : array
+    {
+
+        $result = array();
+
+        if($arrayObject !== null){
+            $tab = array();
+
+            $i = 0;
+
+            foreach($arrayObject as $key => $object){
+                $tab[$i] = [$key => $object];
+
+                $i++;
+            }
+
+            $iter = count($tab);
+
+            do{
+
+                $update = false;
+
+                for($i = 1; $i < $iter; $i++){
+                    if(current($tab[$i])->$method() > current($tab[$i - 1])->$method()){
+                        $tmp = $tab[$i];
+
+                        $tab[$i] = $tab[$i - 1];
+                        $tab[$i - 1] = $tmp;
+                       
+                        if($update === false){
+                            $update = true;
+                        }
+
+
+                    }
+                }
+            }while($update === true);
+
+            foreach ($tab as $key => $value) {
+                $result[key($value)] = current($value);
+            }
+
+        }
+
+
+        
+        return $result;
+    }
+
+
 
     /**
      * Cherche une valeur dans un string compris entre 2 délimiteurs
@@ -248,7 +365,9 @@ class Tools {
                 }
             }
     
-            @mkdir($pathDirDest . $racSrc, 0777, true);
+            if(!file_exists($pathDirDest . $racSrc)){
+                @mkdir($pathDirDest . $racSrc, 0777, true);
+            }
     
             $newPath = $pathDirDest . $racSrc . '/';
     
@@ -257,14 +376,98 @@ class Tools {
             foreach($tabToCopy as $value){
                 if(!is_dir($valDir . $value) && $value !== '.' && $value !== '..'){
                     if(copy($valDir . $value, $newPath . $value)){
-                        echo "Copie de " . $valDir . $value . " vers " . $pathDirDest . $value . "...\n";
+                        //echo "Copie de " . $valDir . $value . " vers " . $pathDirDest . $value . "...\n";
                     }else{
-                        echo "Echec: Le fichier " . $valDir . $value . " n'a pas pu être copié vers " . $pathDirDest . $value . "\n";
+                        //echo "Echec: Le fichier " . $valDir . $value . " n'a pas pu être copié vers " . $pathDirDest . $value . "\n";
                     }
                 }
             }
         }
     }
+
+
+    /**
+     * Supprime l'enssemble d'un dossier de manière récursive
+     *
+     * @param string $pathDirSrc Le dossier source ex: racine/monDossier/ | ici, monDossier/* sera collé comme suit: monDossier/*
+     * @param string $pathDirDest Le dossier de déstination
+     * @return void 
+     */
+    public static function rmDirRecursive(string $pathDirSrc) : void 
+    {
+    
+        $tabGeneral = scandir($pathDirSrc);
+    
+        $tabDirWait = array();
+    
+        $dir = $pathDirSrc;
+    
+        $noPass = count(explode('/', $dir));
+    
+        do{
+            $stop = false;
+    
+            do{
+                $tabGeneral = scandir($dir);
+                $dirFind = false;
+    
+                for($i = 0; $i < count($tabGeneral); $i++){
+                    if(is_dir($dir . $tabGeneral[$i] . '/') && $tabGeneral[$i] !== '.' && $tabGeneral[$i] !== '..'){
+                        if(!self::controlDir($dir . $tabGeneral[$i] . '/', $tabDirWait)){
+                            $dir = $dir . $tabGeneral[$i] . '/';
+                            $dirFind = true;
+                            break;
+                        }
+                    }
+                }
+    
+                if(!$dirFind){
+                    $tabDirWait[] = $dir;
+                    $tabEx = explode('/', $dir);
+                    unset($tabEx[count($tabEx) - 2]);
+                    $dir = implode('/', $tabEx);
+                }
+    
+                if(count(explode('/', $dir)) < $noPass){
+                    $stop = true;
+                    break;
+                }
+            }
+            while($dirFind === true);
+        }
+        while($stop === false);
+    
+        $tabDest = explode('/', $pathDirSrc);
+    
+        foreach($tabDirWait as $valDir){
+    
+            $tabSrc = explode('/', $valDir);
+    
+            $racSrc = null;
+            $findSrc = false;
+            foreach($tabSrc as $valSrc){
+    
+    
+                if($tabDest[count($tabDest) - 2] === $valSrc){
+                    $racSrc = $valSrc;
+                    $findSrc = true;
+                }else if($findSrc === true){
+                    $racSrc = $racSrc . '/' . $valSrc;
+                }
+            }
+        
+            $tabToCopy = scandir($valDir);
+    
+            foreach($tabToCopy as $value){
+                if(!is_dir($valDir . $value) && $value !== '.' && $value !== '..'){
+                    @unlink($valDir . $value);
+                }else if(is_dir($valDir . $value) && $value !== '.' && $value !== '..'){
+                    @rmdir($valDir . $value);
+                }
+            }
+        }
+    }
+
 
     /**
      * Ajoute un élément enfant dans un fichier xml

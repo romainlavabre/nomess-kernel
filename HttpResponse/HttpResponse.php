@@ -2,136 +2,100 @@
 
 namespace NoMess\HttpResponse;
 
-use NoMess\Web\ObserverInterface;
-use NoMess\DataManager\DataManager;
-use NoMess\Exception\WorkException;
-use NoMess\HttpResponse\SubjectInterface;
+use NoMess\HttpRequest\HttpRequest;
 
 
-class HttpResponse implements SubjectInterface{
-
-
-    /**
-     * Session
-     */
-    private const SESSION_RENDER                = 'nomess_render';
-    private const SESSION_DATABASE              = 'nomess_db';
-    private const SESSION_PARAMETERS            = 'nomess_attribute';
+class HttpResponse
+{
 
 
     /**
-     * Donnée formatté en json
-     *
-     * @var string
-     */
-    private $jsondata;
-
-    /**
-     * Contient les observateurs
      *
      * @var array
      */
-    private $observer = array();
+    private $action = array();
+
 
     /**
-     * Instance de DataManager
      *
-     * @var DataManager
+     * @var HttpRequest
      */
-    private $monitoring;
+    private $request;
+
 
     /**
-     * 
-     * Est injecté d'observeur
+     * @Inject
      *
-     * @param ObserverInterface $obs
-     * @param DataManager $md
-     * @return void 
+     * @param HttpRequest $request
      */
-    public function __construct(ObserverInterface $obs,
-                                DataManager $md)
+    public function __construct(HttpRequest $request)
     {
-        $this->observer[] = $obs;
-        $this->monitoring = $md;
+        $this->request = $request;
     }
-    
+
     /**
-     * Formatte les données renvoyé par l'App
+     * Créé un cookie, setCookie assouplie la création en accéptant un tableau a une ou plusieur entrées,
+     * Elle resoudra par elle-même les convertions
      *
-     * @param array $data
+     * @param string $name
+     * @param mixed $value
+     * @param int $expires
+     * @param string $path
+     * @param string $domain
+     * @param bool $secure
+     * @param bool $httponly
+     *
+     * @return bool
+     */
+    public function addCookie(string $name, $value = "", int $expires = 0, string $path = "", string $domain = "", bool $secure = FALSE, bool $httponly = FALSE) : bool
+    {
+        $result = false;
+
+        if(is_array($value)){
+            foreach($value as $key => $val){
+                $this->action['cookie'][] = ['setcookie' => [$name . '[' . $key . ']', $val, $expires, $path, $domain, $secure, $httponly]];
+            }
+
+        }else{
+
+            $this->action['cookie'][] = ['setcookie' => [$name, (string)$value, $expires, $path, $domain, $secure, $httponly]];
+        }
+
+        return $result;
+    }
+
+
+
+
+    /**
+     * Supprime le cookie à l'index spécifié
+     *
+     * @param string $index
+     *
      * @return void
      */
-    public function render(?array $data) : void
+    public function removeCookie(string $index) : void
     {
-        global $time;
-        $time->setXdebug(xdebug_time_index());
-
-        $this->monitoring->database();
-        $this->controlStamp($data);
-
-        if(isset($_SESSION[self::SESSION_RENDER])){
-            unset($_SESSION[self::SESSION_RENDER]);
-        }
-
-        if(isset($_SESSION[self::SESSION_DATABASE])){
-            unset($_SESSION[self::SESSION_DATABASE]);
-        }
-
-        if(!isset($_SESSION[self::SESSION_PARAMETERS])){
-            $_SESSION[self::SESSION_PARAMETERS] = array();
-        }
-
-        foreach($_SESSION as $key => $value){
-            if($key !== self::SESSION_PARAMETERS && $key !== 'private'){
-                $_SESSION[self::SESSION_PARAMETERS][$key] = $value;
-            }
-        }
-
-
-        $data['attribute'] = $_SESSION[self::SESSION_PARAMETERS];
-
-
-        $this->jsondata = json_encode($data);
+        $cookie = $this->request->getCookie($index);
+        $cookie = null;
+        $this->action['cookie'][] = ['setcookie' => [$index, null, -1, '/']];
         
-        unset($_SESSION[self::SESSION_PARAMETERS]);
-
-        $this->notify();
     }
 
-    /**
-     * Retourne des données formattés
-     *
-     * @return string
-     */
-    public function collectData() : string
-    {
-        return $this->jsondata;
-    }
 
     /**
-     * Notifie les observeur d'une modification
+     * Execute les opérations en attente
      *
      * @return void
      */
-    public function notify() : void
+    public function manage() : void
     {
-        foreach($this->observer as $observer){
-            $observer->alert($this);
-        }
-    }
-
-    public function controlStamp(array $data) : void
-    {
-        $find = false;
-
-        foreach($data as $key => $value){
-            if($key === 'stamp'){
-                $find = true;
+        if(isset($this->action['cookie'])){
+            foreach($this->action['cookie'] as $value){
+                foreach($value as $method => $param){
+                    call_user_func_array($method, $param);
+                }
             }
-        }
-
-        if(!$find){
-            throw new WorkException("Votre reponse doit contenir une signature: 'stamp' => 'Controller:method'");
         }
     }
 }
