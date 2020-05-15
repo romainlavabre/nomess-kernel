@@ -87,17 +87,15 @@ namespace " . $this->getNamespace() . ";
 
 use NoMess\HttpResponse\HttpResponse;
 use NoMess\HttpRequest\HttpRequest;
-use NoMess\Manager\ControllerManager;
+use NoMess\Manager\Distributor;
 
 
 /**
  * @Route{\"" . $this->route . "\"} 
  */
-class " . ucfirst($this->controller) . " extends ControllerManager
+class " . ucfirst($this->controller) . " extends Distributor
 {
 
-    private const STAMP_GET     = '" . str_replace('/', '\\', $this->dir) . ucfirst($this->controller) . ":doGet';
-    private const STAMP_POST    = '" . str_replace('/', '\\', $this->dir) . ucfirst($this->controller) . ":doPost/';
 
     /**
      * @Inject
@@ -114,9 +112,7 @@ class " . ucfirst($this->controller) . " extends ControllerManager
      */
     public function doGet(HttpResponse \$response, HttpRequest \$request) : void
     {
-        \$response->render([
-            'stamp' => self::STAMP_GET
-        ]);
+        \$this->forward(\$request, \$response)->bindTwig('template');
     }
 
     /**
@@ -127,13 +123,10 @@ class " . ucfirst($this->controller) . " extends ControllerManager
      */
     public function doPost(HttpResponse \$response, HttpRequest \$request) : void
     {
-        \$data = \$request->getParameters();
 
-        \$report = \$this->yourInstance->service(\$data);
+        \$tracker = \$this->yourInstance->service(\$request);
 
-        \$response->render([
-            'stamp' => self::STAMP_POST . \$report
-        ]);
+        \$this->forward(\$request, \$response)->bindTwig('template');
     }
 }
         ";

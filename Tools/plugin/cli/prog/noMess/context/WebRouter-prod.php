@@ -57,7 +57,13 @@ class WebRouter implements ObserverInterface{
 			throw new \Exception('template.xml: Le template pour ' . $tabData[0] . ' est introuvable   Requête->' . $this->data['stamp']);
 		}
 
-		echo $twig->render($route[strtolower($tabData[0]) . $state], ['WEBROOT' => WEBROOT, 'param' => isset($param) ? $param : null, 'POST' => isset($_POST) ? $_POST : null, 'GET' => isset($_GET) ? $_GET : null]);		
+		echo $twig->render($route[strtolower($tabData[0]) . $state], [
+			'WEBROOT' => WEBROOT, 
+			'param' => isset($param) ? $param : null, 
+			'POST' => isset($_POST) ? $_POST : null, 
+			'GET' => isset($_GET) ? $_GET : null, 
+			'COOKIE' => $_COOKIE
+		]);	
 	}
 
 	

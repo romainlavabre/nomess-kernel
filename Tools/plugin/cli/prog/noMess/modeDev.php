@@ -9,11 +9,12 @@ $comfirme = rdl("Plusieurs fichier system vont être remplacé, continuer ? [oui
 $api = '../vendor/nomess/kernel/';
 if(!is_null($comfirme)){
 	$tabCopyFile = array(
-			$api . 'Tools/plugin/cli/prog/noMess/context/Response-dev.php' => $api . 'HttpResponse/HttpResponse.php',
+			$api . 'Tools/plugin/cli/prog/noMess/context/Distributor-dev.php' => $api . 'Manager/Distributor.php',
 			$api . 'Tools/plugin/cli/prog/noMess/context/WorkException-dev.php' => $api . 'Exception/WorkException.php',
 			$api . 'Tools/plugin/cli/prog/noMess/context/Router-dev.php' => $api . 'Router/Router.php',
 			$api . 'Tools/plugin/cli/prog/noMess/context/index-dev.php' => '../index.php',
-			$api . 'Tools/plugin/cli/prog/noMess/context/WebRouter-dev.php' => $api . 'Web/WebRouter.php'
+			$api . 'Tools/plugin/cli/prog/noMess/context/WebRouter-dev.php' => $api . 'Web/WebRouter.php',
+			$api . 'Tools/plugin/cli/prog/noMess/context/DataManager-dev.php' => $api . 'DataManager/DataManager.php'
 	);
 
 	foreach($tabCopyFile as $key => $value){

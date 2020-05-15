@@ -100,11 +100,7 @@ class DocComment
      */
     public function setKey(string $setter) : void
     {
-        if($this->key === null){
-            $this->key = $setter;
-        }else{
-            throw new WorkException('Pour la class ' . $this->className . ', une seule clé de session est attendu');
-        }
+        $this->key = $setter;
     }
 
     /** 
@@ -125,8 +121,6 @@ class DocComment
     {
         if($this->keyArray === null){
             $this->keyArray = $setter;
-        }else{
-            throw new WorkException('Pour la class ' . $this->className . ', une seule clé de tableau est attendu');
         }
     }
 
@@ -190,7 +184,9 @@ class DocComment
      */
     public function setInsert(string $setter) : void
     {
-        $this->insert = $setter;
+        if($this->insert === null){
+            $this->insert = $setter;
+        }
     }
 
     /**
