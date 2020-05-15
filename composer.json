@@ -10,7 +10,7 @@
         }
     ],
     "require": {
-        "php": "^7.3",
+        "php": "^7.3", 
         "php-di/php-di" : "^6.0",
 		"doctrine/annotations" : "^1.8",
         "digitalnature/php-ref": "^1.3",
