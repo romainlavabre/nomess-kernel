@@ -9,13 +9,14 @@ use NoMess\DataManager\DataManager;
  * ### Database interagit avec le Géstionnaire de donnée afin de créer une couche d'abstraction entre le développeur et cette tache.
  * 
  * Il facilite ainsi le développement et les testes unitaires.
- * Database interagit avec le DataManager et le DataManager interagit direcement avc vos class de persistances, il est développé 
+ * DataManager interagit directement avc vos class de persistances, il est développé 
  * dans l'objectif de gérer les dépendance de vos objets, ses encapsulations et garantir la cohérence de vos données, tant au niveau de la base de donnée 
- * que de la sessiontout en conservant des performance optimale.
+ * que de la session, tout en conservant des performances optimales.
  * Le DataManager n'est pas compatible avec l'utilisation d'un ORM.
  * 
  * Pour utiliser le géstionnaire de données, les configurations se situe au niveau des objets via des annotations, elle consiste éssentiellement à mapper 
- * la class de persistance associé, ses dépendance, sa localisation en session et quelques autre options 
+ * la class de persistance associé, ses dépendances, sa localisation en session et quelques autre options.
+ * Pour une configuration pendant l'éxecution, une documentation se trouve directement dans la class Database
  */
 class Database
 {
