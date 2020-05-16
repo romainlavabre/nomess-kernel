@@ -2,7 +2,7 @@
 
 namespace NoMess\Manager;
 
-use NoMess\Component\LightPersists\LightPersists;
+use Throwable;
 use Twig\Environment;
 use NoMess\SubjectInterface;
 use NoMess\ObserverInterface;
@@ -10,7 +10,7 @@ use Twig\Loader\FilesystemLoader;
 use NoMess\HttpRequest\HttpRequest;
 use NoMess\HttpResponse\HttpResponse;
 use Psr\Container\ContainerInterface;
-use Throwable;
+use NoMess\Component\LightPersists\LightPersists;
 
 abstract class Distributor implements SubjectInterface
 {
@@ -99,7 +99,6 @@ abstract class Distributor implements SubjectInterface
             $this->request = clone $request;
             $this->data = $request->getData();
 
-
             //Intégration des données de lightPersists
             $lpData = array();
 
@@ -107,7 +106,13 @@ abstract class Distributor implements SubjectInterface
                 $lpData = $this->container->get(LightPersists::class)->get(NULL);
             }catch(Throwable $e){}
 
-            $dataSession = array_merge($_SESSION, $lpData);
+            $dataSession = null;
+
+            if(isset($lpData)){
+                $dataSession = array_merge($_SESSION, $lpData);
+            }else{
+                $dataSession = $_SESSION;
+            }
 
             unset($dataSession[self::SESSION_NOMESS_SCURITY]);
             unset($dataSession[self::SESSION_NOMESS_TOOLBAR]);
@@ -134,9 +139,9 @@ abstract class Distributor implements SubjectInterface
      *
      * @param string $url
      *
-     * @return void
+     * @return Distributor
      */
-    public final function redirectLocal(string $url) : void
+    public final function redirectLocal(string $url) : Distributor
     {
         $this->close();
 
@@ -146,6 +151,8 @@ abstract class Distributor implements SubjectInterface
         }
 
         header('Location:' . WEBROOT . $url);
+
+        return $this;
     }
 
 
@@ -156,14 +163,16 @@ abstract class Distributor implements SubjectInterface
      *
      * @param string $url
      *
-     * @return void
+     * @return Distributor
      */
-    public final function redirectOutside(string $url) : void
+    public final function redirectOutside(string $url) : Distributor
     {
         $this->close();
 
 
         header("Location: $url");
+
+        return $this;
     }
 
 

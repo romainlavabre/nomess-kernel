@@ -106,7 +106,14 @@ abstract class Distributor implements SubjectInterface
                 $lpData = $this->container->get(LightPersists::class)->get(NULL);
             }catch(Throwable $e){}
 
-            $dataSession = array_merge($_SESSION, $lpData);
+            $dataSession = null;
+
+            if(isset($lpData)){
+                $dataSession = array_merge($_SESSION, $lpData);
+            }else{
+                $dataSession = $_SESSION;
+            }
+
             unset($dataSession[self::SESSION_NOMESS_SCURITY]);
             unset($dataSession[self::SESSION_NOMESS_TOOLBAR]);
             $this->data = array_merge($this->data, $dataSession);
@@ -132,9 +139,9 @@ abstract class Distributor implements SubjectInterface
      *
      * @param string $url
      *
-     * @return void
+     * @return Distributor
      */
-    public final function redirectLocal(string $url) : void
+    public final function redirectLocal(string $url) : Distributor
     {
         $this->close();
 
@@ -144,6 +151,8 @@ abstract class Distributor implements SubjectInterface
         }
 
         header('Location:' . WEBROOT . $url);
+
+        return $this;
     }
 
 
@@ -154,14 +163,16 @@ abstract class Distributor implements SubjectInterface
      *
      * @param string $url
      *
-     * @return void
+     * @return Distributor
      */
-    public final function redirectOutside(string $url) : void
+    public final function redirectOutside(string $url) : Distributor
     {
         $this->close();
 
 
         header("Location: $url");
+
+        return $this;
     }
 
 

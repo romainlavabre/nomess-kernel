@@ -26,6 +26,7 @@ class HttpSession
      */
     public function initSession() : void
     {
+
         if(session_status() === 1){
 
             session_start();
@@ -33,7 +34,6 @@ class HttpSession
             if(!isset($_SESSION[self::ID_MODULE_SECURITY])){
                 $_SESSION[self::ID_MODULE_SECURITY] = array();
             }
-
 
             $this->securityInitialized();
 
@@ -158,7 +158,7 @@ class HttpSession
      * @param bool $ticketSystem Si TRUE un systeme de ticket sera initialisé
      * @param bool $ipSystem Si TRUE l'ip sera pris en compte pour la validation
      * @param bool $bindTicketIp Si TRUE apporte une souplesse pour le modules IP: 
-     * Si l'ip ne correspond pas et que les tickets sont valides, la validation passera le control
+     * Si l'ip ne correspond pas et que les tickets sont valides, la validation passera le controle
      * @param array[bool $userAgentSystem, bool $ipSystem]|null $recoveryConfig Tableau de configuration secondaire en cas d'échec du module de ticket 
      * (Le client n'accepte pas les cookies)
      *
@@ -200,18 +200,18 @@ class HttpSession
     {
         $success = true;
 
-        if($_SESSION[self::ID_MODULE_SECURITY][self::MODULE_USER_AGENT] !== null){
+        if($_SESSION[self::ID_MODULE_SECURITY][self::MODULE_USER_AGENT] !== false){
             $success = $this->securityUserAgent();
         }
 
-        if($success !== false){
-            if(isset($_SESSION[self::ID_MODULE_SECURITY][self::MODULE_TICKET])){
+        if($success === true){
+            if(isset($_SESSION[self::ID_MODULE_SECURITY][self::MODULE_TICKET]) && $_SESSION[self::ID_MODULE_SECURITY][self::MODULE_TICKET] === true){
                 $success = $this->securityTicket();
             }
         }
 
-        if($success !== false){
-            if($_SESSION[self::ID_MODULE_SECURITY][self::MODULE_IP] !== null){
+        if($success === true){
+            if($_SESSION[self::ID_MODULE_SECURITY][self::MODULE_IP] !== false){
                 $success = $this->securityIpUser();
                 if($success === true && $_SESSION[self::ID_MODULE_SECURITY][self::BIND_TICKET_IP] === true){
                     $success = true;
@@ -220,6 +220,7 @@ class HttpSession
         }
 
 
+        //r($success);
         if($success === false){
             session_regenerate_id(true);
             $_SESSION = array();
@@ -258,6 +259,7 @@ class HttpSession
         if($_SESSION[self::ID_MODULE_SECURITY][self::MODULE_USER_AGENT] === $_SERVER['HTTP_USER_AGENT']){
             return true;
         }else{
+
             return false;
         }
 
@@ -279,7 +281,8 @@ class HttpSession
                 $this->installSecurityModules(
                     $_SESSION[self::ID_MODULE_SECURITY][self::RECOVERY_CONFIG][0], 
                     false, 
-                    $_SESSION[self::ID_MODULE_SECURITY][self::RECOVERY_CONFIG][1]);
+                    $_SESSION[self::ID_MODULE_SECURITY][self::RECOVERY_CONFIG][1]
+                );
             }
 
             $this->getTicket();

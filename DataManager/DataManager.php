@@ -4,11 +4,11 @@ namespace NoMess\DataManager;
 
 use Closure;
 use Exception;
+use Throwable;
 use SimpleXMLElement;
 use NoMess\Exception\WorkException;
 use NoMess\HttpRequest\HttpRequest;
 use Psr\Container\ContainerInterface;
-use Throwable;
 
 class DataManager
 {
@@ -728,16 +728,16 @@ class DataManager
             $keyArray = (string)$this->definition->session->keyArray;
 
             if(!empty($keyArray)){
-                    if(strpos($keyArray, 'get') !== false){
-                        try{
-                            if($delete === false){
-                                $this->unregister[$sessionKey][$this->object->$keyArray()] = $this->object;
-                            }else{
-                                $this->unregister[$sessionKey][$this->object->$keyArray()] = '&delete&';
-                            }
-                        }catch(Throwable $e){
-                            throw new WorkException($e->getMessage() . '<br><br>Controllez:<br>- La syntaxe des annotations<br>- Le retour de la methode de persistance<br>- Le typage de la fonction et son existance');
+                if(strpos($keyArray, 'get') !== false){
+                    try{
+                        if($delete === false){
+                            $this->unregister[$sessionKey][$this->object->$keyArray()] = $this->object;
+                        }else{
+                            $this->unregister[$sessionKey][$this->object->$keyArray()] = '&delete&';
                         }
+                    }catch(Throwable $e){
+                        throw new WorkException($e->getMessage() . '<br><br>Controllez:<br>- La syntaxe des annotations<br>- Le retour de la methode de persistance<br>- Le typage de la fonction et son existance');
+                    }
                 }else{
                     if($delete === false){
                         $this->unregister[$sessionKey][$this->object->$keyArray] = $this->object;

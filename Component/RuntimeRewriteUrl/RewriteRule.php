@@ -7,6 +7,8 @@ use NoMess\ObserverInterface;
 use NoMess\Component\Component;
 use NoMess\Exception\WorkException;
 
+use function DI\value;
+
 class RewriteRule extends Component implements ObserverInterface
 {
 
@@ -48,7 +50,27 @@ class RewriteRule extends Component implements ObserverInterface
      */
     public function createRule(callable $search, ?string $rewrite, string $id) : void
     {
-        $this->contentRule[$id] = [$this->escape($search()) => $rewrite];
+        $key = $this->escape($search());
+        $key = trim($key);
+
+
+        $i = 1;
+
+        foreach($this->contentRule as $arrayId => $value){
+
+            if($i === 1 && key($value) === $key && $arrayId !== trim($id)){
+                $i++;
+            }else if($i > 1 && key($value) === "$key-$i" && $arrayId !== trim($id)){
+                $i++;
+            }
+        }
+
+        if($i > 1){
+            $key .= "-$i";
+        }
+        
+
+        $this->contentRule[trim($id)] = [trim($key) => trim($rewrite)];
         $this->updateRule = true;
     }
 
@@ -94,7 +116,7 @@ class RewriteRule extends Component implements ObserverInterface
      *
      * @param string $id
      *
-     * @return array|null
+     * @return array|null `['search' => 'rewrite']`
      */
     public function getRule(string $id) : ?array
     {

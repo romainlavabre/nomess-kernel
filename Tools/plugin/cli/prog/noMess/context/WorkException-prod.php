@@ -75,14 +75,14 @@ set_exception_handler('NoMess\Exception\customException');
  */
 function bindTwig(string $template) : void
 {
-	$loader = new FilesystemLoader(self::BASE_ENVIRONMENT);
-	$this->engine = new Environment($loader, [
+	$loader = new FilesystemLoader('Web/public/');
+	$engine = new Environment($loader, [
 		'cache' => false,
 	]);
 
-	$this->engine->addExtension(new \Twig\Extension\DebugExtension());
+	$engine->addExtension(new \Twig\Extension\DebugExtension());
 	
-	echo $this->engine->render($template, [
+	echo $engine->render($template, [
 		'WEBROOT' => WEBROOT
 	]);	
 }

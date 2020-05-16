@@ -103,14 +103,17 @@ function customException($e) {
 		$time->setXdebug(xdebug_time_index());
 
 		global $vController, $method, $action;
-        $vController = $_SESSION['nomess_toolbar'][2];
-        $method = $_SESSION['nomess_toolbar'][3];
+		
+		if(isset($_SESSION['nomess_toolbar'])){
+			$vController = $_SESSION['nomess_toolbar'][2];
+			$method = $_SESSION['nomess_toolbar'][3];
 
-        $action = $_SESSION['nomess_toolbar'][1];
+			$action = $_SESSION['nomess_toolbar'][1];
 
-        unset($_SESSION['nomess_toolbar']);
-	
-	require ROOT . 'vendor/nomess/kernel/Tools/tools/toolbar.php';
+			unset($_SESSION['nomess_toolbar']);
+		
+			require ROOT . 'vendor/nomess/kernel/Tools/tools/toolbar.php';
+		}
 	
 	file_put_contents('App/var/log/log.txt', "[" . date('d/m/Y H:i:s') . "]Line " . $e->getLine() . ": " . $e->getFile() . "\nException: " . $e->getMessage() . "\n---------------------------------------------------------\n", FILE_APPEND);
 }

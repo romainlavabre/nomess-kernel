@@ -6,7 +6,6 @@ use Twig\Environment;
 use DI\ContainerBuilder;
 use NoMess\SubjectInterface;
 use NoMess\ObserverInterface;
-use NoMess\DiBuilder\DiBuilder;
 use Twig\Loader\FilesystemLoader;
 use NoMess\HttpRequest\HttpRequest;
 use NoMess\HttpSession\HttpSession;
@@ -96,7 +95,6 @@ class Router implements SubjectInterface
         $controller = null;
         $path = null;
 
-
         if(strpos($_GET['p'], 'param') !== false){
             $get = array();
 
@@ -127,7 +125,6 @@ class Router implements SubjectInterface
 
             $_GET['p'] = implode('/', $get);
         }
-
         
         foreach($file->routes as $value){
             if((string)$value->attributes()['url'] === $_GET['p']){
@@ -178,10 +175,10 @@ class Router implements SubjectInterface
             $tabError = require ROOT . 'App/config/error.php';
 
             if(strpos($tabError['404'], '.twig')){
-                $this->bindTwig($tabError['404']);
-            }else{
-                include(ROOT . $tabError['404']);
-            }
+                        $this->bindTwig($tabError['404']);
+                    }else{
+                        include(ROOT . $tabError['404']);
+                    }
             die;
         }
 
