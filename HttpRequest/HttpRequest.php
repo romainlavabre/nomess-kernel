@@ -139,6 +139,7 @@ class HttpRequest
                 if(is_array($_POST[$index])){
                     array_walk_recursive($_POST[$index], function($key, &$value){
                         $value = htmlspecialchars($value);
+			$value = trim($value);
                     });
                 }
 
@@ -260,6 +261,7 @@ class HttpRequest
         if($escape === true){
             array_walk_recursive($_POST, function($key, &$value){
                 htmlspecialchars($value);
+		$value = trim($value);
             });
 
         }
@@ -280,6 +282,7 @@ class HttpRequest
         if($escape === true){
             array_walk_recursive($_GET, function($key, &$value){
                 htmlspecialchars($value);
+		$value = trim($value);
             });
         }
 
