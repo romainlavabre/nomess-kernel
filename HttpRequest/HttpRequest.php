@@ -154,6 +154,7 @@ class HttpRequest
                 if(is_array($_GET[$index])){
                     array_walk_recursive($_GET[$index], function($key, &$value){
                         $value = htmlspecialchars($value);
+			$value = trim($value);
                     });
                 }
 
