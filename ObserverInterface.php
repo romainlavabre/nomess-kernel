@@ -8,3 +8,5 @@ interface ObserverInterface
 
     public function notifiedOutput() : void;
 }
+
+//
