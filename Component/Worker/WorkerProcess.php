@@ -55,7 +55,7 @@ function process(string $configPath) : void
                 );
             }catch(Throwable $e){
                 file_put_contents($config['error_log'], 
-                    date('d/m/Y H:i:s') . " => Function with id " . $key . " have crash with message: " . $e->getMessage() . "\n\n",
+                    date('d/m/Y H:i:s') . " => Function with id " . $key . " has crash with the message: " . $e->getMessage() . "\n\n",
                     FILE_APPEND
                 );
             }
@@ -79,12 +79,12 @@ function process(string $configPath) : void
                     $tabUnitTask['function'];
 
                     file_put_contents($config['success_log'], 
-                        date('d/m/Y H:i:s') . " => Function with id " . $tabUnitTask['taskId'] . " have success\n\n", 
+                        date('d/m/Y H:i:s') . " => Function with id " . $tabUnitTask['taskId'] . " has success\n\n",
                         FILE_APPEND
                     );
                 }catch(Throwable $e){
                     file_put_contents($config['error_log'], 
-                        date('d/m/Y H:i:s') . " => Function with id " . $tabUnitTask['taskId'] . " have crash with message: " . $e->getMessage() . "\n\n",
+                        date('d/m/Y H:i:s') . " => Function with id " . $tabUnitTask['taskId'] . " has crash with the message: " . $e->getMessage() . "\n\n",
                         FILE_APPEND
                     );
 
@@ -109,7 +109,7 @@ function process(string $configPath) : void
 
 
 if(!isset($argv[1])){
-    echo "Le worker a besoin du chemin vers le fichier de configuration\n";
+    echo "Worker encountered an error: need the path to configuration\n";
     die;
 }else{
     process($argv[1]);

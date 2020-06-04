@@ -14,19 +14,15 @@ class RewriteRule extends Component implements ObserverInterface
 
 
     /**
-     * Contenu des regles
-     *
-     * @var array
+     * Contains rules
      */
-    private $contentRule = array();
+    private ?array $contentRule = array();
 
 
     /**
      * Mise à jour
-     *
-     * @var boolean
      */
-    private $updateRule = false;
+    private bool $updateRule = false;
 
 
 
@@ -40,11 +36,11 @@ class RewriteRule extends Component implements ObserverInterface
 
 
     /**
-     * Ajoute une regle de réécriture
+     * Add an rewrite rule
      *
      * @param string $search
      * @param string|null $rewrite
-     * @param string $id id unique
+     * @param string $id unique id
      *
      * @return void
      */
@@ -76,7 +72,7 @@ class RewriteRule extends Component implements ObserverInterface
 
 
     /**
-     * Supprime une regle de réécriture
+     * Delete an rewrite rule
      *
      * @param string $index
      *
@@ -97,11 +93,9 @@ class RewriteRule extends Component implements ObserverInterface
 
 
     /**
-     * Rend compatible avec le composant la chaine à rechercher
+     * Make compatible whith the component the string to search
      *
      * @param string $search
-     *
-     * @return void
      */
     public function escape(string $search) : string
     {
@@ -112,7 +106,7 @@ class RewriteRule extends Component implements ObserverInterface
 
 
     /**
-     * Retourne la paire clé/valeur de l'id spécifié
+     * Return an pair key/value
      *
      * @param string $id
      *
@@ -131,7 +125,7 @@ class RewriteRule extends Component implements ObserverInterface
 
 
     /**
-     * Retourne toutes les regles de réécriture
+     * Return all rewrite rules
      *
      * @return array|null
      */

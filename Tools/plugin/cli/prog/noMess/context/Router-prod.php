@@ -2,10 +2,10 @@
 
 namespace NoMess\Router;
 
+use NoMess\Container\Container;
+use NoMess\Router\Builder\Builder;
 use Twig\Environment;
-use DI\ContainerBuilder;
 use NoMess\ObserverInterface;
-use NoMess\DiBuilder\DiBuilder;
 use Twig\Loader\FilesystemLoader;
 use NoMess\HttpRequest\HttpRequest;
 use NoMess\HttpSession\HttpSession;
@@ -16,77 +16,45 @@ use NoMess\DataManager\Builder\BuilderDataManager;
 class Router
 {
 
-    private const ROUTING                   = ROOT . "App/var/cache/routes/routing.xml";
-    private const DEFINITION                = ROOT . 'App/config/di-definitions.php';
+    private const CACHE_ROUTING             = ROOT . 'App/var/cache/routes/route.xml';
+    private const CACHE_DATA_MANAGER        = ROOT . 'App/var/cache/dm/datamaner.xml';
 
-    private const CACHE_ROUTING             = ROOT . 'App/var/cache/routes/routing.xml';
-    private const CACHE_DATA_MANAGER        = ROOT . 'App/var/cache/mondata.xml';
-
-    private const BASE_ENVIRONMENT          = 'Web/public/';
+    private const BASE_ENVIRONMENT          = 'public';
 
 
-    /**
-     *
-     * @var HttpSession
-     */
-    private $HttpSession;
+    private HttpSession $HttpSession;
 
+    private Container $container;
 
-    /**
-     *
-     * @var Container
-     */
-    private $container;
-
-
-    /**
-     *
-     * @var ObserverInterface
-     */
-    private $observer = array();
+    private array $observer = array();
 
 
 
     public function __construct()
     {
 
-        $builder = new ContainerBuilder();
-        $builder->useAnnotations(true);
-        $builder->addDefinitions(self::DEFINITION);
-        $this->container = $builder->build();
+        $this->container = new Container();
 
         $this->HttpSession = $this->container->get(HttpSession::class);
-
         $this->HttpSession->initSession();
 
 
         $this->attach();
         $this->notify();
 
-        
-        if(!file_exists(self::CACHE_DATA_MANAGER)){
-            $buildMonitoring = new BuilderDataManager();
-            $buildMonitoring->builderManager();
-        }
-
 
         if(!file_exists(self::CACHE_ROUTING)){
-            $buildRouting = new BuildRoutes(self::CACHE_ROUTING);
-            $buildRouting->build();
+            $builder = new Builder();
+            $builder->buildRoute();
         }
 
     }
 
-
-    /**
-     * Routeur
-     *
-     * @return void
-     */
     public function getRoute() : void
     {
-        
-        $file = simplexml_load_file(self::ROUTING);
+
+        $route = require self::CACHE_ROUTING;
+        $route = unserialize($route);
 
         $controller = null;
         $path = null;
@@ -122,39 +90,40 @@ class Router
             $_GET['p'] = implode('/', $get);
         }
         
-        foreach($file->routes as $value){
-            if((string)$value->attributes()['url'] === $_GET['p']){
-                $controller = (string)$value->controller;
-                $path = (string)$value->path;
-                $auth = (string)$value->auth;
-                
-                if(!empty($auth) && !isset($_SESSION[$auth])){
-                    header('HTTP/1.0 403 Permissions denied');
+        if(isset($route[$_GET['p']])){
+            $controller = $route[$_GET['p']]['controller'];
+            $path = $route[$_GET['p']]['path'];
+            $auth = $route[$_GET['p']]['auth'];
 
-                    $tabError = require ROOT . 'App/config/error.php';
+            if(!empty($auth) && !isset($_SESSION[$auth])){
+                header('HTTP/1.0 403 Permissions denied');
 
-                    if(strpos($tabError['403'], '.twig')){
+                $tabError = require ROOT . 'App/config/error.php';
+
+                if(strpos($tabError['403'], '.twig')){
+                    if(file_exists(ROOT . 'Web/' . $tabError['403'])) {
                         $this->bindTwig($tabError['403']);
-                    }else{
+                    }
+                }else{
+                    if(file_exists(ROOT . $tabError['403'])) {
                         include(ROOT . $tabError['403']);
                     }
-                    die;
                 }
-
-                if($_SERVER['REQUEST_METHOD'] === 'POST'){
-                    $action = 'doPost';
-                }else{
-                    $action = 'doGet';
-                }
-                
-                break;
+                die;
             }
-        } 
+
+            if($_SERVER['REQUEST_METHOD'] === 'POST'){
+                $action = 'doPost';
+            }else{
+                $action = 'doGet';
+            }
+
+        }
 
 
         $this->bufferExclude();
 
-        if(file_exists($path) && !empty($controller)){	
+        if(file_exists($path) && !empty($controller)){
             $controller = $this->container->get($controller);
             
             $controller->$action($this->container->get(HttpResponse::class), $this->container->get(HttpRequest::class));
@@ -165,9 +134,13 @@ class Router
             $tabError = require ROOT . 'App/config/error.php';
 
             if(strpos($tabError['404'], '.twig')){
-                $this->bindTwig($tabError['404']);
+                if(file_exists(ROOT . 'Web/' . $tabError['404'])) {
+                    $this->bindTwig($tabError['404']);
+                }
             }else{
-                include(ROOT . $tabError['404']);
+                if(file_exists(ROOT . $tabError['404'])) {
+                    include(ROOT . $tabError['404']);
+                }
             }
             die;
         }
@@ -181,12 +154,6 @@ class Router
         }
     }
 
-
-    /**
-     * Attache les observeurs
-     *
-     * @return void
-     */
     public function attach() : void
     {
         $componentConfig = require ROOT . 'App/config/component.php';
@@ -200,13 +167,6 @@ class Router
         }
     }
 
-    
-
-    /**
-     * Notify les observeurs d'un changement d'état
-     *
-     * @return void
-     */
     public function notify(): void
     {
         foreach($this->observer as $value){
@@ -214,13 +174,6 @@ class Router
         }
     }
 
-    /**
-     * Charge une erreur avec twig
-     *
-     * @param string $template
-     *
-     * @return void
-     */
     public function bindTwig(string $template) : void
     {
         $loader = new FilesystemLoader(self::BASE_ENVIRONMENT);

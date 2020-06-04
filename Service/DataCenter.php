@@ -9,13 +9,9 @@ class DataCenter
 
     private const DATA_CENTER_FILE              = ROOT . 'App/config/datacenter.php';
 
-    /**
-     *
-     * @var array[string][string]
-     */
-    private $data;
+    private array $data;
 
-    
+
     public function __construct()
     {
         $this->data = require_once self::DATA_CENTER_FILE;
@@ -24,13 +20,12 @@ class DataCenter
     
 
     /**
-     * Retourne La valeur de $index ou null si elle n'existe pas
+     * Return value associate to the index variable (if not exists, return null)
      *
      * @param string|null $index
-     *
      * @return mixed
      */
-    public function getData(?string $index)
+    public function get(?string $index)
     {
         if(isset($this->data[$index])){
             return $this->data[$index];

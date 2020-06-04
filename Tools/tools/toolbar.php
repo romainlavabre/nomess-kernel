@@ -1,6 +1,6 @@
 <?php
 
-	$version = '2.16.0';
+	$version = '2.17.0';
 
 	global $vController, $action, $method, $_GET, $_POST, $time, $tree;
 	
@@ -23,7 +23,7 @@
 
 	$fileIndex = searchReportCoverage();
 ?>
-<link rel="stylesheet" href="<?php echo WEBROOT.'vendor/nomess/kernel/Tools/tools/bootstrap-toolbar.css'; ?>">
+<link rel="stylesheet" href="<?php echo 'toolbar/bootstrap-toolbar.css'; ?>">
 <style type="text/css">
 
 .nm_no-radius{
@@ -81,7 +81,7 @@
 			<?php echo (string) $vController.' - '.(string) $action.' - '.$method; ?>
 		</button>
 	</div>
-	<?php if (@$tabOpcache['directives']['opcache.enable']) {
+	<?php if ($tabOpcache !== null && $tabOpcache['directives']['opcache.enable']) {
                 ?>
 	<div class="nm_btn-group nm_dropup">
 		<button type="button" class="nm_btn nm_noir nm_dropdown-toggle nm_no-radius" data-toggle="nm_dropdown" aria-haspopup="true" aria-expanded="false">
@@ -166,24 +166,28 @@
 				Mods & Lib
 			</button>
 			<div class="nm_dropdown-menu">
-				<?php if (@ini_get_all('xdebug')['xdebug.remote_enable']['local_value'] === '1') {
-                ?>
-					<button class="nm_btn nm_dropdown-item nm_vert nm_no-cursor">xDebug</button>
-				<?php
-            } else {
-                ?>
-					<button class="nm_btn nm_dropdown-item nm_rouge nm_no-cursor">xDebug</button>
-				<?php
-            }
-                if ($tabOpcache['directives']['opcache.enable']) {
-                    ?>
-					<button class="nm_btn nm_dropdown-item nm_vert nm_no-cursor">OpCache</button>
-				<?php
-                } else {
-                    ?>
-					<button class="nm_btn nm_dropdown-item nm_rouge nm_no-cursor">OpCache</button>
-				<?php
-				}?>
+				<?php 
+				try{
+					if (@ini_get_all('xdebug')['xdebug.remote_enable']['local_value'] === '1') {
+					?>
+						<button class="nm_btn nm_dropdown-item nm_vert nm_no-cursor">xDebug</button>
+					<?php
+					} else {
+					?>
+						<button class="nm_btn nm_dropdown-item nm_rouge nm_no-cursor">xDebug</button>
+					<?php
+					}
+					if ($tabOpcache['directives']['opcache.enable']) {
+						?>
+						<button class="nm_btn nm_dropdown-item nm_vert nm_no-cursor">OpCache</button>
+					<?php
+					} else {
+						?>
+						<button class="nm_btn nm_dropdown-item nm_rouge nm_no-cursor">OpCache</button>
+					<?php
+					}
+				}catch(Throwable $e){}
+				?>
 				<button class="nm_btn nm_dropdown-item nm_bleu nm_no-cursor">Twig 3.0</button>
 				<button class="nm_btn nm_dropdown-item nm_bleu nm_no-cursor">PHPUnit.8.5</button>
 				<button class="nm_btn nm_dropdown-item nm_bleu nm_no-cursor">PHP-DI 6</button>
@@ -196,7 +200,9 @@
 </div>
 
 <!-- Button trigger nm_modal -->
-<?php if (@$tabOpcache['directives']['opcache.enable']) {
+<?php 
+try{
+if (@$tabOpcache['directives']['opcache.enable']) {
                     ?>
 <div class="nm_modal fade" id="cache" tabindex="-1" role="dialog" aria-labelledby="examplenm_modalLabel" aria-hidden="true">
 	<div class="nm_modal-dialog nm_modal-lg" role="document">
@@ -340,8 +346,9 @@
 	</div>
 </div>
 <?php
-                }?>
-<?php if (@ini_get_all('xdebug')['xdebug.remote_enable']['local_value'] === '1') {
+	}
+}catch(Throwable $e){}
+if (@ini_get_all('xdebug')['xdebug.remote_enable']['local_value'] === '1') {
                     ?>
 <div class="nm_modal fade" id="xdebug" tabindex="-1" role="dialog" aria-labelledby="examplenm_modalLabel" aria-hidden="true">
 	<div class="nm_modal-dialog nm_modal-lg" role="nm_document">
@@ -389,8 +396,7 @@
 </div>
 <?php
 }	
-/*$i = 0;
-foreach($fileIndex as $key => $value){*/
+
 ?>
 	<div class="nm_modal fade" id="report" tabindex="-1" role="dialog" aria-labelledby="examplenm_modalLabel" aria-hidden="true">
 		<div class="nm_modal-dialog nm_modal-lg" role="nm_document">
@@ -425,7 +431,7 @@ foreach($fileIndex as $key => $value){*/
 				</div>
 				<div class="nm_modal-body">
 					<div class="nm_container">
-						<iframe src="<?php echo WEBROOT . 'vendor/nomess/kernel/Tools/tools/phpinfo.php'?>" style="width: 100%;" height="500"></iframe>
+						<iframe src="<?php echo ROOT . 'vendor/nomess/kernel/Tools/tools/phpinfo.php'?>" style="width: 100%;" height="500"></iframe>
 					</div>
 				</div>
 				<div class="nm_modal-footer">
@@ -435,5 +441,5 @@ foreach($fileIndex as $key => $value){*/
 		</div>
 	</div>
 </div>
-<script type="text/javascript" src="<?php echo WEBROOT.'vendor/nomess/kernel/Tools/tools/popper.min.js'; ?>"></script>
-<script type="text/javascript" src="<?php echo WEBROOT.'vendor/nomess/kernel/Tools/tools/bootstrap.js'; ?>"></script>
+<script type="text/javascript" src="<?php echo 'toolbar/popper.min.js'; ?>"></script>
+<script type="text/javascript" src="<?php echo 'toolbar/bootstrap.js'; ?>"></script>

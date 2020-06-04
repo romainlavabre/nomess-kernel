@@ -2,6 +2,7 @@
 
 namespace NoMess\Manager;
 
+use NoMess\Container\Container;
 use Throwable;
 use Twig\Environment;
 use NoMess\SubjectInterface;
@@ -9,88 +10,37 @@ use NoMess\ObserverInterface;
 use Twig\Loader\FilesystemLoader;
 use NoMess\HttpRequest\HttpRequest;
 use NoMess\HttpResponse\HttpResponse;
-use Psr\Container\ContainerInterface;
 use NoMess\Component\LightPersists\LightPersists;
 
 abstract class Distributor implements SubjectInterface
 {
 
-    /**
-     * Twig
-     */
-    private const BASE_ENVIRONMENT          = 'Web/public/';
-    private const CACHE_TWIG			    = 'Web/cache/twig/';
+    private const BASE_ENVIRONMENT      = 'public';
+    private const CACHE_TWIG            = ROOT . 'Web/cache/twig/';
 
+    private const SESSION_DATA          = 'nomess_persiste_data';
 
-    /**
-     * Persiste data for redirect
-     */
-    private const SESSION_DATA              = 'nomess_persiste_data';
+    const DEFAULT_DATA                  = 'php';
+    const JSON_DATA                     = 'json';
 
-    /**
-     * Data
-     */
-    const DEFAULT_DATA                      = 'php';
-    const JSON_DATA                         = 'json';
+    private const SESSION_NOMESS_SCURITY = 'nomess_session_security';
+    private const SESSION_NOMESS_TOOLBAR = 'nomess_toolbar';
 
-
-    private const SESSION_NOMESS_SCURITY    = 'nomess_session_security';
-
-    /**
-     * Moteur de template
-     *
-     * @var mixed
-     */
     private $engine;
 
-    /**
-     * 
-     *
-     * @var HttpRequest
-     */
-    private $request;
+    private HttpRequest $request;
+
+    private HttpResponse $response;
 
     /**
-     * 
-     *
-     * @var HttpResponse
-     */
-    private $response;
-
-
-    /**
-     * 
      * @Inject
-     *
-     * @var ContainerInterface
      */
-    private $container;
+    protected Container $container;
 
+    private ?array $observer = array();
 
-    /**
-     *
-     * @var ObserverInterface
-     */
-    private $observer = array();
+    private ?array $data;
 
-
-    /**
-     *
-     * @var array
-     */
-    private $data;
-
-
-    /**
-     * Fait suivre les données et opération en attente avec la requête
-     * 
-     *
-     * @param HttpRequest|null $request
-     * @param HttpResponse|null $response
-     * @param string $dataType
-     *
-     * @return Distributor
-     */
     public final function forward(?HttpRequest $request, ?HttpResponse $response, string $dataType = self::DEFAULT_DATA) : Distributor
     {
 
@@ -129,16 +79,6 @@ abstract class Distributor implements SubjectInterface
         return $this;
     }
 
-
-    /**
-     * Redirige vers une resource local, si request et response sont intégré avec forward,
-     * Les opération en attente seront exécuté normalement et les données seront présente 
-     * dans le contexte de la ressource cible 
-     *
-     * @param string $url
-     *
-     * @return Distributor
-     */
     public final function redirectLocal(string $url) : Distributor
     {
 
@@ -153,16 +93,6 @@ abstract class Distributor implements SubjectInterface
         return $this;
     }
 
-
-    /**
-     * Redirige vers une ressource externe, si response est intégré avec forward, 
-     * les opération en attente seront exécuté normalement (conseillé), l'introduction 
-     * de request n'aura aucun impact et ses données seront perdu
-     *
-     * @param string $url
-     *
-     * @return Distributor
-     */
     public final function redirectOutside(string $url) : Distributor
     {
 
@@ -174,13 +104,6 @@ abstract class Distributor implements SubjectInterface
     }
 
 
-    /**
-     * Lie le moteur twig à la response
-     *
-     * @param string $template
-     *
-     * @return Distributor
-     */
     public final function bindTwig(string $template) : Distributor
     {
 
@@ -210,14 +133,6 @@ abstract class Distributor implements SubjectInterface
         return $this;
     }
 
-
-    /**
-     * Lie un fichier php à la response
-     *
-     * @param string $template
-     *
-     * @return Distributor
-     */
     public final function bindDefaultEngine(string $template) : Distributor
     {
 
@@ -232,36 +147,16 @@ abstract class Distributor implements SubjectInterface
         return $this;
     }
 
-
-    /**
-     * Retourne les données
-     *
-     * @return array|null
-     */
     public final function sendData() : ?array
     {
         return $this->data;
     }
 
-
-
-    /**
-     * Tue le procéssus courant
-     *
-     * @return void
-     */
     public function stopProcess() : void
     {
         die;
     }
 
-
-
-    /**
-     * Attache les observeurs
-     *
-     * @return void
-     */
     public function attach() : void
     {
         $componentConfig = require ROOT . 'App/config/component.php';
@@ -275,13 +170,6 @@ abstract class Distributor implements SubjectInterface
         }
     }
 
-    
-
-    /**
-     * Notify les observeurs d'un changement d'état
-     *
-     * @return void
-     */
     public function notify(): void
     {
         foreach($this->observer as $value){

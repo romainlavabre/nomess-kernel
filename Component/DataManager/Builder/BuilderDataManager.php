@@ -1,15 +1,14 @@
 <?php 
 
-namespace NoMess\DataManager\Builder;
+namespace NoMess\Component\DataManager\Builder;
 
 use NoMess\Exception\WorkException;
-use NoMess\DataManager\Builder\DocComment;
-
 
 class BuilderDataManager 
 {
 
-    const DIR       = ROOT . 'App/src/Modules/';
+    private const DIR                   = ROOT . 'App/src/Modules/';
+    private const CACHE_PATH            = ROOT . 'App/var/cache/dm/datamanager.xml';
 
 
     /**
@@ -119,8 +118,8 @@ class BuilderDataManager
 
         $xml = $xml . "</data>";
 
-        if(!file_put_contents('App/var/cache/mondata.xml', $xml)){
-            throw new WorkException('MonitoringData: Impossible d\'accéder au cache');
+        if(!file_put_contents(self::CACHE_PATH, $xml)){
+            throw new WorkException('BuilderDataManager encountered an error: Impossible to access to cache file');
         }
     }
 
@@ -216,9 +215,9 @@ class BuilderDataManager
                 }
             }
 
-            throw new WorkException('Le nom de la class n\'a pas été résolue dans le fichier ' . $path . ' pour la method BuildRoutes::getClassName');
+            throw new WorkException('BuilderDataManager encountered an error: the class name can\'t be resolved in file . ' . $path);
         }else{
-            throw new WorkException('Le fichier ' . $file . ' n\'a pas été résolue dans la method BuildRoutes::getClassName');
+            throw new WorkException('BuilderDataManager encountered an error: the file ' . $file . ' can\'t be resolved');
         }
     }
 
@@ -242,7 +241,7 @@ class BuilderDataManager
                 }
             }
         }else{
-            throw new WorkException('Le fichier ' . $file . ' n\'a pas pu être ouvert dans la method MonitoringData::getNamespace');
+            throw new WorkException('BuilderDataManager encountered an error: the file ' . $file . ' could not be opened');
         }
     }
 
@@ -277,7 +276,7 @@ class BuilderDataManager
                     if(isset($floorOne[3])){
                         $cls->setAlias($floorOne[1], $floorOne[3]);
                     }else{
-                        throw new WorkException('Erreur de syntaxe dans les commantaire de la class' . $className);
+                        throw new WorkException('BuilderDataManager: syntaxe error in the class ' . $className);
                     }
                 }
             }
@@ -355,12 +354,12 @@ class BuilderDataManager
         if($util === true){
 
             if((!empty($cls->getSesDepend()) || !empty($cls->getKeyArray())) && empty($cls->getKey())){
-                throw new WorkException('Clé de session attendu pour ' . $cls->getClassName());
+                throw new WorkException('BuilderDataManager encountered an error: session key expected for this class: ' . $cls->getClassName());
                 die;
             }
 
             if((!empty($cls->getDbDepend()) || !empty($cls->getInsert())) && empty($cls->getBase())){
-                throw new WorkException('Table de persistance attendu pour ' . $cls->getClassName());
+                throw new WorkException('BuilderDataManager encountered an error: class of persistence expected for this class: '  . $cls->getClassName());
                 die;
             }
             

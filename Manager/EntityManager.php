@@ -3,13 +3,12 @@
 namespace NoMess\Manager;
 
 
-class EntityManager implements \JsonSerializable{
+class EntityManager{
 
 	/**
-	 * Hydrate l'entité
+	 * Hydrate entity
 	 *
 	 * @param array $donnees
-	 * @return void
 	 */
 	public function hydrate(array $donnees) : void
 	{
@@ -22,16 +21,6 @@ class EntityManager implements \JsonSerializable{
 		}
 	}
 
-	
-
-	/**
-	 *
-	 * @return array
-	 */
-	public function jsonSerialize() : array
-    {
-        return get_object_vars($this);
-    }
 
 	public function __destruct() {}
 }

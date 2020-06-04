@@ -2,15 +2,15 @@
 
 namespace NoMess\Manager;
 
-use Throwable;
-use Twig\Environment;
-use NoMess\SubjectInterface;
-use NoMess\ObserverInterface;
-use Twig\Loader\FilesystemLoader;
+use NoMess\Component\LightPersists\LightPersists;
+use NoMess\Container\Container;
 use NoMess\HttpRequest\HttpRequest;
 use NoMess\HttpResponse\HttpResponse;
-use Psr\Container\ContainerInterface;
-use NoMess\Component\LightPersists\LightPersists;
+use NoMess\ObserverInterface;
+use NoMess\SubjectInterface;
+use Throwable;
+use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
 
 abstract class Distributor implements SubjectInterface
 {
@@ -18,73 +18,54 @@ abstract class Distributor implements SubjectInterface
     /**
      * Twig
      */
-    private const BASE_ENVIRONMENT          = 'Web/public/';
+    private const BASE_ENVIRONMENT = 'public';
 
 
     /**
      * Persiste data for redirect
      */
-    private const SESSION_DATA              = 'nomess_persiste_data';
+    private const SESSION_DATA = 'nomess_persiste_data';
 
     /**
-     * Data
+     * Data type
      */
-    const DEFAULT_DATA                      = 'php';
-    const JSON_DATA                         = 'json';
+    const DEFAULT_DATA = 'php';
+    const JSON_DATA = 'json';
 
 
-    private const SESSION_NOMESS_SCURITY    = 'nomess_session_security';
-    private const SESSION_NOMESS_TOOLBAR    = 'nomess_toolbar';
+    private const SESSION_NOMESS_SCURITY = 'nomess_session_security';
+    private const SESSION_NOMESS_TOOLBAR = 'nomess_toolbar';
 
     /**
-     * Moteur de template
+     * Template engine
      *
      * @var mixed
      */
     private $engine;
 
-    /**
-     * 
-     *
-     * @var HttpRequest
-     */
-    private $request;
+    private HttpRequest $request;
 
-    /**
-     * 
-     *
-     * @var HttpResponse
-     */
-    private $response;
+    private HttpResponse $response;
 
 
     /**
-     * 
      * @Inject
-     *
-     * @var ContainerInterface
      */
-    private $container;
+    protected Container $container;
 
 
     /**
      *
      * @var ObserverInterface
      */
-    private $observer = array();
+    private ?array $observer = array();
+
+    private ?array $data;
 
 
     /**
+     * forward data and pending operation
      *
-     * @var array
-     */
-    private $data;
-
-
-
-    /**
-     * Fait suivre les données et opération en attente avec la requête
-     * 
      *
      * @param HttpRequest|null $request
      * @param HttpResponse|null $response
@@ -92,38 +73,39 @@ abstract class Distributor implements SubjectInterface
      *
      * @return Distributor
      */
-    public final function forward(?HttpRequest $request, ?HttpResponse $response, string $dataType = self::DEFAULT_DATA) : Distributor
+    public final function forward(?HttpRequest $request, ?HttpResponse $response, string $dataType = self::DEFAULT_DATA): Distributor
     {
 
-        if($request !== null){
+        if ($request !== null) {
             $this->request = clone $request;
             $this->data = $request->getData();
 
             //Intégration des données de lightPersists
             $lpData = array();
 
-            try{
+            try {
                 $lpData = $this->container->get(LightPersists::class)->get(NULL);
-            }catch(Throwable $e){}
+            } catch (Throwable $e) {
+            }
 
             $dataSession = null;
 
-            if(isset($lpData)){
+            if (isset($lpData)) {
                 $dataSession = array_merge($_SESSION, $lpData);
-            }else{
+            } else {
                 $dataSession = $_SESSION;
             }
 
             unset($dataSession[self::SESSION_NOMESS_SCURITY]);
             unset($dataSession[self::SESSION_NOMESS_TOOLBAR]);
             $this->data = array_merge($this->data, $dataSession);
-  
-            if($dataType === 'json'){
+
+            if ($dataType === 'json') {
                 $this->data = json_encode($this->data);
             }
         }
 
-        if($response !== null){
+        if ($response !== null) {
             $this->response = clone $response;
             $this->response->manage();
         }
@@ -133,20 +115,19 @@ abstract class Distributor implements SubjectInterface
 
 
     /**
-     * Redirige vers une resource local, si request et response sont intégré avec forward,
-     * Les opération en attente seront exécuté normalement et les données seront présente 
-     * dans le contexte de la ressource cible 
+     *
+     * Redirect toward an local ressource, if forward method is called, the pending operation
+     * will be executed and the data will be presente in next context
      *
      * @param string $url
-     *
      * @return Distributor
      */
-    public final function redirectLocal(string $url) : Distributor
+    public final function redirectLocal(string $url): Distributor
     {
         $this->close();
 
 
-        if(!empty($this->data)){
+        if (!empty($this->data)) {
             $_SESSION[self::SESSION_DATA] = $this->data;
         }
 
@@ -157,15 +138,13 @@ abstract class Distributor implements SubjectInterface
 
 
     /**
-     * Redirige vers une ressource externe, si response est intégré avec forward, 
-     * les opération en attente seront exécuté normalement (conseillé), l'introduction 
-     * de request n'aura aucun impact et ses données seront perdu
+     * Redirect toward an local ressource, if forward method is called, the pending operation
+     * will be executed
      *
      * @param string $url
-     *
      * @return Distributor
      */
-    public final function redirectOutside(string $url) : Distributor
+    public final function redirectOutside(string $url): Distributor
     {
         $this->close();
 
@@ -177,62 +156,57 @@ abstract class Distributor implements SubjectInterface
 
 
     /**
-     * Lie le moteur twig à la response
+     * Bind the template engine to the response
      *
      * @param string $template
-     *
      * @return Distributor
      */
-    public final function bindTwig(string $template) : Distributor
+    public final function bindTwig(string $template): Distributor
     {
         $this->close();
 
 
-
-        
         global $time;
         $time->setXdebug(xdebug_time_index());
 
         $loader = new FilesystemLoader(self::BASE_ENVIRONMENT);
-		$this->engine = new Environment($loader, [
-			'debug' => true,
-			'cache' => false,
-			'strict_variables' => true
-		]);
+        $this->engine = new Environment($loader, [
+            'debug' => true,
+            'cache' => false,
+            'strict_variables' => true
+        ]);
 
         $this->engine->addExtension(new \Twig\Extension\DebugExtension());
-        
+
         echo $this->engine->render($template, [
-			'WEBROOT' => WEBROOT, 
-			'param' => $this->data, 
-			'POST' => $this->request->getPost(true), 
-			'GET' => $this->request->getGet(true), 
-        ]);	
+            'WEBROOT' => WEBROOT,
+            'param' => $this->data,
+            'POST' => $this->request->getPost(true),
+            'GET' => $this->request->getGet(true),
+        ]);
 
         $this->getDevToolbar();
-        
+
         return $this;
     }
 
 
     /**
-     * Lie un fichier php à la response
+     * Bind an php file to the response
      *
      * @param string $template
-     *
      * @return Distributor
      */
-    public final function bindDefaultEngine(string $template) : Distributor
+    public final function bindDefaultEngine(string $template): Distributor
     {
         $this->close();
 
 
-
         global $time;
         $time->setXdebug(xdebug_time_index());
-        
+
         $param = $this->data;
-        
+
         require(ROOT . 'Web/public/' . $template);
 
         $this->getDevToolbar();
@@ -242,38 +216,28 @@ abstract class Distributor implements SubjectInterface
 
 
     /**
-     * Retourne les données
+     * Return data
      *
      * @return array|null
      */
-    public final function sendData() : ?array
+    public final function sendData(): ?array
     {
         $this->close();
-
 
         return $this->data;
     }
 
 
-
     /**
-     * Tue le procéssus courant
-     *
-     * @return void
+     * Kill the current process
      */
-    public function stopProcess() : void
+    public function stopProcess(): void
     {
         die;
     }
 
 
-
-
-    /**
-     *
-     * @return void
-     */
-    private function getDevToolbar() : void
+    private function getDevToolbar(): void
     {
         global $vController, $method, $action;
         $vController = $_SESSION['nomess_toolbar'][2];
@@ -282,44 +246,39 @@ abstract class Distributor implements SubjectInterface
         $action = $_SESSION['nomess_toolbar'][1];
 
         unset($_SESSION['nomess_toolbar']);
-    
+
         require_once ROOT . 'vendor/nomess/kernel/Tools/tools/toolbar.php';
     }
 
 
     /**
-     * Attache les observeurs
-     *
-     * @return void
+     * Attach observer
      */
-    public function attach() : void
+    public function attach(): void
     {
         $componentConfig = require ROOT . 'App/config/component.php';
 
-        if($componentConfig !== null){
-            foreach($componentConfig as $key => $value){
-                if($value !== false && isset(class_implements($key)[ObserverInterface::class])){
+        if ($componentConfig !== null) {
+            foreach ($componentConfig as $key => $value) {
+                if ($value !== false && isset(class_implements($key)[ObserverInterface::class])) {
                     $this->observer[] = $this->container->get($key);
                 }
             }
         }
     }
 
-    
 
     /**
-     * Notify les observeurs d'un changement d'état
-     *
-     * @return void
+     * Notify the observer to change state
      */
     public function notify(): void
     {
-        foreach($this->observer as $value){
+        foreach ($this->observer as $value) {
             $value->notifiedOutput();
         }
     }
 
-    private function close() : void
+    private function close(): void
     {
         $this->attach();
         $this->notify();

@@ -11,13 +11,13 @@ class InteractiveRuntimeWorker extends Component
 
 
     /**
-     * Créer une tache a efféctuer par le worker
+     * Create task to be executed by worker
      *
-     * @param string $className Nom complet de la class
-     * @param string $method Nom de la method à appeler
-     * @param array $args tableau d'argument
-     * @param string $taskId identifiant de la tache
-     * @param bool $permanent Si défini, la tache sera répété de manière permanent
+     * @param string $className Full name class
+     * @param string $method Name of method to called
+     * @param array $args Array of arguments
+     * @param string $taskId Task identifiant
+     * @param bool $permanent id defined, the task will be permanently repeat
      *
      * @return void
      */

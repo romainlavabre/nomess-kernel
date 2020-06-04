@@ -2,6 +2,8 @@
 
 namespace NoMess\Router;
 
+use NoMess\Container\Container;
+use NoMess\Router\Builder\Builder;
 use Twig\Environment;
 use DI\ContainerBuilder;
 use NoMess\SubjectInterface;
@@ -13,51 +15,39 @@ use NoMess\HttpResponse\HttpResponse;
 use NoMess\Router\Builder\BuildRoutes;
 use NoMess\DataManager\Builder\BuilderDataManager;
 
+
+
 class Router implements SubjectInterface
 {
 
-    private const ROUTING                   = ROOT . "App/var/cache/routes/routing.xml";
-    private const DEFINITION                = ROOT . 'App/config/di-definitions.php';
+    private const CACHE_ROUTING             = ROOT . 'App/var/cache/routes/route.xml';
 
-    private const CACHE_ROUTING             = ROOT . 'App/var/cache/routes/routing.xml';
-    private const CACHE_DATA_MANAGER        = ROOT . 'App/var/cache/mondata.xml';
-
-    private const BASE_ENVIRONMENT          = 'Web/public/';
+    private const BASE_ENVIRONMENT          = 'public';
 
 
-    /**
-     *
-     * @var HttpSession
-     */
-    private $HttpSession;
+
+    private HttpSession $HttpSession;
+
+    private Container $container;
 
 
     /**
      *
-     * @var Container
+     * @var ObserverInterface[]
      */
-    private $container;
+    private array $observer;
 
 
     /**
-     *
-     * @var ObserverInterface
+     * @throws \NoMess\Exception\WorkException
+     * @throws \ReflectionException
      */
-    private $observer = array();
-
-
-
-
     public function __construct()
     {
-
-        $builder = new ContainerBuilder();
-        $builder->useAnnotations(true);
-        $builder->addDefinitions(self::DEFINITION);
-        $this->container = $builder->build();
+        $start = microtime(true);
+        $this->container = new Container();
 
         $this->HttpSession = $this->container->get(HttpSession::class);
-
         $this->HttpSession->initSession();
 
         $this->resetCache();
@@ -65,32 +55,23 @@ class Router implements SubjectInterface
         $this->attach();
         $this->notify();
 
-        
-        if(!file_exists(self::CACHE_DATA_MANAGER)){
-            $buildMonitoring = new BuilderDataManager();
-            $buildMonitoring->builderManager();
-        }
-
-
-        if(!file_exists(self::CACHE_ROUTING)){
-            $buildRouting = new BuildRoutes(self::CACHE_ROUTING);
-            $buildRouting->build();
-        }
+        $this->controlCacheFile();
     }
 
 
     /**
-     * Routeur
+     * Router
      *
      * @return void
      */
     public function getRoute() : void
     {
-        
+
         $vController = null;
         $method = null;
-        
-        $file = simplexml_load_file(self::ROUTING);
+
+        $route = require self::CACHE_ROUTING;
+        $route = unserialize($route);
 
         $controller = null;
         $path = null;
@@ -125,48 +106,49 @@ class Router implements SubjectInterface
 
             $_GET['p'] = implode('/', $get);
         }
-        
-        foreach($file->routes as $value){
-            if((string)$value->attributes()['url'] === $_GET['p']){
-                $controller = (string)$value->controller;
-                $path = (string)$value->path;
-                $auth = (string)$value->auth;
-                
-                if(!empty($auth) && !isset($_SESSION[$auth])){
-                    header('HTTP/1.0 403 Permissions denied');
 
-                    $tabError = require ROOT . 'App/config/error.php';
+        if(isset($route[$_GET['p']])) {
+            $controller = $route[$_GET['p']]['controller'];
+            $path = $route[$_GET['p']]['path'];
+            $auth = $route[$_GET['p']]['auth'];
 
-                    if(strpos($tabError['403'], '.twig')){
+            if (!empty($auth) && !isset($_SESSION[$auth])) {
+                header('HTTP/1.0 403 Permissions denied');
+
+                $tabError = require ROOT . 'App/config/error.php';
+
+                if(strpos($tabError['403'], '.twig')){
+                    if(file_exists(ROOT . 'Web/' . $tabError['403'])) {
                         $this->bindTwig($tabError['403']);
-                    }else{
+                    }
+                }else{
+                    if(file_exists(ROOT . $tabError['403'])) {
                         include(ROOT . $tabError['403']);
                     }
-                    die;
                 }
-
-                if($_SERVER['REQUEST_METHOD'] === 'POST'){
-                    $action = 'doPost';
-                    $method = "POST";
-                }else{
-                    $action = 'doGet';
-                    $method = "GET";
-                }
-                
-                break;
+                die;
             }
-        } 
+
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $action = 'doPost';
+                $method = "POST";
+            } else {
+                $action = 'doGet';
+                $method = "GET";
+            }
+        }
 
         $result = explode('\\', $controller);
         $vController = $result[count($result) - 1];
 
         $this->bufferExclude();
 
-        if(file_exists($path) && !empty($controller)){	
+
+        if(file_exists($path) && !empty($controller)){
             $controller = $this->container->get($controller);
 
             $_SESSION['nomess_toolbar'] = [1 => $action, 2 => $vController, 3 => $method];
-            
+
             $controller->$action($this->container->get(HttpResponse::class), $this->container->get(HttpRequest::class));
         }else{
 
@@ -175,10 +157,14 @@ class Router implements SubjectInterface
             $tabError = require ROOT . 'App/config/error.php';
 
             if(strpos($tabError['404'], '.twig')){
-                        $this->bindTwig($tabError['404']);
-                    }else{
-                        include(ROOT . $tabError['404']);
-                    }
+                if(file_exists(ROOT . 'Web/' . $tabError['404'])) {
+                    $this->bindTwig($tabError['404']);
+                }
+            }else{
+                if(file_exists(ROOT . $tabError['404'])) {
+                    include(ROOT . $tabError['404']);
+                }
+            }
             die;
         }
 
@@ -205,12 +191,12 @@ class Router implements SubjectInterface
         }
 
         if(isset($_POST['resetCacheRoute'])){
-            @unlink(ROOT . 'App/var/cache/routes/routing.xml');
+            @unlink(ROOT . 'App/var/cache/routes/route.xml');
             unset($_POST);
         }
 
         if(isset($_POST['resetCacheMon'])){
-            @unlink(ROOT . 'App/var/cache/mondata.xml');
+            @unlink(ROOT . 'App/var/cache/dm/datamanager.xml');
             unset($_POST);
         }
     }
@@ -218,7 +204,7 @@ class Router implements SubjectInterface
 
 
     /**
-     * Attache les observeurs
+     * Attach observers
      *
      * @return void
      */
@@ -235,23 +221,25 @@ class Router implements SubjectInterface
         }
     }
 
-    
+
 
     /**
-     * Notify les observeurs d'un changement d'état
+     * Notify the observer that state has changed
      *
      * @return void
      */
     public function notify(): void
     {
-        foreach($this->observer as $value){
-            $value->notifiedInput();
+        if(isset($this->observer)) {
+            foreach ($this->observer as $value) {
+                $value->notifiedInput();
+            }
         }
     }
 
 
     /**
-     * Charge une erreur avec twig
+     * Load error template with twig engine
      *
      * @param string $template
      *
@@ -260,14 +248,28 @@ class Router implements SubjectInterface
     public function bindTwig(string $template) : void
     {
         $loader = new FilesystemLoader(self::BASE_ENVIRONMENT);
-		$this->engine = new Environment($loader, [
-			'cache' => false,
-		]);
+        $this->engine = new Environment($loader, [
+            'cache' => false,
+        ]);
 
         $this->engine->addExtension(new \Twig\Extension\DebugExtension());
-        
+
         echo $this->engine->render($template, [
-			'WEBROOT' => WEBROOT
-        ]);	
+            'WEBROOT' => WEBROOT
+        ]);
+    }
+
+
+    /**
+     * Control existing cache file of route
+     *
+     * @throws \NoMess\Exception\WorkException
+     */
+    private function controlCacheFile(): void
+    {
+        if(!file_exists(self::CACHE_ROUTING)){
+            $builder = new Builder();
+            $builder->buildRoute();
+        }
     }
 }

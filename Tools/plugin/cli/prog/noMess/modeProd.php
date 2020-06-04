@@ -4,22 +4,18 @@ use NoMess\DiBuilder\DiBuilder;
 
 echo "Lancement de la configuration...\n";
 
-require 'function-Installer.php';
+require __DIR__ . '/function-Installer.php';
 
-$comfirme = rdl("Plusieurs fichier system vont être remplacé, continuer ? [oui: o | non: Enter]: ");
-
-
-$api = '../vendor/nomess/kernel/';
+$comfirme = rdl("Many file system will be remove, pursue ? [oui: o | non: Enter]: ");
 
 
+$api = 'vendor/nomess/kernel/';
 if(!is_null($comfirme)){
 	$tabCopyFile = array(
 			$api . 'Tools/plugin/cli/prog/noMess/context/Distributor-prod.php' => $api . 'Manager/Distributor.php',
 			$api . 'Tools/plugin/cli/prog/noMess/context/WorkException-prod.php' => $api . 'Exception/WorkException.php',
 			$api . 'Tools/plugin/cli/prog/noMess/context/Router-prod.php' => $api . 'Router/Router.php',
-			$api . 'Tools/plugin/cli/prog/noMess/context/index-prod.php' => '../index.php',
-			$api . 'Tools/plugin/cli/prog/noMess/context/WebRouter-prod.php' => $api . 'Web/WebRouter.php',
-			$api . 'Tools/plugin/cli/prog/noMess/context/DataManager-prod.php' => $api . 'DataManager/DataManager.php'
+			$api . 'Tools/plugin/cli/prog/noMess/context/index-prod.php' => 'Web/index.php',
 	);
 
 	foreach($tabCopyFile as $key => $value){
@@ -27,13 +23,9 @@ if(!is_null($comfirme)){
 		$tabLength = count($tabFile);
 
 		if(copy($key, $value)){
-			echo "Fichier " . $tabFile[$tabLength - 1] . " réinitialisé\n";
+			echo "File " . $tabFile[$tabLength - 1] . " reset\n";
 		}else{
-			echo "Error: Le fichier " . $tabFile[$tabLength - 1] . " n'a pas pu être créé\n";
+			echo "Error: The file " . $tabFile[$tabLength - 1] . " cannot be created\n";
 		}
 	}
-
-	require_once '../vendor/nomess/kernel/DiBuilder/DiBuilder.php';
-	$build = new DiBuilder();
-	$build->diBuilder();
 }

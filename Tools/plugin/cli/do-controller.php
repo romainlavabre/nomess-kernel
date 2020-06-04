@@ -9,14 +9,14 @@ class Controller
 {
 
     /**
-     * Chemin du fichier
+     * Path of file
      *
      * @var string
      */
     private $dir;
 
     /**
-     * Nom du controller
+     * Controller name
      *
      * @var string
      */
@@ -32,7 +32,7 @@ class Controller
 
     public function generator() : void
     {
-        $dir = rdl("Depuis 'App/src/Controller/', précisez le chemin (vide pour racine): ");
+        $dir = rdl("Precise path beginning 'App/src/Controller/', void for racine: ");
 
         if($dir !== null){
             $tabDir = explode('/', $dir);
@@ -47,12 +47,12 @@ class Controller
         }
 
         do{
-            $this->controller = rdl("Précisez le nom du controller: ");
-            $this->route = rdl("Précisez la route: ");
+            $this->controller = rdl("Precise name of controller: ");
+            $this->route = rdl("Precise route: ");
 
-            file_put_contents('../App/src/Controllers/' . $this->dir . ucfirst($this->controller) . '.php', $this->getContent());
+            file_put_contents('App/src/Controllers/' . $this->dir . ucfirst($this->controller) . '.php', $this->getContent());
 
-            $restart = rdl("Continuer ? [N: n | O: Enter");
+            $restart = rdl("Pursue ? [N: n | O: Enter] ");
 
             if($restart === null){
                 $restart = true;
@@ -92,41 +92,40 @@ use NoMess\Manager\Distributor;
 
 /**
  * @Route{\"" . $this->route . "\"} 
+ * @autowire
  */
 class " . ucfirst($this->controller) . " extends Distributor
 {
 
+    private const WEB_TEMPLATE              = 'Web_template';
+
 
     /**
      * @Inject
-     * 
-     * @var YourInstance
      */
-    private \$yourInstance;
+    private TypeOfInstance \$yourInstance;
 
     /**
      * 
      * @param HttpRequest \$request
      * @param HttpResponse \$response
-     * @return void
      */
-    public function doGet(HttpResponse \$response, HttpRequest \$request) : void
+    public function doGet(HttpResponse \$response, HttpRequest \$request): void
     {
-        \$this->forward(\$request, \$response)->bindTwig('template');
+        \$this->forward(\$request, \$response)->bindTwig(self::WEB_TEMPLATE)->stopProcess();
     }
 
     /**
      *
      * @param HttpRequest \$request
      * @param HttpResponse \$response
-     * @return void
      */
-    public function doPost(HttpResponse \$response, HttpRequest \$request) : void
+    public function doPost(HttpResponse \$response, HttpRequest \$request): void
     {
 
         \$tracker = \$this->yourInstance->service(\$request);
 
-        \$this->forward(\$request, \$response)->bindTwig('template');
+        \$this->forward(\$request, \$response)->bindTwig(self::WEB_TEMPLATE)->stopProcess();
     }
 }
         ";

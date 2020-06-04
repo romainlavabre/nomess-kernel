@@ -15,7 +15,7 @@ abstract class Component
             if($key === get_class($this)){
 
                 if($value === false){
-                    throw new WorkException('Le composant ' . get_class($this) . ' n\'est pas activé, et ne peut pas etre utilisé. Utilisez App/config/composant.php pour gérer vos composants');
+                    throw new WorkException('The compenent ' . get_class($this) . ' isn\'t enabled, please, use App/config/component.php for manage your use');
                 }
             }
         }

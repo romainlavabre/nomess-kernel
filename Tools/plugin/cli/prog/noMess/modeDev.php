@@ -1,20 +1,18 @@
 <?php
-echo "Lancement de la configuration...\n";
+echo "Launch of configuration...\n";
 
-require 'function-Installer.php';
+require __DIR__ . '/function-Installer.php';
 
-$comfirme = rdl("Plusieurs fichier system vont être remplacé, continuer ? [oui: o | non: Enter]: ");
+$comfirme = rdl("Many file system will be remove, pursue ? [oui: o | non: Enter]: ");
 
 
-$api = '../vendor/nomess/kernel/';
+$api = 'vendor/nomess/kernel/';
 if(!is_null($comfirme)){
 	$tabCopyFile = array(
 			$api . 'Tools/plugin/cli/prog/noMess/context/Distributor-dev.php' => $api . 'Manager/Distributor.php',
 			$api . 'Tools/plugin/cli/prog/noMess/context/WorkException-dev.php' => $api . 'Exception/WorkException.php',
 			$api . 'Tools/plugin/cli/prog/noMess/context/Router-dev.php' => $api . 'Router/Router.php',
-			$api . 'Tools/plugin/cli/prog/noMess/context/index-dev.php' => '../index.php',
-			$api . 'Tools/plugin/cli/prog/noMess/context/WebRouter-dev.php' => $api . 'Web/WebRouter.php',
-			$api . 'Tools/plugin/cli/prog/noMess/context/DataManager-dev.php' => $api . 'DataManager/DataManager.php'
+			$api . 'Tools/plugin/cli/prog/noMess/context/index-dev.php' => 'Web/index.php',
 	);
 
 	foreach($tabCopyFile as $key => $value){
@@ -22,9 +20,9 @@ if(!is_null($comfirme)){
 		$tabLength = count($tabFile);
 
 		if(@copy($key, $value)){
-			echo "Fichier " . $tabFile[$tabLength - 1] . " réinitialisé\n";
+			echo "File " . $tabFile[$tabLength - 1] . " reset\n";
 		}else{
-			echo "Error: Le fichier " . $tabFile[$tabLength - 1] . " n'a pas pu être créé\n";
+			echo "Error: File " . $tabFile[$tabLength - 1] . " cannot be created\n";
 		}
 	}
 }

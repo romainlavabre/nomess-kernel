@@ -8,8 +8,9 @@ error_reporting(E_ALL);
 ini_set('display_errors', 'on');
 ini_set("log_errors", "1");
 
-define('WEBROOT', str_replace('index.php', '', $_SERVER['SCRIPT_NAME']));
-define('ROOT', str_replace('index.php', '', $_SERVER['SCRIPT_FILENAME']));
+define('ROOT', str_replace('Web/index.php', '', $_SERVER['SCRIPT_FILENAME']));
+define('WEBROOT', 'public/');
+define('NOMESS_CONTEXT', 'DEV');
 
 ini_set('error_log', ROOT .'App/var/log/error.log');
 

@@ -3,147 +3,138 @@
 
 namespace NoMess\Component\LightPersists;
 
-use Throwable;
 use NoMess\Component\Component;
+use NoMess\Container\Container;
 use NoMess\Exception\WorkException;
 use NoMess\HttpRequest\HttpRequest;
 use NoMess\HttpResponse\HttpResponse;
 use NoMess\ObserverInterface;
-use Psr\Container\ContainerInterface;
+use Throwable;
 
 
 /**
- * LightPersists est un conteneur de persistance légé et plus malléable que les sessions, 
- * le cookie généré expire au bout de 10 ans, ainsi, c'est au développeur de supprimer manuellement les données 
+ * LightPersists est un conteneur de persistance légé et plus malléable que les sessions,
+ * le cookie généré expire au bout de 10 ans, ainsi, c'est au développeur de supprimer manuellement les données
  */
 class LightPersists extends Component implements ObserverInterface
 {
 
-    private const COOKIE_NAME           = 'psd_';
-    private const STORAGE_PATH          = '/var/nomess/';
+    private const COOKIE_NAME = 'psd_';
+    private const STORAGE_PATH = '/var/nomess/';
 
+
+    private Container $container;
+
+    private ?array $content;
+
+
+    /**
+     * Identifier of file
+     */
+    private ?string $id;
 
 
     /**
      * @Inject
      *
-     * @var ContainerInterface
+     * @param Container $container
      */
-    private $container;
+    public function __construct(Container $container)
+    {
+        $this->container = $container;
+    }
 
 
     /**
-     * Contenu
-     *
-     * @var array
-     */
-    private $content;
-
-
-    /**
-     * Identifiant du fichier
-     *
-     * @var string
-     */
-    private $id;
-
-
-    /**
-     * Retourne la valeur associé à l'index par référence
-     * Null si elle n'éxiste pas
+     * Return value associate to index variable or null if doesn't exists
      *
      * @param mixed $index
-     *
-     * @return void
      */
     public function &getReference($index)
     {
 
-        if(isset($this->content[$index])){
+        if (isset($this->content[$index])) {
             return $this->content[$index];
-        }else{
+        } else {
             return null;
         }
     }
 
 
-
     /**
-     * Ajoute une valeur
+     * Add value in container
      *
      * @param mixed $key
      * @param mixed $value
-     * @param bool $reset Supprime la clé $key avant toute insertion
+     * @param bool $reset Delete value associate to index before instertion
      *
      * @return void
      */
-	public function set($key, $value, $reset = false) : void
-	{
-		if($reset === true){
-			unset($this->content[$key]);
-		}
+    public function set($key, $value, $reset = false): void
+    {
+        if ($reset === true) {
+            unset($this->content[$key]);
+        }
 
-        if(\is_array($value)){
+        if (\is_array($value)) {
 
-            foreach($value as $keyArray => $valArray){
+            foreach ($value as $keyArray => $valArray) {
 
                 $this->content[$key][$keyArray] = $valArray;
             }
 
-        }else{
+        } else {
             $this->content[$key] = $value;
         }
     }
-    
+
 
     /**
-     * Retourne la valeur associé a l'index
-     * Null si elle n'éxiste pas
+     * Return value associate to index variable or null if doesn't exists
      *
      * @param mixed $index
      *
      * @return mixed
      */
-    public function get($index) 
-	{
+    public function get($index)
+    {
 
-        if(isset($this->content[$index])){
+        if (isset($this->content[$index])) {
             return $this->content[$index];
-        }else if($index === null){
+        } else if ($index === null) {
             return $this->content;
-        }else{
+        } else {
             return null;
         }
     }
-    
+
 
     /**
-     * Supprime une paire clé/valeur
+     * Delete an pair key/value
      *
      * @param string $index
      *
      * @return void
      */
-    public function delete(string $index){
+    public function delete(string $index)
+    {
 
-        if($this->id === null){
+        if ($this->id === null) {
             $this->getContent();
         }
 
-        if(array_key_exists($index, $this->content)){
+        if (array_key_exists($index, $this->content)) {
             unset($this->content[$index]);
         }
     }
 
 
     /**
-     * Supprime le fichier de persistance
-     * 
-     * @throws WorkException
+     * Delete the persistence file
      *
-     * @return void
+     * @throws WorkException
      */
-    public function purge() : void
+    public function purge(): void
     {
 
         /**
@@ -153,43 +144,40 @@ class LightPersists extends Component implements ObserverInterface
 
         $response->removeCookie(self::COOKIE_NAME);
 
-        try{
+        try {
             unlink(self::STORAGE_PATH . $this->id);
-        }catch(Throwable $e){
+        } catch (Throwable $e) {
             throw new WorkException('Impossible d\'acceder à' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
         }
     }
 
 
-
-
     /**
-     * Perists les modifications
-     * 
-     * @throws WorkException
+     * Save changes
      *
      * @return void
+     * @throws WorkException
+     *
      */
-    private function persists() : void
+    private function persists(): void
     {
 
-        try{
+        try {
             file_put_contents(self::STORAGE_PATH . $this->id . '.txt', serialize($this->content));
-        }catch(Throwable $e){
+        } catch (Throwable $e) {
             throw new WorkException('Impossible d\'acceder à' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
         }
     }
 
 
-
     /**
-     * Recupère le contenu du fichier ou le créer
-     * 
-     * @throws WorkException
+     * Get content of file or create it
      *
      * @return void
+     * @throws WorkException
+     *
      */
-    private function getContent() : void
+    private function getContent(): void
     {
 
         /**
@@ -200,29 +188,25 @@ class LightPersists extends Component implements ObserverInterface
         $id = $request->getCookie(self::COOKIE_NAME);
 
 
-        if($id === null){
+        if ($id === null) {
 
-            /**
-             * @var HttpResponse
-             */
             $response = $this->container->get(HttpResponse::class);
 
             $id = uniqid();
 
-            $response->addCookie(self::COOKIE_NAME, $id, time() + 60 * 60 *24 * 3650, '/' );
+            $response->addCookie(self::COOKIE_NAME, $id, time() + 60 * 60 * 24 * 3650, '/');
 
-            try{
+            try {
                 file_put_contents(self::STORAGE_PATH . $id . '.txt', '');
-            }catch(Throwable $e){
+            } catch (Throwable $e) {
                 throw new WorkException('Impossible d\'acceder à' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
             }
 
-        }else{
-            try{
+        } else {
+            try {
                 $data = file_get_contents(self::STORAGE_PATH . $id . '.txt');
-                //r($this->content);
                 $this->content = unserialize($data);
-            }catch(Throwable $e){
+            } catch (Throwable $e) {
                 throw new WorkException('Impossible d\'acceder à' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
             }
         }

@@ -3,57 +3,32 @@
 namespace NoMess\HttpRequest;
 
 use NoMess\Exception\WorkException;
-use NoMess\HttpSession\HttpSession;
 
-class HttpRequest 
+class HttpRequest
 {
 
 
-    private const SESSION_DATA      = 'nomess_persiste_data';
+    private const SESSION_DATA = 'nomess_persiste_data';
+
+    private ?array $error = array();
+
+    private ?array $success = array();
+
+    private ?array $parameters = array();
+
+    private ?array $render = array();
 
 
-
-    /**
-     *
-     * @var array
-     */
-    private $error = array();
-
-
-    /**
-     *
-     * @var array
-     */
-    private $success = array();
-
-
-    /**
-     *
-     * @var array
-     */
-    private $parameters = array();
-
-
-    /**
-     *
-     * @var array
-     */
-    private $render = array();
-
-
-
-    
     public function __construct()
     {
 
-
-        if(isset($_SESSION[self::SESSION_DATA])){
-            foreach($_SESSION[self::SESSION_DATA] as $key => $data){
-                if($key === 'error'){
+        if (isset($_SESSION[self::SESSION_DATA])) {
+            foreach ($_SESSION[self::SESSION_DATA] as $key => $data) {
+                if ($key === 'error') {
                     $this->error = $data;
-                }else if($key === 'success'){
+                } else if ($key === 'success') {
                     $this->success = $data;
-                }else{
+                } else {
                     $this->parameters[$key] = $data;
                 }
             }
@@ -64,107 +39,91 @@ class HttpRequest
 
 
     /**
-     * Ajoute une erreur
+     * Add an error
      *
      * @param string $message
-     * @return void
      */
-    public function setError(string $message) : void
+    public function setError(string $message): void
     {
         $this->error[] = $message;
     }
 
 
-
     /**
-     * Ajoute un succès
+     * Add an success
      *
      * @param string $message
-     * @return void
      */
-    public function setSuccess(string $message) : void
+    public function setSuccess(string $message): void
     {
         $this->success[] = $message;
     }
 
 
-
     /**
-     * Supprime les message de succès
-     *
-     * @return void
+     * Delete all success message
      */
-    public function resetSuccess() : void
+    public function resetSuccess(): void
     {
         $this->success = null;
     }
 
 
-
-
     /**
-     * Ajoute un paramêtre à la requête
-     * Si value est un tableau, la clé sera associé à l'élément parent:
-     * 
-     * $param['key']['keyOfValue] = value;
-     * et non 
-     * $param['key'] = ['keyOfValue => value];
-     * 
-     * 
-     * 
+     * Add an parameter of request
+     *
      * @param mixed $key
-     * @param mixed $value 
-     * @return void
+     * @param mixed $value
      */
-    public function setParameter($key, $value) : void
-	{
+    public function setParameter($key, $value): void
+    {
         $this->parameters[$key] = $value;
-	}
+    }
 
     /**
-     * Retourne les paramètre $_POST et $_GET, si concurrence, renvoie la valeur de $_POST
-     * Si le paramêtre n'éxiste pas ou est vide, NULL est retourné
+     *
+     * Return an paremeter from GET or POST, if conflict exists, POST is the default choice
+     * If doesn't exists parameter, null is retuned
      *
      * @param string $index
-     * @param bool $escape si TRUE (par defaut) la fonction htmlspecialchars sera appliqué
-     *
+     * @param bool $escape True by default, htmlspecialchars is apply
      * @return mixed
      */
     public function getParameter(string $index, bool $escape = true)
     {
 
-        if(isset($_POST[$index]) && !empty($_POST[$index])){
+        if (isset($_POST[$index]) && !empty($_POST[$index])) {
 
-            if($escape === true){
-                if(is_array($_POST[$index])){
-                    array_walk_recursive($_POST[$index], function($key, &$value){
+            if ($escape === true) {
+                if (is_array($_POST[$index])) {
+                    array_walk_recursive($_POST[$index], function ($key, &$value) {
                         $value = htmlspecialchars($value);
-			$value = trim($value);
+                        $value = trim($value);
                     });
                 }
 
                 return $_POST[$index];
-            }else{
+            } else {
                 return $_POST[$index];
             }
 
-        }else if(isset($_GET[$index]) && !empty($_GET[$index])){
+        } else if (isset($_GET[$index]) && !empty($_GET[$index])) {
 
-            if($escape === true){
+            if ($escape === true) {
 
-                if(is_array($_GET[$index])){
-                    array_walk_recursive($_GET[$index], function($key, &$value){
+                if (is_array($_GET[$index])) {
+                    array_walk_recursive($_GET[$index], function ($key, &$value) {
                         $value = htmlspecialchars($value);
-			$value = trim($value);
+                        $value = trim($value);
                     });
                 }
 
                 return $_GET[$index];
-            }else{
+            } else {
                 return $_GET[$index];
             }
 
-        }else{
+        } else {
 
             return null;
         }
@@ -172,56 +131,53 @@ class HttpRequest
 
 
     /**
-     * Déconseillé
-     * Retourne la variable POST complète
+     * Return all value of POST variable
      *
      * @return array|null
      */
-    public function getParameters() : ?array
+    public function getParameters(): ?array
     {
         return ['POST' => $_POST, 'GET' => $_GET];
     }
 
-    
+
     /**
-     * Rends temporairement une valeur
+     * Add an temporary value
      *
      * @param string $serviceStamp
      * @param mixed $value
-     * @return void
      */
-    public function setRender(string $serviceStamp, $value) : void
-	{
-		$this->render[$serviceStamp] = $value;
-	}
+    public function setRender(string $serviceStamp, $value): void
+    {
+        $this->render[$serviceStamp] = $value;
+    }
 
 
     /**
-     * Récupère une valeur temporaire
+     * Get an temporary value
      *
      * @param string $serviceStamp
      * @return mixed
      */
-	public function getRender(string $serviceStamp) 
-	{
-		if(array_key_exists($serviceStamp, $this->render)){
+    public function getRender(string $serviceStamp)
+    {
+        if (array_key_exists($serviceStamp, $this->render)) {
             return $this->render[$serviceStamp];
-		}
+        }
 
-		throw new WorkException($serviceStamp . ' n\'a rien retourné');
-	}
+        throw new WorkException($serviceStamp . ' n\'a rien retourné');
+    }
 
 
     /**
-     * Retourne les fichiers envoyé par POST (Global $_FILES)
+     * Return the file sended by POST request
      *
      * @param string $index
-     *
      * @return array|null
      */
-    public function getFile(string $index) : ?array
+    public function getPart(string $index): ?array
     {
-        if(isset($_FILES[$index])){
+        if (isset($_FILES[$index])) {
             return $_FILES[$index];
         }
 
@@ -229,39 +185,34 @@ class HttpRequest
     }
 
 
-
-
     /**
-     * Retour le cookie associé a l'index, NULL si il est vide ou n'éxiste pas
+     * Return associate cookie of index variable, null if empty of doesn't exists
      *
      * @param string $index
-     *
      * @return mixed
      */
     public function getCookie(string $index)
     {
-        if(isset($_COOKIE[$index]) && !empty($_COOKIE[$index])){
+        if (isset($_COOKIE[$index]) && !empty($_COOKIE[$index])) {
             return $_COOKIE[$index];
-        }else{
+        } else {
             return null;
         }
     }
 
 
     /**
-     * Retourne toute les donnée de $_POST, si $escape vaut true, la fonction 
-     * htmlspecialchars sera appliqué a toute les valeurs recursivement
+     * Return all data contained in POST, if espcape worth true, htmlspecialchars will be apply in value (recursively)
      *
      * @param bool $escape
-     *
      * @return array|null
      */
-    public function getPost(bool $escape = false) : ?array
+    public function getPost(bool $escape = false): ?array
     {
-        if($escape === true){
-            array_walk_recursive($_POST, function($key, &$value){
+        if ($escape === true) {
+            array_walk_recursive($_POST, function ($key, &$value) {
                 htmlspecialchars($value);
-		$value = trim($value);
+                $value = trim($value);
             });
 
         }
@@ -270,19 +221,17 @@ class HttpRequest
     }
 
     /**
-     * Retourne toute les donnée de $_GET, si $escape vaut true, la fonction 
-     * htmlspecialchars sera appliqué à toute les valeurs recursivement
+     * Return all data contained in GET, if espcape worth true, htmlspecialchars will be apply in value (recursively)
      *
      * @param bool $escape
-     *
      * @return array|null
      */
-    public function getGet(bool $escape = false) : ?array
+    public function getGet(bool $escape = false): ?array
     {
-        if($escape === true){
-            array_walk_recursive($_GET, function($key, &$value){
+        if ($escape === true) {
+            array_walk_recursive($_GET, function ($key, &$value) {
                 htmlspecialchars($value);
-		$value = trim($value);
+                $value = trim($value);
             });
         }
 
@@ -291,32 +240,32 @@ class HttpRequest
 
 
     /**
-     * Retourne le contenu de $_SERVER
+     * Return all content of $_SERVER variable
      *
      * @return array
      */
-    public function getServer() : array
+    public function getServer(): array
     {
         return $_SERVER;
     }
 
 
-    public function getData() : array
+    public function getData(): array
     {
         $array = array();
 
-        if(!empty($this->error)){
+        if (!empty($this->error)) {
             $array['error'] = $this->error;
         }
 
-        if(!empty($this->success)){
+        if (!empty($this->success)) {
             $array['success'] = $this->success;
         }
 
-        if(!empty($this->parameters)){
+        if (!empty($this->parameters)) {
             $array = array_merge($array, $this->parameters);
         }
-        
+
         return $array;
     }
 }

@@ -1,49 +1,77 @@
 <?php
+
 namespace NoMess\Database;
 
+use NoMess\Exception\WorkException;
 
 class PDOFactory implements IPDOFactory
 {
 
-	private const DATA = ROOT . 'App/config/database.php';
+    private const DATA = ROOT . 'App/config/database.php';
 
-	/**
-	 * Insatnce de PDO
-	 *
-	 * @var \PDO
-	 */
-	private $instance;
+    /**
+     * Configuration
+     */
+    private ?string $config;
 
-	/**
-	 * Administre les instances
-	 *
-	 * @return \PDO
-	 */
-	public function getConnection() : \PDO
-	{
-		if($this->instance === null){
-			$this->createConnection();
-		}
-		
-		return $this->instance;
-	}
+    private ?array $tabConfiguration;
 
-	/**
-	 * Initialise une connection
-	 *
-	 * @return void
-	 */
-	private function createConnection() : void
-	{
-		$tab = require_once self::DATA;
+    private string $transaction;
 
-		$db = new \PDO('mysql:host=' . $tab['host'] . ';dbname=' . $tab['dbname'] . '', $tab['user'], $tab['password'], array(
-				\PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'
-		));
+    public function __construct()
+    {
+        $this->tabConfiguration = require self::DATA;
+    }
 
-		$db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
-		$this->instance = $db;
+    /**
+     * Select an configuration by id
+     *
+     * @param string $id
+     */
+    public function selectConfiguration(string $idConfig): void
+    {
+        $this->config = $idConfig;
+        $this->createConnection();
+    }
 
-	}
+
+    /**
+     * Manage instance of PDO
+     *
+     * @return \PDO
+     */
+    public function getConnection(string $idConfig = 'default'): \PDO
+    {
+        if (empty(Instance::$instance) || !isset(Instance::$instance[$idConfig])) {
+            $this->config = $idConfig;
+            $this->createConnection();
+        }
+
+        return Instance::$instance[$idConfig];
+    }
+
+
+    /**
+     * Initialize an connection
+     */
+    private function createConnection(): void
+    {
+
+        if (!isset($this->tabConfiguration[$this->config])) {
+            throw new WorkException('PDOFactory encountered an error: impossible of find configuration for "' . $this->config . '"');
+        } else {
+            $tab = $this->tabConfiguration[$this->config];
+        }
+
+        $db = new \PDO($tab['server'] . ':host=' . $tab['host'] . ';port=' . $tab['port'] . ';dbname=' . $tab['dbname'] . '', $tab['user'], $tab['password'], array(
+            \PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'
+        ));
+
+        $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
+        Instance::$instance[$this->config] = $db;
+
+    }
+
 }

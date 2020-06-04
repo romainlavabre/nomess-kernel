@@ -1,5 +1,5 @@
 <?php
-namespace NoMess\DataManager\Builder;
+namespace NoMess\Component\DataManager\Builder;
 
 use NoMess\Exception\WorkException;
 
