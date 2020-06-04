@@ -20,11 +20,12 @@
             "NoMess\\HttpSession\\": "HttpSession/",
             "NoMess\\HttpRequest\\" : "HttpRequest/",
             "NoMess\\HttpResponse\\": "HttpResponse/",
+            "NoMess\\DataManager\\": "DataManager/",
             "NoMess\\Database\\": "Database/",
             "NoMess\\Router\\": "Router/",
             "NoMess\\Manager\\": "Manager/",
+            "NoMess\\Web\\": "Web/",
             "NoMess\\service\\": "Service/",
-            "NoMess\\Component\\": "Component/"
 		}
     },
     "minimum-stability": "stable"
