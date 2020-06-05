@@ -12,10 +12,7 @@ use NoMess\ObserverInterface;
 use Throwable;
 
 
-/**
- * LightPersists est un conteneur de persistance légé et plus malléable que les sessions,
- * le cookie généré expire au bout de 10 ans, ainsi, c'est au développeur de supprimer manuellement les données
- */
+
 class LightPersists extends Component implements ObserverInterface
 {
 
@@ -55,8 +52,6 @@ class LightPersists extends Component implements ObserverInterface
 
         if (isset($this->content[$index])) {
             return $this->content[$index];
-        } else {
-            return null;
         }
     }
 

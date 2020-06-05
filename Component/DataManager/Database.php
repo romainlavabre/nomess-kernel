@@ -36,7 +36,7 @@ class Database extends Component
 
 
     /**
-     * @Inject()
+     * @Inject
      *
      * Database constructor.
      * @param DataManager $dataManager
@@ -135,44 +135,62 @@ class Database extends Component
 
 
     /**
-     * @param array $configuration he runtime configuration allow temporarly disable once (or multiple) configuration or add any more.
-     * Possible parameters:<br><br>
-     * Depend:<br>
-     * &nbsp&nbsp&nbsp&nbsp - false : disable an dependency<br>
-     * &nbsp&nbsp&nbsp&nbsp - Full\Quanlified\class::methodName : Use specified class::method to inject value<br>
-     * &nbsp&nbsp&nbsp&nbsp - Mixed value : All arbitrary value, if is an array, DataManager will attempt insertion as a block, then if an error has occured it will iterate your array<br>
-     * &nbsp&nbsp&nbsp&nbsp - Array object : This parameter is an extention of full name of class, because, the data taken is defer, but it more, you can pass an array data for unique setter method, consequently, you must pass an reference of object dependency
-     *      if you need defer method and pass an array data, this is option is good choice
-     * Transaction:<br>
-     * &nbsp&nbsp&nbsp&nbsp - false : Disables an transaction for this encapsed object<br>
-     * &nbsp&nbsp&nbsp&nbsp - true : Enables an transaction for this encapsed object<br>
+     * Modify the insert configuration
      * Insert:<br>
-     * &nbsp&nbsp&nbsp&nbsp - false : Insertion disabled<br>
-     * &nbsp&nbsp&nbsp&nbsp - nomess_backTransaction : The inserted value is returned by transaction<br>
-     * &nbsp&nbsp&nbsp&nbsp - Mixded value : All arbitrary value, if is an array, DataManager will attempt insertion as a block, then if an error has occured it will iterate your array<br>
-     * &nbsp&nbsp&nbsp&nbsp - Array object : This parameter is an extention of full name of class, because, the data taken is defer, but it more, you can pass an array data for unique setter method, consequently, you must pass an reference of object dependency
-     *      if you need defer method and pass an array data, this is option is good choice
-     * <br><br>
-     * Format<br>
+     *  &nbsp;&nbsp;&nbsp;&nbsp; - false : Insertion disabled<br>
+     *  &nbsp;&nbsp;&nbsp;&nbsp; - nomess_backTransaction : The inserted value is returned by transaction<br>
+     *  &nbsp;&nbsp;&nbsp;&nbsp; - Mixded value : All arbitrary value, if is an array, DataManager will attempt insertion as a block, then if an error has occured it will iterate your array<br>
+     *  &nbsp;&nbsp;&nbsp;&nbsp; - Array object : This parameter is an extention of full name of class, because, the data taken is defer, but it more, you can pass an array data for unique setter method, consequently, you must pass an reference of object dependency if you need defer method and pass an array data, this is option is good choice
      *
-     * ['depend' => [<br>
-     *          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp 'setterMethod' => false    |     string('Full\Quanlified\class::methodName')    |   mixed value     | ['getter' => ObjectReference|array(ObjectReference) [, ...]],<br>
-     *          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp '...'<br>
-     *          &nbsp&nbsp&nbsp&nbsp ],<br>
-     * 'transation' => [<br>
-     *          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp 'setterMethod' => true/false,<br>
-     *          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp '...'<br>
-     *        &nbsp&nbsp&nbsp&nbsp ],<br>
-     * 'insert' => [<br>
-     *          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp 'setterMethod' => false |   'nomess_backTransaction'     |    mixed value    |   ['getter' => ObjectReference|array(ObjectReference) [, ...]],<br>
-     *          &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp '...'<br>
-     *      &nbsp&nbsp&nbsp&nbsp ]<br>
-     * ]<br>
-     * @return Database
+     * Format: [setterMethod => value ]
+     *
+     * @param array $configuration
+     * @return $this
      */
-    public function setConfiguration(array $configuration): Database
+    public function setInsertConfiguration(array $configuration): Database
     {
-        $this->data[$this->cursor]['runtimeConfig'] = $configuration;
+        $this->data[$this->cursor]['runtimeConfig']['insert'] = $configuration;
+
+        return $this;
+    }
+
+    /**
+     * Modify the depend configuration
+     * Depend:<br>
+     * &nbsp;&nbsp;&nbsp;&nbsp; - false : disable an dependency<br>
+     * &nbsp;&nbsp;&nbsp;&nbsp; - Full\Quanlified\class::methodName : Use specified class::method to inject value<br>
+     * &nbsp;&nbsp;&nbsp;&nbsp; - Mixed value : All arbitrary value, if is an array, DataManager will attempt insertion as a block, then if an error has occured it will iterate your array<br>
+     * &nbsp;&nbsp;&nbsp;&nbsp; - Array object : This parameter is an extention of full name of class, because, the data taken is defer, but it more, you can pass an array data for unique setter method, consequently, you must pass an reference of object dependency
+     *      if you need defer method and pass an array data, this is option is good choice
+     *
+     * Format: [ setterMethod => value ]
+     *
+     * @param array $configuration
+     * @return $this
+     */
+    public function setDependConfiguration(array $configuration): Database
+    {
+        $this->data[$this->cursor]['runtimeConfig']['depend'] = $configuration;
+
+        return $this;
+    }
+
+    /**
+     * Modify the transaction configuration
+     * Transaction:<br>
+     * &nbsp;&nbsp;&nbsp;&nbsp; - false : Disables an transaction for this encapsed object<br>
+     * &nbsp;&nbsp;&nbsp;&nbsp; - true : Enables an transaction for this encapsed object<br>
+     *
+     * Format: [ className => true|false ]
+     *
+     * @param array $configuration
+     * @return $this
+     */
+    public function setTransactionConfiguration(array $configuration): Database
+    {
+        $this->data[$this->cursor]['runtimeConfig']['transaction'] = $configuration;
+
+        return $this;
     }
 
 
@@ -243,10 +261,8 @@ class Database extends Component
 
     /**
      * Launch builder if cache file doesn't exists
-     *
-     * @throws \NoMess\Exception\WorkException
      */
-    public function controlCache(): void
+    private function controlCache(): void
     {
         if(!file_exists(self::CACHE_DATA_MANAGER)){
             $buildMonitoring = $this->container->get(BuilderDataManager::class);

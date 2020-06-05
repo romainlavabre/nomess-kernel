@@ -61,6 +61,12 @@ abstract class Resolver
 
 
     /**
+     * Id of database configuration
+     */
+    public ?string $idConfig;
+
+
+    /**
      * Contains an array with configuration of dependency
      */
     public ?array $dependency;
@@ -141,51 +147,50 @@ abstract class Resolver
             foreach ($output[0] as $value) {
 
                 $columnName = str_replace(':', '', $value);
+                $type = (string)$this->propertyMapping[$columnName]['type'];
 
                 //If this column exists in array of configuration, create line, else, search a good object provider
 
                 if(isset($this->parameter[str_replace(':', '', $columnName)])){
-                    $this->bindValue[] = '$req->bindValue("' . $value . '", $' . $columnName . ');';
+                    $this->bindValue[$value] = '$req->bindValue("' . $value . '", $' . $columnName . ');';
                 }elseif (isset($this->propertyMapping[$columnName])) {
 
-                    $type = (string)$this->propertyMapping[$columnName]['type'];
                     $scope = (string)$this->propertyMapping[$columnName]['scope'];
                     $accessor = (string)$this->propertyMapping[$columnName]['accessor'];
-                    $mutator = (string)$this->propertyMapping[$columnName]['mutator'];
 
                     //If is array type, resolver must create a adaptator
                     if ($type !== 'array') {
 
                         if (isset($this->config[$this->method]['patch'][$columnName])) {
-                            $this->bindValue[] = '$req->bindValue(\'' . $value . '\', ' . $this->config[$this->method]["patch"][$columnName] . ', ' . self::TYPE_BIND_VALUE[$type] . ');';
+                            $this->bindValue[$value] = '$req->bindValue(\'' . $value . '\', ' . $this->config[$this->method]["patch"][$columnName] . ', ' . self::$typeConstPDO[$type] . ');';
                         } elseif ($scope === 'private' || $scope === 'protected') {
 
-                            $this->bindValue[] = '$req->bindValue(\'' . $value . '\', $' . $this->getOnlyClassName($this->className) . '->' . $accessor . '(), ' . self::$typeConstPDO[$type] . ');';
+                            $this->bindValue[$value] = '$req->bindValue(\'' . $value . '\', $' . $this->getOnlyClassName($this->className) . '->' . $accessor . '(), ' . self::$typeConstPDO[$type] . ');';
                         } else {
-                            $this->bindValue[] = '$req->bindValue(\'' . $value . '\', $' . $this->getOnlyClassName($this->className) . '->' . $accessor . ', ' . self::$typeConstPDO[$type] . ');';
+                            $this->bindValue[$value] = '$req->bindValue(\'' . $value . '\', $' . $this->getOnlyClassName($this->className) . '->' . $accessor . ', ' . self::$typeConstPDO[$type] . ');';
                         }
                     } else {
                         if (isset($this->config[$this->method]['patch'][$columnName])) {
-                            $this->bindValue[] = '$req->bindValue(\'' . $value . '\', ' . $this->config[$this->method]["patch"][$columnName] . ', ' . self::$typeConstPDO[$type] . ');';
+                            $this->bindValue[$value] = '$req->bindValue(\'' . $value . '\', ' . $this->config[$this->method]["patch"][$columnName] . ', ' . self::$typeConstPDO[$type] . ');';
                         } elseif ($scope === 'private' || $scope === 'protected') {
 
-                            $this->bindValue[] = '$req->bindValue(\'' . $value . '\', serialize($' . $this->getOnlyClassName($this->className) . '->' . $accessor . '()), ' . self::$typeConstPDO[$type] . ');';
+                            $this->bindValue[$value] = '$req->bindValue(\'' . $value . '\', serialize($' . $this->getOnlyClassName($this->className) . '->' . $accessor . '()), ' . self::$typeConstPDO[$type] . ');';
                         } else {
-                            $this->bindValue[] = '$req->bindValue(\'' . $value . '\', serialize($' . $this->getOnlyClassName($this->className) . '->' . $accessor . '), ' . self::$typeConstPDO[$type] . ');';
+                            $this->bindValue[$value] = '$req->bindValue(\'' . $value . '\', serialize($' . $this->getOnlyClassName($this->className) . '->' . $accessor . '), ' . self::$typeConstPDO[$type] . ');';
                         }
                     }
                 } elseif (!isset($this->propertyMapping[$columnName])) {
 
                     if (isset($this->config[$this->method]['patch'][$columnName])) {
-                        $this->bindValue[] = '$req->bindValue(\'' . $value . '\', ' . $this->config[$this->method]["patch"][$columnName] . ', ' . self::$typeConstPDO[$type] . ');';
+                        $this->bindValue[$value] = '$req->bindValue(\'' . $value . '\', ' . $this->config[$this->method]["patch"][$columnName] . ', ' . self::$typeConstPDO[$type] . ');';
                     } else {
                         $tab = $this->recovery_columnNotFound($columnName);
 
                         if ($type !== 'array') {
-                            $this->bindValue[] = '$req->bindValue(\'' . $value . '\', $' . $this->getOnlyClassName($this->className) . '->' . $tab['classname'] . $tab['method'] . ', ' . self::$typeConstPDO[$type] . ');';
+                            $this->bindValue[$value] = '$req->bindValue(\'' . $value . '\', $' . $this->getOnlyClassName($this->className) . '->' . $tab["classname"] . $tab["method"] . ', ' . self::$typeConstPDO[$type] . ');';
 
                         } else {
-                            $this->bindValue[] = '$req->bindValue(\'' . $value . '\', serialize($' . $this->getOnlyClassName($this->className) . '->' . $tab['classname'] . $tab['method'] . '), ' . self::$typeConstPDO[$type] . ');';
+                            $this->bindValue[$value] = '$req->bindValue(\'' . $value . '\', serialize($' . $this->getOnlyClassName($this->className) . '->' . $tab["classname"] . $tab["method"] . '), ' . self::$typeConstPDO[$type] . ');';
 
                         }
                     }
@@ -193,7 +198,6 @@ abstract class Resolver
             }
         }
     }
-
 
 
 

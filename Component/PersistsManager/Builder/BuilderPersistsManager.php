@@ -207,7 +207,7 @@ class BuilderPersistsManager
 
 
         if($type === null){
-            return mixed;
+            return 'mixed';
         }else{
             return $type;
         }

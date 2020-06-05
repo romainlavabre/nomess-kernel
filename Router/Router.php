@@ -12,8 +12,6 @@ use Twig\Loader\FilesystemLoader;
 use NoMess\HttpRequest\HttpRequest;
 use NoMess\HttpSession\HttpSession;
 use NoMess\HttpResponse\HttpResponse;
-use NoMess\Router\Builder\BuildRoutes;
-use NoMess\DataManager\Builder\BuilderDataManager;
 
 
 
@@ -248,13 +246,13 @@ class Router implements SubjectInterface
     public function bindTwig(string $template) : void
     {
         $loader = new FilesystemLoader(self::BASE_ENVIRONMENT);
-        $this->engine = new Environment($loader, [
+        $engine = new Environment($loader, [
             'cache' => false,
         ]);
 
-        $this->engine->addExtension(new \Twig\Extension\DebugExtension());
+        $engine->addExtension(new \Twig\Extension\DebugExtension());
 
-        echo $this->engine->render($template, [
+        echo $engine->render($template, [
             'WEBROOT' => WEBROOT
         ]);
     }
@@ -263,7 +261,6 @@ class Router implements SubjectInterface
     /**
      * Control existing cache file of route
      *
-     * @throws \NoMess\Exception\WorkException
      */
     private function controlCacheFile(): void
     {

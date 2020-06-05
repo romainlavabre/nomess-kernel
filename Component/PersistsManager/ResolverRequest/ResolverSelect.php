@@ -97,7 +97,6 @@ class ResolverSelect extends Resolver
     {
 
         $tabNotFound = array();
-        $tableMapping = array();
 
         //Extract column not found in target object
         foreach ($this->setData as $column => $alias) {

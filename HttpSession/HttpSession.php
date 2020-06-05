@@ -57,8 +57,6 @@ class HttpSession
     {
         if (isset($_SESSION[$index])) {
             return $_SESSION[$index];
-        } else {
-            return null;
         }
     }
 
@@ -83,7 +81,7 @@ class HttpSession
      *
      * @param string $index
      */
-    public function delete(string $index)
+    public function delete(string $index): void
     {
         if (array_key_exists($index, $_SESSION)) {
             unset($_SESSION[$index]);

@@ -166,7 +166,7 @@ class PersistsManager extends Component
      * @param array|null $parameter Parameters for request, must be an array with ['parameter' => $value]
      * @param string $idMethod id of the method to call, it's 'update' by default
      */
-    public function update($object, ?array $parameter = null, string $idMethod = 'update'): void
+    public function update(object $object, ?array $parameter = null, string $idMethod = 'update'): void
     {
         try {
             $this->className = get_class($object);

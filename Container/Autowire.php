@@ -42,7 +42,7 @@ class Autowire
 
                 if ($tabReflectionParameters !== null) {
 
-                    $tabParameters = $this->parametersResolver($tabReflectionParameters, $make);
+                    $tabParameters = $this->parametersResolver($tabReflectionParameters, $make, $reflectionClass);
 
                     $this->instance[$key] = $reflectionClass->newInstanceArgs($tabParameters);
                     $this->setValueProperty($this->instance[$key]);
@@ -83,7 +83,7 @@ class Autowire
 
         foreach($tabMethod as $reflectionMethod){
             if(strpos($reflectionMethod->getDocComment(), '@Inject') && !$reflectionMethod->isConstructor()){
-                $tabParameters = $this->parametersResolver($reflectionMethod->getParameters(), $make);
+                $tabParameters = $this->parametersResolver($reflectionMethod->getParameters(), $make, $reflectionClass);
 
                 $reflectionMethod->invokeArgs($object, $tabParameters);
             }
@@ -125,7 +125,7 @@ class Autowire
      * @throws WorkException
      * @throws \ReflectionException
      */
-    private function parametersResolver(array $tabReflectionParameters, bool $make): array
+    private function parametersResolver(array $tabReflectionParameters, bool $make, \ReflectionClass $reflectionClass): array
     {
 
         $tabParameters = array();

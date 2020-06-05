@@ -74,7 +74,7 @@ class DataManager
     /**
      * Stock temporarly the dependance of current object
      */
-    private ?array $dependancy;
+    private ?array $dependency;
 
 
     /**
@@ -134,7 +134,7 @@ class DataManager
                 foreach ($value['request'] as $key => $param) {
 
                     $this->key = $key;
-                    $this->dependancy = $value['depend'];
+                    $this->dependency = $value['depend'];
                     $this->runtime = $value['runtimeConfig'];
                     $this->persistsManager = $value['persistsManager'];
 
@@ -143,10 +143,9 @@ class DataManager
                         $this->getMethod($key);
 
                         $this->doTransaction($param);
-                        //charge les objets encapsulé
+
+                        //Charge the wrapped object
                         $this->explorer();
-
-
 
                     } catch (\Throwable $e) {
 
@@ -156,7 +155,7 @@ class DataManager
                         if(NOMESS_CONTEXT === 'DEV') {
 
                             if ($this->definition !== null) {
-                                throw new WorkException('La transation ' . (string)$this->definition->base->attributes()['class'] . '->' . $this->method . '() à échoué<br><br><br><span>Line ' . $e->getLine() . ' in ' . str_replace(ROOT, '', $e->getFile()) . '<br> ' . $e->getMessage() . '</span>');
+                                throw new WorkException('The transaction ' . (string)$this->definition->base->attributes()['class'] . '->' . $this->method . '() have crash<br><br><br><span>Line ' . $e->getLine() . ' in ' . str_replace(ROOT, '', $e->getFile()) . '<br> ' . $e->getMessage() . '</span>');
                             } else {
                                 throw new WorkException('<span>Line ' . $e->getLine() . ' in ' . str_replace(ROOT, '', $e->getFile()) . '<br> ' . $e->getMessage() . '</span>');
                             }
@@ -166,7 +165,7 @@ class DataManager
                             $request = $this->container->get(HttpRequest::class);
                             $datacenter = $this->container->get(DataCenter::class);
 
-                            $message = $datacenter->getData('error_data_manager');
+                            $message = $datacenter->get('error_data_manager');
 
                             if($message === null){
                                 $request->setError('Une erreur s\'est produite');
@@ -174,6 +173,7 @@ class DataManager
                                 $request->setError($message);
                             }
 
+                            //Delete all success message
                             $request->resetSuccess();
 
                         }
@@ -347,14 +347,14 @@ class DataManager
 
                         foreach ($value as $key => $array) {
 
-                            foreach ($depend as $get => $array) {
+                            foreach ($array as $get => $depend) {
 
-                                if (is_array($array)) {
-                                    foreach ($array as $object) {
-                                        $this->pushData($setter, $this->pullData($get, $object));
+                                if (is_array($depend)) {
+                                    foreach ($depend as $object) {
+                                        $this->pushData($method, $this->pullData($get, $object));
                                     }
                                 } else {
-                                    $this->pushData($setter, $this->pullData($get, $array));
+                                    $this->pushData($method, $this->pullData($get, $depend));
                                 }
                             }
                         }
@@ -384,8 +384,8 @@ class DataManager
             return $this->object;
         }
 
-        if ($this->dependancy !== null) {
-            foreach ($this->dependancy as $value) {
+        if ($this->dependency !== null) {
+            foreach ($this->dependency as $value) {
                 if (get_class($value) === $className) {
                     return $value;
                 }
@@ -531,7 +531,7 @@ class DataManager
     private function doTransaction(array $param): void
     {
 
-        //Récupère le nom de la class (avec namespace)
+        //Get full class name
         $type = $this->getClassName($param);
 
         if ($type === null) {
@@ -539,7 +539,7 @@ class DataManager
             die();
         }
 
-        //Récupère les définition à appliquer pour cette class
+        //Get the definitions in xml file to apply
         $definition = $this->getDefinition($type);
 
         if ($definition !== null) {
@@ -567,18 +567,16 @@ class DataManager
 
                 $persistsManager = $this->container->make(PersistsManager::class);
 
-                if(is_array($this->persistsManager) && array_key_exists($className, $this->persistsManager)) {
-                    $className = get_class($param[0]);
-
+                if(is_array($this->persistsManager) && array_key_exists($type, $this->persistsManager)) {
 
                     $persistsManager->$method(
-                        $this->persistsManager[$className]['object'],
-                        $this->persistsManager[$className]['parameters'],
-                        ($this->persistsManager[$className]['idMethod'] !== null) ? $this->persistsManager[$type]['idMethod'] : $this->method
+                        $this->persistsManager[$type]['object'],
+                        $this->persistsManager[$type]['parameters'],
+                        ($this->persistsManager[$type]['idMethod'] !== null) ? $this->persistsManager[$type]['idMethod'] : $this->method
                     );
                 }else{
                     $persistsManager->$method(
-                        $param[0]
+                        $type
                     );
                 }
 
@@ -799,8 +797,8 @@ class DataManager
                         try {
                             $this->object->$method($data);
                         } catch (Throwable $th) {
-                            foreach ($data as $data) {
-                                $this->object->$method($data);
+                            foreach ($data as $value) {
+                                $this->object->$method($value);
                             }
                         }
                     } else {
@@ -811,9 +809,9 @@ class DataManager
         } else {//Si public
 
             if ($control === false) {
-                $this->object->$method = $value;
+                $this->object->$method = $data;
             } elseif ($this->object->$method === null) {
-                $this->object->$method = $value;
+                $this->object->$method = $data;
             }
         }
     }

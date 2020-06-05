@@ -116,8 +116,8 @@ abstract class Distributor implements SubjectInterface
 
     /**
      *
-     * Redirect toward an local ressource, if forward method is called, the pending operation
-     * will be executed and the data will be presente in next context
+     * Redirects to a local resource, if the forward method is called, pending operations
+     * will be executed and the data will be presented in the following context
      *
      * @param string $url
      * @return Distributor
@@ -138,8 +138,7 @@ abstract class Distributor implements SubjectInterface
 
 
     /**
-     * Redirect toward an local ressource, if forward method is called, the pending operation
-     * will be executed
+     * Redirects to an external resource, if the forward method is called, pending operations will be executed
      *
      * @param string $url
      * @return Distributor
@@ -156,7 +155,7 @@ abstract class Distributor implements SubjectInterface
 
 
     /**
-     * Bind the template engine to the response
+     * Binds the twig model engine to the response
      *
      * @param string $template
      * @return Distributor
@@ -192,7 +191,7 @@ abstract class Distributor implements SubjectInterface
 
 
     /**
-     * Bind an php file to the response
+     * Binds a php file to the response
      *
      * @param string $template
      * @return Distributor

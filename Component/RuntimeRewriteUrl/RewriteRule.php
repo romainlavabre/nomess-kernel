@@ -7,8 +7,6 @@ use NoMess\ObserverInterface;
 use NoMess\Component\Component;
 use NoMess\Exception\WorkException;
 
-use function DI\value;
-
 class RewriteRule extends Component implements ObserverInterface
 {
 
@@ -74,7 +72,7 @@ class RewriteRule extends Component implements ObserverInterface
     /**
      * Delete an rewrite rule
      *
-     * @param string $index
+     * @param string $id
      *
      * @return bool
      */
@@ -97,7 +95,7 @@ class RewriteRule extends Component implements ObserverInterface
      *
      * @param string $search
      */
-    public function escape(string $search) : string
+    private function escape(string $search) : string
     {
 
         return str_replace("'", "’", $search);
@@ -138,11 +136,11 @@ class RewriteRule extends Component implements ObserverInterface
 
 
     /**
-     * Réécrie les urls
+     * Rewrite url
      *
      * @return void
      */
-    public function rewrite() : void
+    private function rewrite() : void
     {
         if(!empty($this->contentRule)){
 
@@ -195,11 +193,11 @@ class RewriteRule extends Component implements ObserverInterface
 
 
     /**
-     * En cas de modification, reconstruit le fichier de regle
+     * Rebuild rule file
      *
      * @return void
      */
-    public function persiste() : void
+    private function persiste() : void
     {
 
         if($this->updateRule === true){
