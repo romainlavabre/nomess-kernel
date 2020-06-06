@@ -11,7 +11,6 @@ use NoMess\Exception\WorkException;
 class BuilderPersistsManager
 {
 
-    private const DIR                   = ROOT . 'App/src/Modules/';
     private const CACHE_PATH            = ROOT . 'App/var/cache/pm/persistsmanager.php';
 
     private static array $comment = [
@@ -135,7 +134,7 @@ class BuilderPersistsManager
 
 
             if($column !== null){
-                $type = $this->getTypeProperty($reflectionProperty);
+                $type = $this->getTypeProperty($reflectionProperty, $reflectionClass);
                 $scope = $this->getScopeProperty($reflectionProperty);
                 $accessor = $this->getAccessorProperty($reflectionClass, $reflectionProperty, $scope);
                 $mutator = $this->getMutatorProperty($reflectionClass, $reflectionProperty, $scope);
@@ -170,13 +169,16 @@ class BuilderPersistsManager
             $reflectionProperty = $value;
 
             if(strpos($reflectionProperty->getDocComment(), self::$comment['dependency'])){
-                $this->dependency[$reflectionProperty->getType()->getName()]['scope'] = $this->getScopeProperty($reflectionProperty);
 
-                if($this->dependency[$reflectionProperty->getType()->getName()]['scope'] === 'public'){
-                    $this->dependency[$reflectionProperty->getType()->getName()]['mutator'] = $reflectionProperty->getName();
+                $type = $this->getTypeDependency($reflectionProperty, $reflectionClass);
+
+                $this->dependency[$type]['scope'] = $this->getScopeProperty($reflectionProperty);
+
+                if($this->dependency[$type]['scope'] === 'public'){
+                    $this->dependency[$type]['mutator'] = $reflectionProperty->getName();
                 }else{
                     try {
-                        $this->dependency[$reflectionProperty->getType()->getName()]['mutator'] = $reflectionClass->getMethod('set' . ucfirst($reflectionProperty->getName()))->getName();
+                        $this->dependency[$type]['mutator'] = $reflectionClass->getMethod('set' . ucfirst($reflectionProperty->getName()))->getName();
                     } catch (\ReflectionException $rf) {
 
                         $accessor = $this->searchPatch($reflectionProperty->getName(), $reflectionClass, 'Mutator');
@@ -186,11 +188,44 @@ class BuilderPersistsManager
                                 $reflectionProperty->getName() . ' not found, please, respect convention or add patch 
                                 "@PM\Patch\Accessor(propertyName). Our searching: get' . ucfirst($reflectionProperty->getName()));
                         }else{
-                            $this->dependency[$reflectionProperty->getType()->getName()]['mutator'] = $accessor;
+                            $this->dependency[$type]['mutator'] = $accessor;
                         }
                     }
                 }
             }
+        }
+    }
+
+
+    /**
+     * Return type of dependency
+     *
+     * @param \ReflectionProperty $reflectionProperty
+     * @param \ReflectionClass $reflectionClass
+     * @return string|null
+     * @throws WorkException
+     */
+    private function getTypeDependency(\ReflectionProperty $reflectionProperty, \ReflectionClass $reflectionClass): ?string
+    {
+
+        $comment = $reflectionProperty->getDocComment();
+
+
+        if(strpos($comment, '@PM\Dependency(') !== false){
+            $floorOne = explode('@PM\Dependency(', $comment);
+            $type = trim(explode(')', $floorOne[1])[0]);
+
+            if(!class_exists($type)){
+                throw new WorkException('BuilderPersistsManager encountered an error: property "' . $reflectionProperty->getName() . ' with type: "' . $type . '" is not class in ' . $reflectionClass->getName());
+            }else{
+                return $type;
+            }
+        }else{
+            if(class_exists($reflectionProperty->getType()->getName())){
+                return $reflectionProperty->getType()->getName();
+            }
+
+            throw new WorkException('BuilderPersistsManager encountered an error: property "' . $reflectionProperty->getName() . ' with type: "' . $reflectionProperty->getType()->getName() . '" is not class in ' . $reflectionClass->getName());
         }
     }
 
@@ -201,8 +236,13 @@ class BuilderPersistsManager
      * @param \ReflectionProperty $reflectionProperty
      * @return string
      */
-    private function getTypeProperty(\ReflectionProperty $reflectionProperty): string
+    private function getTypeProperty(\ReflectionProperty $reflectionProperty, \ReflectionClass $reflectionClass): string
     {
+
+        if($reflectionProperty->getType() === null){
+            throw new WorkException('BuilderPeristsManager encountered an error: the type of property "' . $reflectionProperty->getName() . '" of the class ' . $reflectionClass->getName() . ' is unresolved');
+        }
+
         $type = $reflectionProperty->getType()->getName();
 
 

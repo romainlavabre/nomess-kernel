@@ -178,6 +178,7 @@ abstract class Distributor implements SubjectInterface
         $this->engine->addExtension(new \Twig\Extension\DebugExtension());
 
         echo $this->engine->render($template, [
+            'URL' => URL,
             'WEBROOT' => WEBROOT,
             'param' => $this->data,
             'POST' => $this->request->getPost(true),

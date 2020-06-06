@@ -149,7 +149,7 @@ class Builder
 
         $data = '<?php return \'' . serialize($this->routes) . '\';';
 
-        file_put_contents(self::PATH_CACHE . 'route.xml', $data);
+        file_put_contents(self::PATH_CACHE . 'route.php', $data);
     }
 
 

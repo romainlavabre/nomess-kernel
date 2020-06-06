@@ -255,7 +255,8 @@ class Router implements SubjectInterface
         $this->engine->addExtension(new \Twig\Extension\DebugExtension());
 
         echo $this->engine->render($template, [
-            'WEBROOT' => WEBROOT
+            'WEBROOT' => WEBROOT,
+            'URL' => URL
         ]);
     }
 

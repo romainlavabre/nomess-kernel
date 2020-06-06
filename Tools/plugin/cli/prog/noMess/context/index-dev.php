@@ -9,7 +9,8 @@ ini_set('display_errors', 'on');
 ini_set("log_errors", "1");
 
 define('ROOT', str_replace('Web/index.php', '', $_SERVER['SCRIPT_FILENAME']));
-define('WEBROOT', 'public/');
+define('WEBROOT', str_replace('index.php', 'public/', $_SERVER['SCRIPT_NAME']));
+define('URL', str_replace('index.php', '', $_SERVER['SCRIPT_NAME']));
 define('NOMESS_CONTEXT', 'DEV');
 
 ini_set('error_log', ROOT .'App/var/log/error.log');

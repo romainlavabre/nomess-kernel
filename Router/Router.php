@@ -18,7 +18,7 @@ use NoMess\HttpResponse\HttpResponse;
 class Router implements SubjectInterface
 {
 
-    private const CACHE_ROUTING             = ROOT . 'App/var/cache/routes/route.xml';
+    private const CACHE_ROUTING             = ROOT . 'App/var/cache/routes/route.php';
 
     private const BASE_ENVIRONMENT          = 'public';
 
@@ -253,7 +253,8 @@ class Router implements SubjectInterface
         $engine->addExtension(new \Twig\Extension\DebugExtension());
 
         echo $engine->render($template, [
-            'WEBROOT' => WEBROOT
+            'WEBROOT' => WEBROOT,
+            'URL' => URL
         ]);
     }
 

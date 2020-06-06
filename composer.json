@@ -24,7 +24,8 @@
             "NoMess\\Router\\": "Router/",
             "NoMess\\Manager\\": "Manager/",
             "NoMess\\service\\": "Service/",
-            "NoMess\\Component\\": "Component/"
+            "NoMess\\Component\\": "Component/",
+            "NoMess\\": "/"
 		}
     },
     "minimum-stability": "stable"

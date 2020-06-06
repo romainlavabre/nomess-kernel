@@ -93,6 +93,7 @@ function bindTwig(string $template) : void
     $engine->addExtension(new \Twig\Extension\DebugExtension());
 
     echo $engine->render($template, [
+        'URL' => URL,
         'WEBROOT' => WEBROOT
     ]);
 }
