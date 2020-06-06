@@ -120,8 +120,9 @@ class PersistsManager extends Component
      * @param string $fullNameClass Full name of object target
      * @param array|null $parameter Parameters for request, must be an array with ['parameter' => $value]
      * @param string $idMethod id of the method to call, it's 'read' by default
+     * @return PersistsManager
      */
-    public function read(string $fullNameClass, ?array $parameter = null, string $idMethod = 'read'): void
+    public function read(string $fullNameClass, ?array $parameter = null, string $idMethod = 'read'): PersistsManager
     {
         try {
             $this->parameter = $parameter;
@@ -132,6 +133,8 @@ class PersistsManager extends Component
 
         $this->internalMethod = 'read';
         $this->method = $idMethod;
+
+        return $this;
     }
 
 
@@ -141,8 +144,9 @@ class PersistsManager extends Component
      * @param object $object Object target
      * @param array|null $parameter Parameters for request, must be an array with ['parameter' => $value]
      * @param string $idMethod id of the method to call, it's 'create' by default
+     * @return PersistsManager
      */
-    public function create(object $object, ?array $parameter = null, string $idMethod = 'create'): void
+    public function create(object $object, ?array $parameter = null, string $idMethod = 'create'): PersistsManager
     {
         try {
             $this->className = get_class($object);
@@ -156,6 +160,8 @@ class PersistsManager extends Component
         $this->method = $idMethod;
         $this->object = $object;
 
+        return $this;
+
     }
 
 
@@ -165,8 +171,9 @@ class PersistsManager extends Component
      * @param object $object Object target
      * @param array|null $parameter Parameters for request, must be an array with ['parameter' => $value]
      * @param string $idMethod id of the method to call, it's 'update' by default
+     * @return PersistsManager
      */
-    public function update(object $object, ?array $parameter = null, string $idMethod = 'update'): void
+    public function update(object $object, ?array $parameter = null, string $idMethod = 'update'): PersistsManager
     {
         try {
             $this->className = get_class($object);
@@ -180,6 +187,8 @@ class PersistsManager extends Component
         $this->method = $idMethod;
         $this->object = $object;
 
+        return $this;
+
     }
 
 
@@ -189,8 +198,9 @@ class PersistsManager extends Component
      * @param object $object Object target
      * @param array|null $parameter Parameters for request, must be an array with ['parameter' => $value]
      * @param string $idMethod id of the method to call, it's 'delete' by default
+     * @return PersistsManager
      */
-    public function delete(object $object, ?array $parameter = null, string $idMethod = 'delete'): void
+    public function delete(object $object, ?array $parameter = null, string $idMethod = 'delete'): PersistsManager
     {
         try {
 
@@ -205,6 +215,8 @@ class PersistsManager extends Component
         $this->method = $idMethod;
         $this->object = $object;
 
+        return $this;
+
     }
 
 
@@ -212,6 +224,7 @@ class PersistsManager extends Component
      * Launch transaction
      *
      * @return mixed
+     * @throws WorkException
      */
     public function execute()
     {
@@ -248,6 +261,7 @@ class PersistsManager extends Component
      * Take file cache to this class::request
      *
      * @return bool
+     * @throws WorkException
      */
     private function getCache(): ?bool
     {
@@ -275,8 +289,8 @@ class PersistsManager extends Component
     /**
      * Control that configuration hasn't change
      *
-     * @param $class
      * @return bool
+     * @throws WorkException
      */
     private function revalideCache(): bool
     {
@@ -405,7 +419,7 @@ class PersistsManager extends Component
      * Build or rebuild cache and return new cache
      *
      * @return \SimpleXMLElement
-     * @throws \NoMess\Exception\WorkException
+     * @throws \NoMess\Exception\WorkException|\ReflectionException
      */
     private function loadCache($className) : string
     {
