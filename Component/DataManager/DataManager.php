@@ -576,7 +576,7 @@ class DataManager
                     );
                 }else{
                     $persistsManager->$method(
-                        $type
+                        $param[0]
                     );
                 }
 
