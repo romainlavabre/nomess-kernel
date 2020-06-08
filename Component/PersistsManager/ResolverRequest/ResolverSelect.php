@@ -5,16 +5,11 @@ namespace NoMess\Component\PersistsManager\ResolverRequest;
 
 
 use NoMess\Component\PersistsManager\Resolver;
+use NoMess\Exception\WorkException;
 
 
 class ResolverSelect extends Resolver
 {
-
-
-    /**
-     * Contains the bring closer between table and suffix
-     */
-    private array $suffixTable;
 
 
     /**
@@ -28,208 +23,207 @@ class ResolverSelect extends Resolver
     public ?string $className;
 
 
-    /**
-     * Executable
-     * Contains data to insert
-     * [column|alias => method]
-     */
-    private array $dataInsert;
-
-
-    /**
-     * Launcher
-     */
     public function execute(): void
     {
 
-        $this->mappeSuffixTable();
-        $this->parseRequest();
-        $this->buildCache();
+        $columnInfo = $this->parserColumn();
+
+        $this->buildCache($columnInfo);
         $this->registerInitialConfig($this->className);
         $this->purge();
     }
 
 
+
     /**
-     * Specific to select request
-     * Parse request for build class of persistence
+     * Return column info
+     *
+     * @return array
      */
-    private function parseRequest(): void
+    private function parserColumn(): array
     {
 
-        //purge keyword for keep only parameters
-        $tmpOne = explode('FROM', $this->request);
-        $tmpTwo = str_replace('SELECT', '', $tmpOne[0]);
+        $array = array();
+
+        $floorOne = explode('FROM', $this->request);
+        $list = str_replace('SELECT', '', $floorOne[0]);
 
 
-        //If select all, do this, else search column and alias
-        if (trim($tmpTwo) === '*') {
-            foreach ($this->propertyMapping as $key => $value) {
-                $this->setData[$value['column']] = null;
+        //Search an "Alias.*"
+        preg_match('/[.]\.*/', $list, $output);
+
+        if($output === 1 || $output === true){
+            throw new WorkException('Resolver encountered an error: nomess doesn\'t accept a "alias.*" format');
+        }
+
+        //Search the * sign
+        if(strpos($list, '*') !== false){
+            foreach($this->propertyMapping as $value){
+                $array[$value['column']] = [
+                    'column' => $value['column'],
+                    'alias' => null,
+                    'prefix' => null
+                ];
             }
-        } else {
-            $finally = explode(',', $tmpTwo);
 
-            foreach ($finally as $value) {
-                if (strpos($value, 'AS') !== null) {
-                    $tabKeypair = explode('AS', $value);
+            //Search an bad convention
+        }elseif (strpos($list, 'as') !== false){
+            throw new WorkException('Resolver Encountered an error: nomess have found "as" but not "AS", please, capitalize');
+        }else {
+            $tabColumn = explode(',', $list);
 
-                    $this->setData[trim($tabKeypair[0])] = trim($tabKeypair[1]);
-                } else {
-                    $this->setData[$value] = null;
+            foreach ($tabColumn as $column) {
+
+                //If find an alias column
+                if(strpos($column, 'AS') !== false){
+                    $group = explode('AS', $column);
+
+
+                    $return = $this->getExplodeColumn($group[0]);
+
+                    $array[trim($group[0])] = [
+                        'column' => $return['column'],
+                        'alias' => trim($group[1]),
+                        'prefix' => $return['prefix']
+                    ];
+
+                }else{
+
+                    $return = $this->getExplodeColumn($column);
+
+                    $array[$column] = [
+                        'column' => $return['column'],
+                        'alias' => null,
+                        'prefix' => $return['prefix']
+                    ];
                 }
             }
         }
 
-
-        $this->buildParameter();
-        $this->selectGetLine();
-
-
+        return $this->getRelationTable($array);
     }
 
 
     /**
-     * Specifique to select request
-     * Parse request for build the setter
+     * Extract column the column and prefix
+     *
+     * @param string $column
+     * @return array
      */
-    private function selectGetLine(): void
+    private function getExplodeColumn(string $column): array
     {
 
-        $tabNotFound = array();
+        $array = null;
 
-        //Extract column not found in target object
-        foreach ($this->setData as $column => $alias) {
+        //If alias table found
+        if(strpos($column, '.') !== false){
+            $groupPrefixColumn = explode('.', $column);
 
-            $originColumn = explode('.', $column);
+            $array = [
+                'column' => trim($groupPrefixColumn[1]),
+                'prefix' => trim($groupPrefixColumn[0])
+            ];
+        }else{
 
-
-            $finalColumn = null;
-
-            //If suffix exists, get orginal column name, else it's already orginal name
-            if (count($originColumn) > 1) {
-                $finalColumn = $originColumn[1];
-            } else {
-                $finalColumn = $originColumn[0];
-            }
-
-
-            if (!isset($this->propertyMapping[$finalColumn]) || (isset($this->suffixTable) && $this->suffixTable[$this->className] !== $originColumn[0])) {
-                $tabNotFound[$column] = $alias;
-            } else {
-
-                $this->updateParameters($this->className, $this->propertyMapping[$finalColumn], $column, $alias);
-
-            }
+            $array = [
+                'column' => trim($column),
+                'prefix' => null
+            ];
         }
 
-
-        if (!empty($tabNotFound)) {
-
-            $searchPortion = explode('FROM', $this->request);
-
-            preg_match_all('/[a-zA-Z0-9-_&\/\\\~@#]+\s*AS\s*[A-Za-z0-9-_\.]+/', $searchPortion[1], $table);
+        return $array;
+    }
 
 
+    /**
+     * Mapping the suffix by table
+     *
+     * @param array $tabColumn
+     * @return array
+     */
+    private function getRelationTable(array $tabColumn): array
+    {
+        $searchPortion = explode('FROM', $this->request);
 
-            foreach ($tabNotFound as $column => $alias) {
-                //For pregmatch function, taken full name table and alias, if full name column (with alias table)
-                // is equals to aliasTable . column name inside configuration, then create setter
-
-                foreach ($table[0] as $value) {
-                    $tmp = explode('AS', $value);
-
-                    foreach ($this->dependency as $className => $tabColumn) {
-
-
-                        foreach ($tabColumn as $key => $value) {
-
-                            if ($column === trim($tmp[1]) . '.' . $value['column'] && $value['table'] === trim($tmp[0])) {
+        preg_match_all('/[a-zA-Z0-9-_&\/\\\~@#]+\s*AS\s*[A-Za-z0-9-_\.]+/', $searchPortion[1], $table);
 
 
-                                //if alias is not null, setter with alias name, else, with column name (with alias table)
-                                $this->updateParameters($className, $tabColumn[$key], $column, $this->setData[$column]);
+        foreach ($table[0] as $value){
+            $tmp = explode('AS', $value);
+
+            if(isset($this->dependency)){
+                foreach($this->dependency as $className => $configuration){
+
+                    foreach ($configuration as $array) {
+                        if ($array['table'] === trim($tmp[0])) {
+
+                            foreach ($tabColumn as &$arrayColumn){
+
+                                $prefixFind = trim($tmp[1]);
+
+                                if($arrayColumn['prefix'] === $prefixFind){
+                                    $arrayColumn['objectRelation'] = $className;
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
 
+        unset($value);
 
-    /**
-     * Treat an parameter received by select request, whatever is array or scope
-     *
-     * @param string $fullNameClass
-     * @param array $tabConfig
-     * @param string $columnName
-     * @param bool $dependency
-     */
-    private function updateParameters(string $fullNameClass, array $tabConfig, string $columnName, ?string $aliasName): void
-    {
-
-        $columnName = preg_replace('/[a-zA-Z0-9-_&\/\\\~@#]+\.{1}/', '', $columnName);
-
-        if((isset($this->propertyMapping[$columnName]['type']) && $this->propertyMapping[$columnName]['type'] === 'array') || (isset($this->dependency[$fullNameClass][$columnName]['type']) && $this->dependency[$fullNameClass][$columnName]['type'] === 'array')){
-
-            $this->dataInsert[$fullNameClass][] = "\r\t\t\t\t\t\tif(isset(\$data['" . $aliasName . "']) && !empty(\$data['" . (($aliasName !== null) ? $aliasName : $columnName) . "'])){
-                            
-                            \$tmp = unserialize(\$data['" . (($aliasName !== null) ? $aliasName : $columnName) . "']);
-                            
-                            try{
-                                foreach(\$tmp as \$value){
-                                    " .
-                (
-                ($tabConfig['scope'] === 'public')
-                    ? '$' . $this->getOnlyClassName($fullNameClass) . '->' . $tabConfig['mutator'] . '($value);'
-                    : '$' . $this->getOnlyClassName($fullNameClass) . '->' . $tabConfig['mutator'] . ' = $value;'
-                )
-                . "
-                                }  
-                            }catch(\Throwable \$th){
-                            " .
-                (
-                ($tabConfig['scope'] === 'public')
-                    ? "\t$" . $this->getOnlyClassName($fullNameClass) . '->' . $tabConfig['mutator'] . '($tmp);'
-                    : "\t$" . $this->getOnlyClassName($fullNameClass) . '->' . $tabConfig['mutator'] . ' = $tmp;'
-                )
-                . "
-                            }
-                        }
-                        ";
-
-        }else {
-
-            $this->dataInsert[$fullNameClass][] =
-                '$' . $this->getOnlyClassName($fullNameClass) . '->' .
-                (
-                ($tabConfig['scope'] === 'public')
-                    ? $tabConfig['mutator'] . ' = $data["' . (($aliasName !== null) ? $aliasName : $columnName) . '"];'
-                    : $tabConfig['mutator'] . '($data["' . (($aliasName !== null) ? $aliasName : $columnName) . '"]);'
-                );
+        //If relation object doesn't exist, column is to object target
+        foreach ($tabColumn as &$value){
+            if(!array_key_exists('objectRelation', $value)){
+                $value['objectRelation'] = $this->className;
+            }
         }
+
+        return $tabColumn;
+    }
+
+
+    private function buildCache(array $columnInfo): void
+    {
+
+        $classNameCache = $this->generateClassName($this->className . "::" . $this->method);
+
+        $content = $this->getBeginningClass($classNameCache);
+
+        $content .= $this->getObjectTarget($columnInfo);
+
+        if(isset($this->dependency)) {
+            foreach ($this->dependency as $dependencyClassName => $unused) {
+                $content .= $this->getDependency($dependencyClassName, $columnInfo);
+            }
+        }
+
+
+        $content .= $this->getEndClass();
+
+
+        $this->registerCache($content, $classNameCache);
     }
 
 
     /**
-     * Build final cache file
+     * Return php code for beginning class
      *
-     * @throws \NoMess\Exception\WorkException
+     * @param string $classNameCache
+     * @return string
      */
-    private function buildCache(): void
+    private function getBeginningClass(string $classNameCache): string
     {
-
         $parameter = "NoMess\Database\IPDOFactory \$instance, NoMess\Container\Container \$container";
-
-        $classNameCache = str_replace('=', '', base64_encode($this->className . "::" . $this->method));
 
 
         //Add arbitrary parameters given
         $parameter = $this->adjustParameter($parameter);
 
 
-        $content = "<?php
+        return "<?php\r
+        \r
                 
         class " . $classNameCache . "
         {
@@ -243,89 +237,72 @@ class ResolverSelect extends Resolver
                 
                 \$tab = array();
                 
-                while(\$data = \$req->fetch(\PDO::FETCH_ASSOC)){
+                while(\$data = \$req->fetch(\PDO::FETCH_ASSOC)){";
+    }
 
-            
-                    \$" . $this->getOnlyClassName($this->className) . " = null;
-                    
-                    if(!isset(\$tab[\$data['" . $this->actualkeyArray($this->className) . "']])){
-                        \$" . $this->getOnlyClassName($this->className) . " = \$container->make(" . $this->className . "::class);\r
-                        " . $this->getDataInsertByClass($this->className) . "
-                    }else{
-                        \$" . $this->getOnlyClassName($this->className) . " = \$tab[\$data['" . $this->actualKeyArray($this->className) . "']];
-                    }
-                
-                
-                ";
 
-        $cursor = null;
+    /**
+     * Return php of end class
+     *
+     * @return string
+     */
+    private function getEndClass(): string
+    {
 
-        foreach($this->dataInsert as $keyClassName => $line){
-
-            if($keyClassName !== $cursor && $keyClassName !== $this->className){
-                $content .= "\r\r\t\t\t\t\tif(isset(\$data['" . $this->actualkeyArray($keyClassName) . "'])){
-                        $" . $this->getOnlyClassName($keyClassName) . " = \$container->make(" . $keyClassName . "::class);
-                    " . $this->getDataInsertByClass($keyClassName) . "
-                    \t\$" . $this->getOnlyClassName($this->className) . "->" .
-                    (
-                        ($this->cache[$this->className]['dependency'][$keyClassName]['scope'] === 'public')
-                            ? $this->cache[$this->className]['dependency'][$keyClassName]['mutator'] . " = " . $this->getOnlyClassName($keyClassName)
-                            : $this->cache[$this->className]['dependency'][$keyClassName]['mutator'] . "($" . $this->getOnlyClassName($keyClassName) . ");"
-
-                    ) . "
-                \t}
-                ";
-            }
-        }
-
-        $content .= "
+        return "
                             \$tab[$" . $this->getOnlyClassName($this->className) . "->" . $this->propertyMapping[$this->getKeyArray($this->className)]['accessor'] .
-                (
-                    ($this->propertyMapping[$this->getKeyArray($this->className)]['scope'] === 'public')
-                    ? ""
-                    : "()"
-                ) . "] = $" . $this->getOnlyClassName($this->className) . ";\r
+            (
+            ($this->propertyMapping[$this->getKeyArray($this->className)]['scope'] === 'public')
+                ? ""
+                : "()"
+            ) . "] = $" . $this->getOnlyClassName($this->className) . ";\r
                         \r\t\t\t\t}
                     return \$tab;
             \r\t\t\t}
             
         \r\t\t}";
-
-
-        $this->registerCache($content, $classNameCache);
-
     }
 
 
     /**
-     * Mapping of suffix of table
+     *
+     * Return object target
+     * @param array $columnInfo
+     * @return string
      */
-    private function mappeSuffixTable(): void
+    private function getObjectTarget(array $columnInfo): string
     {
-        $searchPortion = explode('FROM', $this->request);
-
-        preg_match_all('/[a-zA-Z0-9-_&\/\\\~@#]+\s*AS\s*[A-Za-z0-9-_\.]+/', $searchPortion[1], $table);
-
-        foreach ($table[0] as $value){
-            $tmp = explode('AS', $value);
-
-            $find = false;
-
-            if(isset($this->dependency)){
-                foreach($this->dependency as $className => $configuration){
-                    foreach ($configuration as $array) {
-                        if ($array['table'] === trim($tmp[0])) {
-                            $find = true;
-                            $this->suffixTable[$className] = trim($tmp[1]);
-                        }
-                    }
-                }
+        return "
+            
+            \$" . $this->getOnlyClassName($this->className) . " = null;
+            
+            if(!isset(\$tab[\$data['" . $this->getKeyArrayClean($this->className, $columnInfo) . "']])){
+                \$" . $this->getOnlyClassName($this->className) . " = \$container->make(" . $this->className . "::class);\r
+                " . $this->getMutatorList($this->className, $columnInfo) . "
+            }else{
+                \$" . $this->getOnlyClassName($this->className) . " = \$tab[\$data['" . $this->getKeyArrayClean($this->className, $columnInfo) . "']];
             }
+        
+        
+        ";
+    }
 
-            if($find === false){
-                $this->suffixTable[$this->className] = trim($tmp[1]);
-            }
-        }
+
+    /**
+     * Return php code for dependency
+     *
+     * @param string $className
+     * @param array $columnInfo
+     * @return string
+     */
+    private function getDependency(string $className, array $columnInfo): string
+    {
+        return "\n\n\t\t\t\tif(isset(\$data['" . $this->getKeyArrayClean($className, $columnInfo) . "'])){
+            $" . $this->getOnlyClassName($className) . " = \$container->make(" . $className . "::class);
+            " . $this->getMutatorList($className, $columnInfo) . "
+            
+            " . $this->getSetterLineScopeResolver($this->className, $this->cache[$this->className]['dependency'][$className]['mutator'], $this->cache[$this->className]['dependency'][$className]['scope'], '$' . $this->getOnlyClassName($className)) . "
+        }";
     }
 
 
@@ -336,55 +313,144 @@ class ResolverSelect extends Resolver
      * @return string|null
      * @throws \Exception
      */
-    private function actualkeyArray(?string $className): ?string
+    private function getKeyArrayClean(?string $className, array $columnInfo): string
     {
-
-
 
         $column = $this->getKeyArray($className);
 
-        if(isset($this->suffixTable[$className])){
 
-            //if alias is defined
-            if(isset($this->setData[$this->suffixTable[$className] . '.' . $column])){
-                return $this->setData[$this->suffixTable[$className] . '.' . $column];
-            }else{
-                return $this->suffixTable[$className] . '.' . $column;
+        foreach ($columnInfo as $key => $value){
+            if($value['column'] === $column && $className === $value['objectRelation']){
+                if($value['alias'] !== null){
+                    return $value['alias'];
+                }else{
+                    if($value['prefix'] !== null){
+                        return $key;
+                    }else{
+                        return $value['column'];
+                    }
+                }
             }
+        }
+
+        return $column;
+    }
+
+
+    /**
+     * Return php code of setters method
+     *
+     * @param string $className
+     * @param array $columnInfo
+     * @return string
+     */
+    private function getMutatorList(string $className, array $columnInfo): ?string
+    {
+        $tabProperty = $this->getConfiguration($className);
+
+        $content = null;
+
+        $passed = array();
+
+        foreach ($columnInfo as $fullColumnName => $value){
+            foreach ($tabProperty as $tabColumn){
+
+                if($tabColumn['column'] === $value['column'] && $value['objectRelation'] === $className && !array_key_exists($fullColumnName, $passed)){
+                    if($tabColumn['type'] === 'array'){
+                        $content .= $this->getArrayPortion($columnInfo, $tabColumn, $fullColumnName, $className);
+                    }else{
+                        $content .= $this->getSetterLineScopeResolver($className, $tabColumn['mutator'], $tabColumn['scope'], '$data["' . $this->getAbstractColumn($columnInfo, $fullColumnName) . '"]');
+                    }
+
+                    $passed[$fullColumnName] = null;
+                }
+            }
+        }
+
+
+        return $content;
+    }
+
+
+    /**
+     * Return a good column for mutator
+     *
+     * @param array $columnInfo
+     * @param string $fullColumnName
+     * @return string
+     */
+    private function getAbstractColumn(array $columnInfo, string $fullColumnName): string
+    {
+        if($columnInfo[$fullColumnName]['alias'] !== null){
+            return $columnInfo[$fullColumnName]['alias'];
         }else{
-            //if alias is defined
-            if(isset($this->setData[$column])){
-                return $this->setData[$column];
+            if($columnInfo[$fullColumnName]['prefix'] !== null){
+                return key($columnInfo);
             }else{
-                return $column;
+                return $columnInfo[$fullColumnName]['column'];
             }
         }
     }
 
 
-
     /**
-     * Return group of line for specific class for building cache
+     * Return the property configuration for className parameter
      *
      * @param string $className
+     * @return array
+     */
+    private function getConfiguration(string $className): array
+    {
+        return $this->cache[$className]['property'];
+    }
+
+
+    /**
+     * Return php code for array property
+     *
+     * @param array $columnInfo
+     * @param array $tabColumn
+     * @param string $fullColumnName
+     * @param string $fullClassName
      * @return string
      */
-    private function getDataInsertByClass(string $className): string
+    private function getArrayPortion(array $columnInfo, array $tabColumn, string $fullColumnName, string $fullClassName): string
     {
 
-        $content = '';
+        $columnName = $this->getAbstractColumn($columnInfo, $fullColumnName);
 
-        foreach($this->dataInsert as $keyClassName => $array) {
-            if ($keyClassName === $className) {
-                foreach ($array as $line){
-                    $content .= $line . "\n\t\t\t\t\t\t";
-                }
-            }
+        return "\n\t\t\t\t\tif(isset(\$data['" . $columnName . "']) && !empty(\$data['" . $columnName . "'])){
+                            
+                        \$tmp = unserialize(\$data['" . $columnName . "']);
+                        
+                        try{
+                            foreach(\$tmp as \$value){
+                                " . $this->getSetterLineScopeResolver($fullClassName, $tabColumn['mutator'], $tabColumn['scope'], '$value') . "
+                            }  
+                        }catch(\Throwable \$th){
+                        \t" . $this->getSetterLineScopeResolver($fullClassName, $tabColumn['mutator'], $tabColumn['scope'], '$tmp') . "
+                        }
+                    }\n\n
+                    ";
+    }
+
+
+    /**
+     * Return line if setting object in resolving scope
+     *
+     * @param string $className
+     * @param string $mutator
+     * @param string $scope
+     * @param string $insertion
+     * @return string
+     */
+    private function getSetterLineScopeResolver(string $className, string $mutator, string $scope, string $insertion): string
+    {
+        if($scope === 'public'){
+            return '$' . $this->getOnlyClassName($className) . '->' . $mutator . ' = ' . $insertion . ";\n\t\t\t\t";
+        }else{
+            return '$' . $this->getOnlyClassName($className) . '->' . $mutator . '(' . $insertion . ");\n\t\t\t\t";
         }
-
-        $this->internalCursor = $className;
-
-        return $content;
     }
 
 
@@ -396,5 +462,4 @@ class ResolverSelect extends Resolver
         $this->className = null;
         $this->dataInsert = array();
     }
-
 }

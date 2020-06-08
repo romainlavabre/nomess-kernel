@@ -226,7 +226,7 @@ abstract class Resolver
                     if ($configColumn['scope'] === 'private' || $configColumn['scope'] === 'protected') {
                         $method = '$' . $this->getOnlyClassName($className) . '->' .
                             (
-                                ($this->config['dependency'][$this->getOnlyClassName($className)]['scope'] === 'public')
+                            ($this->config['dependency'][$this->getOnlyClassName($className)]['scope'] === 'public')
                                 ? $this->config['dependency'][$this->getOnlyClassName($className)]['accessor']
                                 : $this->config['dependency'][$this->getOnlyClassName($className)]['accessor'] . '()'
                             ) . '->' . $configColumn['accessor'] . '()';
@@ -327,6 +327,33 @@ abstract class Resolver
 
 
     /**
+     *
+     * @param string $unformated
+     * @return string
+     */
+    protected function generateClassName(string $unformated): string
+    {
+        $str = str_replace(['\\', '::'], '_', $unformated);
+        $str = mb_strtolower($str);
+
+        $array = str_split($str);
+
+        if(count($array) > 250){
+            $iterate = count($array) - 250;
+
+            for($i = 0; $i < $iterate; $i++){
+                unset($array[$i]);
+            }
+
+            $str = implode('', $array);
+        }
+
+        return $str;
+
+    }
+
+
+    /**
      * Register an cache file
      *
      * @param string $data
@@ -349,7 +376,7 @@ abstract class Resolver
     protected function registerInitialConfig(string $className): void
     {
 
-        $filename = self::STORAGE_CACHE . base64_encode($className . '::' . $this->method . 'Config') . '.php';
+        $filename = self::STORAGE_CACHE . $this->generateClassName('Config-' . $this->className . '::' . $this->method) . '.php';
 
 
 

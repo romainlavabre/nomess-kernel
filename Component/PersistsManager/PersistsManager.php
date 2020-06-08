@@ -12,7 +12,6 @@ use NoMess\Component\PersistsManager\ResolverRequest\ResolverUpdate;
 use NoMess\Container\Container;
 use NoMess\Database\IPDOFactory;
 use NoMess\Exception\WorkException;
-use NoMess\ObserverInterface;
 
 
 class PersistsManager extends Component
@@ -37,12 +36,6 @@ class PersistsManager extends Component
      * Contains a configuration for request
      */
     private array $config;
-
-
-    /**
-     * This value is iterated when
-     */
-    private int $calledGetCache = 0;
 
 
     /**
@@ -107,6 +100,7 @@ class PersistsManager extends Component
     public function __construct(IPDOFactory $IPDOFactory,
                                 Container $container)
     {
+
         parent::__construct();
         $this->IPDOFactory = $IPDOFactory;
         $this->container = $container;
@@ -233,7 +227,7 @@ class PersistsManager extends Component
         }elseif ($this->getCache()) {
 
 
-            $className = str_replace('=', '', base64_encode($this->className . "::" . $this->method));
+            $className = $this->generateClassName($this->className . "::" . $this->method);
             $parameter = array($this->IPDOFactory, $this->container);
 
             if(isset($this->parameter)){
@@ -263,7 +257,7 @@ class PersistsManager extends Component
      */
     private function getCache(): ?bool
     {
-        $filename = self::STORAGE_CACHE . str_replace('=', '', base64_encode($this->className . '::' . $this->method)) . '.php';
+        $filename = self::STORAGE_CACHE . $this->generateClassName($this->className . '::' . $this->method) . '.php';
 
         if(!file_exists($filename)){
             return false;
@@ -287,12 +281,11 @@ class PersistsManager extends Component
     /**
      * Control that configuration hasn't change
      *
-     * @param $class
      * @return bool
      */
     private function revalideCache(): bool
     {
-        $lastConfig = self::STORAGE_CACHE . base64_encode($this->className . '::' . $this->method . 'Config') . '.php';
+        $lastConfig = self::STORAGE_CACHE . $this->generateClassName('Config-' . $this->className . '::' . $this->method) . '.php';
 
         try{
 
@@ -300,7 +293,7 @@ class PersistsManager extends Component
             $lastConfig = unserialize($lastConfig);
         }catch (\Throwable $th){
             if(strpos($th->getMessage(), 'No such file or directory') === false){
-                throw new WorkException('PersistsManager encountered an error: when we try to take file ' . self::STORAGE_CACHE . base64_encode($this->className . '::' . $this->method . 'Config') . '.php , we have received this message: "' . $th->getMessage() . ' in line ' . $th->getLine() . '"');
+                throw new WorkException('PersistsManager encountered an error: when we try to take file ' . self::STORAGE_CACHE . $this->generateClassName('Config-' . $this->className . '::' . $this->method) . '.php , we have received this message: "' . $th->getMessage() . ' in line ' . $th->getLine() . '"');
             }
 
             return false;
@@ -308,7 +301,7 @@ class PersistsManager extends Component
 
         if (!empty(array_diff_assoc($lastConfig[$this->method], $this->config[$this->method]))) {
 
-            unlink(self::STORAGE_CACHE . base64_encode($this->className . '::' . $this->method . 'Config') . '.php');
+            unlink(self::STORAGE_CACHE . $this->generateClassName('Config-' . $this->className . '::' . $this->method) . '.php');
             return false;
         } else {
             return true;
@@ -323,7 +316,7 @@ class PersistsManager extends Component
 
         $resolver = null;
 
-        //Search class to instanciate
+        //Search class to instantiate
         if($this->internalMethod === 'read') {
             $resolver = $this->container->get(ResolverSelect::class);
             $resolver->className = $this->className;
@@ -352,7 +345,7 @@ class PersistsManager extends Component
         if(!empty($this->cache[$this->className]['dependency'])){
             foreach($this->cache[$this->className]['dependency'] as $classNameDependency => $dependency){
 
-                $this->cahe = $this->loadCache($classNameDependency);
+                $this->cache = unserialize($this->loadCache($classNameDependency));
 
                 //If cache for dependency doesn't exists, rebuild
                 if(array_key_exists($classNameDependency, $this->cache)) {
@@ -440,5 +433,32 @@ class PersistsManager extends Component
         $tmp = explode('\\', $fullclassName);
 
         return $tmp[count($tmp) - 1];
+    }
+
+
+    /**
+     *
+     * @param string $unformated
+     * @return string
+     */
+    protected function generateClassName(string $unformated): string
+    {
+        $str = str_replace(['\\', '::'], '_', $unformated);
+        $str = mb_strtolower($str);
+
+        $array = str_split($str);
+
+        if(count($array) > 250){
+            $iterate = count($array) - 250;
+
+            for($i = 0; $i < $iterate; $i++){
+                unset($array[$i]);
+            }
+
+            $str = implode('', $array);
+        }
+
+        return $str;
+
     }
 }
