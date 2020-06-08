@@ -2,7 +2,7 @@
 
 namespace NoMess\Manager;
 
-use NoMess\Component\LightPersists\LightPersists;
+use NoMess\Components\LightPersists\LightPersists;
 use NoMess\Container\Container;
 use NoMess\HttpRequest\HttpRequest;
 use NoMess\HttpResponse\HttpResponse;
@@ -213,6 +213,30 @@ abstract class Distributor implements SubjectInterface
         $this->getDevToolbar();
 
         return $this;
+    }
+
+
+    /**
+     * Return an status code
+     *
+     * @param int $code
+     */
+    public final function statusCode(int $code): void
+    {
+        http_response_code($code);
+
+        $tabError = require ROOT . 'App/config/error.php';
+
+        if(strpos($tabError[$code], '.twig')){
+            if(file_exists(ROOT . 'Web/public/' . $tabError[$code])) {
+                $this->bindTwig($tabError[$code]);
+            }
+        }else{
+            if(file_exists(ROOT . $tabError[$code])) {
+                include(ROOT . $tabError[$code]);
+            }
+        }
+        die;
     }
 
 

@@ -1,6 +1,6 @@
 <?php 
 
-namespace NoMess\Component\DataManager\Builder;
+namespace NoMess\Components\DataManager\Builder;
 
 use NoMess\Exception\WorkException;
 

@@ -103,12 +103,12 @@ class Builder
     {
         $comment = $reflectionClass->getDocComment();
 
-        if(strpos($comment, '@Auth')){
+        if(strpos($comment, '@Filter')){
             $lineComment = explode('*', $comment);
 
             foreach ($lineComment as $line){
-                if(strpos($comment, '@Auth')){
-                    return trim(str_replace(['@Auth(', ')'], '', $line));
+                if(strpos($comment, '@Filter')){
+                    return trim(str_replace(['@Filter(', ')'], '', $line));
                 }
             }
         }

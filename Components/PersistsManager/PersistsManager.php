@@ -1,14 +1,14 @@
 <?php
 
-namespace NoMess\Component\PersistsManager;
+namespace NoMess\Components\PersistsManager;
 
 
-use NoMess\Component\Component;
-use NoMess\Component\PersistsManager\Builder\BuilderPersistsManager;
-use NoMess\Component\PersistsManager\ResolverRequest\ResolverCreate;
-use NoMess\Component\PersistsManager\ResolverRequest\ResolverDelete;
-use NoMess\Component\PersistsManager\ResolverRequest\ResolverSelect;
-use NoMess\Component\PersistsManager\ResolverRequest\ResolverUpdate;
+use NoMess\Components\Component;
+use NoMess\Components\PersistsManager\Builder\BuilderPersistsManager;
+use NoMess\Components\PersistsManager\ResolverRequest\ResolverCreate;
+use NoMess\Components\PersistsManager\ResolverRequest\ResolverDelete;
+use NoMess\Components\PersistsManager\ResolverRequest\ResolverSelect;
+use NoMess\Components\PersistsManager\ResolverRequest\ResolverUpdate;
 use NoMess\Container\Container;
 use NoMess\Database\IPDOFactory;
 use NoMess\Exception\WorkException;
@@ -17,7 +17,7 @@ use NoMess\Exception\WorkException;
 class PersistsManager extends Component
 {
 
-    private const STORAGE_CONFIGURATION = ROOT . 'App/config/component/PersistsManager.php';
+    private const STORAGE_CONFIGURATION = ROOT . 'App/config/components/PersistsManager.php';
     private const STORAGE_CACHE = ROOT . 'App/var/cache/pm/';
 
 

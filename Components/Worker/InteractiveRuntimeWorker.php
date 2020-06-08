@@ -1,9 +1,9 @@
 <?php
 
 
-namespace NoMess\Component\Worker;
+namespace NoMess\Components\Worker;
 
-use NoMess\Component\Component;
+use NoMess\Components\Component;
 
 class InteractiveRuntimeWorker extends Component
 {

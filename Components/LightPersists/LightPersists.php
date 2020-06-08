@@ -1,9 +1,9 @@
 <?php
 
 
-namespace NoMess\Component\LightPersists;
+namespace NoMess\Components\LightPersists;
 
-use NoMess\Component\Component;
+use NoMess\Components\Component;
 use NoMess\Container\Container;
 use NoMess\Exception\WorkException;
 use NoMess\HttpRequest\HttpRequest;

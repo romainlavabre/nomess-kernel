@@ -28,18 +28,18 @@ class WorkException extends \ErrorException{
                 break;
         }
 
-        header('HTTP/1.0 500 INTERNAL SERVER ERROR');
+        http_response_code(500);
 
         $tabError = require ROOT . 'App/config/error.php';
 
-        if(strpos($tabError['500'], '.twig')){
+        if(strpos($tabError[500], '.twig')){
 
-            if(file_exists(ROOT . 'Web/' . $tabError['500'])) {
-                bindTwig($tabError['500']);
+            if(file_exists(ROOT . 'Web/public/' . $tabError[500])) {
+                bindTwig($tabError[500]);
             }
         }else{
-            if(file_exists(ROOT . $tabError['500'])) {
-                include(ROOT . $tabError['500']);
+            if(file_exists(ROOT . $tabError[500])) {
+                include(ROOT . $tabError[500]);
             }
         }
         die;
@@ -55,18 +55,18 @@ function customException($e) {
 
     file_put_contents(ROOT . 'App/var/log/log.txt', "[" . date('d/m/Y H:i:s') . "]Line " . $e->getLine() . ": " . $e->getFile() . "\nException: " . $e->getMessage() . "\n---------------------------------------------------------\n", FILE_APPEND);
 
-    header('HTTP/1.0 500 INTERNAL SERVER ERROR');
+    http_response_code(500);
 
     $tabError = require ROOT . 'App/config/error.php';
 
-    if(strpos($tabError['500'], '.twig')){
+    if(strpos($tabError[500], '.twig')){
 
-        if(file_exists(ROOT . 'Web/' . $tabError['500'])) {
-            bindTwig($tabError['500']);
+        if(file_exists(ROOT . 'Web/public/' . $tabError[500])) {
+            bindTwig($tabError[500]);
         }
     }else{
-        if(file_exists(ROOT . $tabError['500'])) {
-            include(ROOT . $tabError['500']);
+        if(file_exists(ROOT . $tabError[500])) {
+            include(ROOT . $tabError[500]);
         }
     }
     die;

@@ -1,10 +1,10 @@
 <?php
 
 
-namespace NoMess\Component\PersistsManager\ResolverRequest;
+namespace NoMess\Components\PersistsManager\ResolverRequest;
 
 
-use NoMess\Component\PersistsManager\Resolver;
+use NoMess\Components\PersistsManager\Resolver;
 use NoMess\Exception\WorkException;
 
 
@@ -29,7 +29,7 @@ class ResolverSelect extends Resolver
         $columnInfo = $this->parserColumn();
 
         $this->buildCache($columnInfo);
-        $this->registerInitialConfig($this->className);
+        $this->registerInitialConfig();
         $this->purge();
     }
 

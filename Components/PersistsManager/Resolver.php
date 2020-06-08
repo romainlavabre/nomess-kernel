@@ -1,7 +1,7 @@
 <?php
 
 
-namespace NoMess\Component\PersistsManager;
+namespace NoMess\Components\PersistsManager;
 
 
 use NoMess\Database\IPDOFactory;
@@ -371,9 +371,8 @@ abstract class Resolver
     /**
      * Register the initial congiguration
      *
-     * @param string $className
      */
-    protected function registerInitialConfig(string $className): void
+    protected function registerInitialConfig(): void
     {
 
         $filename = self::STORAGE_CACHE . $this->generateClassName('Config-' . $this->className . '::' . $this->method) . '.php';

@@ -1,7 +1,7 @@
 <?php
 
 
-namespace NoMess\Component\PersistsManager\Builder;
+namespace NoMess\Components\PersistsManager\Builder;
 
 
 use NoMess\Container\Container;

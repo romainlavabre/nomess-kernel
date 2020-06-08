@@ -1,7 +1,7 @@
 #!/usr/local/bin/php
 <?php
 
-use DI\ContainerBuilder;
+
 
 
 ignore_user_abort(true);
@@ -36,10 +36,7 @@ function process(string $configPath) : void
     //Service
     require $config['autoload'];
 
-    $builder = new ContainerBuilder();
-    $builder->useAnnotations(true);
-    $builder->addDefinitions(str_replace('component/worker.php', 'di-definitions.php', $configPath));
-    $container = $builder->build();
+    $container = new NoMess\Container\Container();
 
     while($stop === false){
 

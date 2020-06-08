@@ -1,7 +1,7 @@
 <?php
 
 
-namespace NoMess\Component\PersistsManager\ResolverRequest;
+namespace NoMess\Components\PersistsManager\ResolverRequest;
 
 
 class ResolverDelete extends ResolverImpactData
@@ -17,7 +17,7 @@ class ResolverDelete extends ResolverImpactData
     {
         $this->buildParameter();
         $this->buildCache();
-        $this->registerInitialConfig($this->className);
+        $this->registerInitialConfig();
     }
 
 
@@ -29,7 +29,7 @@ class ResolverDelete extends ResolverImpactData
 
 
 
-        $className = str_replace('=', '', base64_encode($this->className . "::" . $this->method));
+        $className = $this->generateClassName($this->className . "::" . $this->method);
         $parameter = "NoMess\Database\IPDOFactory \$instance, NoMess\Container\Container \$container";
 
         $parameter = $this->adjustParameter($parameter);

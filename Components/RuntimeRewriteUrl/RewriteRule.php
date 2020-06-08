@@ -1,10 +1,10 @@
 <?php
 
-namespace NoMess\Component\RuntimeRewriteUrl;
+namespace NoMess\Components\RuntimeRewriteUrl;
 
 use Throwable;
 use NoMess\ObserverInterface;
-use NoMess\Component\Component;
+use NoMess\Components\Component;
 use NoMess\Exception\WorkException;
 
 class RewriteRule extends Component implements ObserverInterface

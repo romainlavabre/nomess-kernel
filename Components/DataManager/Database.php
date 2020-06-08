@@ -1,18 +1,13 @@
 <?php
 
-namespace NoMess\Component\DataManager;
+namespace NoMess\Components\DataManager;
 
-use DI\Annotation\Inject;
-use NoMess\Component\Component;
-use NoMess\Component\DataManager\Builder\BuilderDataManager;
+use NoMess\Components\Component;
+use NoMess\Components\DataManager\Builder\BuilderDataManager;
 use NoMess\Container\Container;
-use NoMess\Database\IPDOFactory;
-use NoMess\ObserverInterface;
+use NoMess\Exception\WorkException;
 
-/**
- * Class Database
- * @package NoMess\Component\DataManager
- */
+
 class Database extends Component
 {
 
@@ -41,7 +36,7 @@ class Database extends Component
      * Database constructor.
      * @param DataManager $dataManager
      * @param Container $container
-     * @throws \NoMess\Exception\WorkException
+     * @throws WorkException
      */
     public function __construct(DataManager $dataManager,
                                 Container $container)
@@ -94,8 +89,6 @@ class Database extends Component
      * ### Push a  ***delete*** of the target object in pile
      *
      * @param array $param
-     * @param array|null $dependancy
-     * @param array|null $runtimeConfig
      * @param string|null $type
      * @return $this
      */
@@ -120,8 +113,9 @@ class Database extends Component
      *
      * @param string $method Name of method
      *
+     * @param array $param
+     * @param string|null $type
      * @return Database
-     *
      */
     public function aliasMethod(string $method, array $param, string $type = null): Database
     {

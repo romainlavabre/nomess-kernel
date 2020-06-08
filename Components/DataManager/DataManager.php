@@ -1,9 +1,9 @@
 <?php
 
-namespace NoMess\Component\DataManager;
+namespace NoMess\Components\DataManager;
 
 use Closure;
-use NoMess\Component\PersistsManager\PersistsManager;
+use NoMess\Components\PersistsManager\PersistsManager;
 use NoMess\Container\Container;
 use NoMess\Database\IPDOFactory;
 use NoMess\Exception\WorkException;

@@ -5,11 +5,13 @@ namespace NoMess\Container;
 
 
 
+use NoMess\Exception\WorkException;
+use ReflectionException;
+
 class Container
 {
 
-    private const PATH_DEFINITION                   = ROOT . 'App/config/definitions.php';
-    private const PATH_CACHE                        = ROOT . 'App/var/cache/di/';
+    private const PATH_DEFINITION                   = ROOT . 'App/config/container.php';
 
 
     private Autowire $autowire;
@@ -29,8 +31,8 @@ class Container
      *
      * @param string $className
      * @return object
-     * @throws \NoMess\Exception\WorkException
-     * @throws \ReflectionException
+     * @throws WorkException
+     * @throws ReflectionException
      */
     public function get(string $className): object
     {
@@ -62,8 +64,8 @@ class Container
      *
      * @param string $className
      * @return object
-     * @throws \NoMess\Exception\WorkException
-     * @throws \ReflectionException
+     * @throws WorkException
+     * @throws ReflectionException
      */
     public function make(string $className): object
     {

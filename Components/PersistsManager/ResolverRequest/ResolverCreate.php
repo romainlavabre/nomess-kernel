@@ -1,11 +1,13 @@
 <?php
 
 
-namespace NoMess\Component\PersistsManager\ResolverRequest;
+namespace NoMess\Components\PersistsManager\ResolverRequest;
 
 
-class ResolverUpdate extends ResolverImpactData
+
+class ResolverCreate extends ResolverImpactData
 {
+
     /**
      * Launch build cache file
      *
@@ -15,7 +17,7 @@ class ResolverUpdate extends ResolverImpactData
     {
         $this->buildParameter();
         $this->buildCache();
-        $this->registerInitialConfig($this->className);
+        $this->registerInitialConfig();
     }
 
 
@@ -27,13 +29,14 @@ class ResolverUpdate extends ResolverImpactData
 
 
 
-        $className = str_replace('=', '', base64_encode($this->className . "::" . $this->method));
+        $className = $this->generateClassName($this->className . "::" . $this->method);
         $parameter = "NoMess\Database\IPDOFactory \$instance, NoMess\Container\Container \$container";
 
         $parameter = $this->adjustParameter($parameter);
 
         $content = "<?php
-                
+        
+        
         class " . $className . "
         {
            public function execute(" . $parameter . ")
@@ -42,10 +45,14 @@ class ResolverUpdate extends ResolverImpactData
                 \$database = \$instance->getConnection('" . $this->idConfig . "');
                 
                 " . $this->buildFileRequest() . "
-
+          
+                try{
+                    return \$database->lastInsertId();
+                }catch(\Throwable \$th){}
             }
         }      
         ";
+
 
         $this->registerCache($content, $className);
     }

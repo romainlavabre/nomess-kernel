@@ -1,10 +1,10 @@
 <?php
 
 
-namespace NoMess\Component\PersistsManager\ResolverRequest;
+namespace NoMess\Components\PersistsManager\ResolverRequest;
 
 
-use NoMess\Component\PersistsManager\Resolver;
+use NoMess\Components\PersistsManager\Resolver;
 
 /**
  * @package NoMess\Component\PersistsManager\ResolverRequest

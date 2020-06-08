@@ -10,7 +10,7 @@ use NoMess\ObserverInterface;
 use Twig\Loader\FilesystemLoader;
 use NoMess\HttpRequest\HttpRequest;
 use NoMess\HttpResponse\HttpResponse;
-use NoMess\Component\LightPersists\LightPersists;
+use NoMess\Components\LightPersists\LightPersists;
 
 abstract class Distributor implements SubjectInterface
 {
@@ -147,6 +147,26 @@ abstract class Distributor implements SubjectInterface
 
         return $this;
     }
+
+
+    public final function statusCode(int $code): void
+    {
+        http_response_code($code);
+
+        $tabError = require ROOT . 'App/config/error.php';
+
+        if(strpos($tabError[$code], '.twig')){
+            if(file_exists(ROOT . 'Web/public/' . $tabError[$code])) {
+                $this->bindTwig($tabError[$code]);
+            }
+        }else{
+            if(file_exists(ROOT . $tabError[$code])) {
+                include(ROOT . $tabError[$code]);
+            }
+        }
+        die;
+    }
+
 
     public final function sendData() : ?array
     {

@@ -5,7 +5,6 @@ namespace NoMess\Router;
 use NoMess\Container\Container;
 use NoMess\Router\Builder\Builder;
 use Twig\Environment;
-use DI\ContainerBuilder;
 use NoMess\SubjectInterface;
 use NoMess\ObserverInterface;
 use Twig\Loader\FilesystemLoader;
@@ -19,6 +18,7 @@ class Router implements SubjectInterface
 {
 
     private const CACHE_ROUTING             = ROOT . 'App/var/cache/routes/route.php';
+    private const COMPONENTS_CONFIG         = ROOT . 'App/config/components.php';
 
     private const BASE_ENVIRONMENT          = 'public';
 
@@ -42,7 +42,6 @@ class Router implements SubjectInterface
      */
     public function __construct()
     {
-        $start = microtime(true);
         $this->container = new Container();
 
         $this->HttpSession = $this->container->get(HttpSession::class);
@@ -108,23 +107,14 @@ class Router implements SubjectInterface
         if(isset($route[$_GET['p']])) {
             $controller = $route[$_GET['p']]['controller'];
             $path = $route[$_GET['p']]['path'];
-            $auth = $route[$_GET['p']]['auth'];
+            $useFilter = $route[$_GET['p']]['filter'];
 
-            if (!empty($auth) && !isset($_SESSION[$auth])) {
-                header('HTTP/1.0 403 Permissions denied');
+            if (!empty($useFilter)) {
+                $className = 'App\\Filters\\' . $useFilter;
 
-                $tabError = require ROOT . 'App/config/error.php';
+                $filter = $this->container->get($className);
+                $filter->filtrate($this->container->get(HttpRequest::class), $this->container->get(HttpResponse::class));
 
-                if(strpos($tabError['403'], '.twig')){
-                    if(file_exists(ROOT . 'Web/' . $tabError['403'])) {
-                        $this->bindTwig($tabError['403']);
-                    }
-                }else{
-                    if(file_exists(ROOT . $tabError['403'])) {
-                        include(ROOT . $tabError['403']);
-                    }
-                }
-                die;
             }
 
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -150,17 +140,17 @@ class Router implements SubjectInterface
             $controller->$action($this->container->get(HttpResponse::class), $this->container->get(HttpRequest::class));
         }else{
 
-            header('HTTP/1.0 404 NOT FOUND');
+            http_response_code(404);
 
             $tabError = require ROOT . 'App/config/error.php';
 
-            if(strpos($tabError['404'], '.twig')){
-                if(file_exists(ROOT . 'Web/' . $tabError['404'])) {
-                    $this->bindTwig($tabError['404']);
+            if(strpos($tabError[404], '.twig')){
+                if(file_exists(ROOT . 'Web/public/' . $tabError[404])) {
+                    $this->bindTwig($tabError[404]);
                 }
             }else{
-                if(file_exists(ROOT . $tabError['404'])) {
-                    include(ROOT . $tabError['404']);
+                if(file_exists(ROOT . $tabError[404])) {
+                    include(ROOT . $tabError[404]);
                 }
             }
             die;
@@ -208,7 +198,7 @@ class Router implements SubjectInterface
      */
     public function attach() : void
     {
-        $componentConfig = require ROOT . 'App/config/component.php';
+        $componentConfig = require self::COMPONENTS_CONFIG;
 
         if($componentConfig !== null){
             foreach($componentConfig as $key => $value){
