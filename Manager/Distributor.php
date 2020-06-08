@@ -14,27 +14,29 @@ use Twig\Loader\FilesystemLoader;
 
 abstract class Distributor implements SubjectInterface
 {
+    private const COMPONENT_CONFIGURATION       = ROOT . 'App/config/components.php';
+
 
     /**
      * Twig
      */
-    private const BASE_ENVIRONMENT = 'public';
+    private const BASE_ENVIRONMENT              = 'public';
 
 
     /**
      * Persiste data for redirect
      */
-    private const SESSION_DATA = 'nomess_persiste_data';
+    private const SESSION_DATA                  = 'nomess_persiste_data';
 
     /**
      * Data type
      */
-    const DEFAULT_DATA = 'php';
-    const JSON_DATA = 'json';
+    const DEFAULT_DATA                          = 'php';
+    const JSON_DATA                             = 'json';
 
 
-    private const SESSION_NOMESS_SCURITY = 'nomess_session_security';
-    private const SESSION_NOMESS_TOOLBAR = 'nomess_toolbar';
+    private const SESSION_NOMESS_SCURITY        = 'nomess_session_security';
+    private const SESSION_NOMESS_TOOLBAR        = 'nomess_toolbar';
 
     /**
      * Template engine
@@ -280,7 +282,7 @@ abstract class Distributor implements SubjectInterface
      */
     public function attach(): void
     {
-        $componentConfig = require ROOT . 'App/config/component.php';
+        $componentConfig = require self::COMPONENT_CONFIGURATION;
 
         if ($componentConfig !== null) {
             foreach ($componentConfig as $key => $value) {
