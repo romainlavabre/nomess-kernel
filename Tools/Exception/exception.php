@@ -32,12 +32,12 @@ for($i = 0; $i < $iter; $i++){
 $array .= '</table>';
 
 $i = 0;
-$content = array();
+$source = array();
 
 foreach(file($e->getFile()) as $line){
 
-    if($i >= (int)$e->getLine() - 5 && $i <= (int)$e->getLine() + 5){
-        $content[$i + 1] = $line;
+    if($i >= (int)$e->getLine() - 15 && $i <= (int)$e->getLine() + 15){
+        $source[$i + 1] = $line;
     }
 
     $i++;
@@ -148,7 +148,7 @@ foreach(file($e->getFile()) as $line){
                             <h4 class="card-title font-weight-bold">Sources</h4>
                         </div>
                         <div class="card-body ref-code">
-                            <?php r($content) ?>
+                            <?php r($source) ?>
                         </div>
                     </div>
                 </div>

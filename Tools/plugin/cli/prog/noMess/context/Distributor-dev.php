@@ -15,6 +15,8 @@ use Twig\Loader\FilesystemLoader;
 abstract class Distributor implements SubjectInterface
 {
 
+    private const COMPONENT_CONFIGURATION           = ROOT . 'App/config/components.php';
+
     /**
      * Twig
      */
@@ -281,7 +283,7 @@ abstract class Distributor implements SubjectInterface
      */
     public function attach(): void
     {
-        $componentConfig = require ROOT . 'App/config/component.php';
+        $componentConfig = require self::COMPONENT_CONFIGURATION;
 
         if ($componentConfig !== null) {
             foreach ($componentConfig as $key => $value) {

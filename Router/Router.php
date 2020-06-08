@@ -179,7 +179,7 @@ class Router implements SubjectInterface
         }
 
         if(isset($_POST['resetCacheRoute'])){
-            @unlink(ROOT . 'App/var/cache/routes/route.xml');
+            @unlink(self::CACHE_ROUTING);
             unset($_POST);
         }
 

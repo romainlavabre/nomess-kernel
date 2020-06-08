@@ -15,16 +15,16 @@ use NoMess\Components\LightPersists\LightPersists;
 abstract class Distributor implements SubjectInterface
 {
 
-    private const BASE_ENVIRONMENT      = 'public';
-    private const CACHE_TWIG            = ROOT . 'Web/cache/twig/';
+    private const COMPONENT_CONFIGURATION           = ROOT . 'App/config/components.php';
+    private const BASE_ENVIRONMENT                  = 'public';
+    private const CACHE_TWIG                        = ROOT . 'Web/cache/twig/';
 
-    private const SESSION_DATA          = 'nomess_persiste_data';
+    private const SESSION_DATA                      = 'nomess_persiste_data';
 
-    const DEFAULT_DATA                  = 'php';
-    const JSON_DATA                     = 'json';
+    const DEFAULT_DATA                              = 'php';
+    const JSON_DATA                                 = 'json';
 
-    private const SESSION_NOMESS_SCURITY = 'nomess_session_security';
-    private const SESSION_NOMESS_TOOLBAR = 'nomess_toolbar';
+    private const SESSION_NOMESS_SCURITY            = 'nomess_session_security';
 
     private $engine;
 
@@ -180,7 +180,7 @@ abstract class Distributor implements SubjectInterface
 
     public function attach() : void
     {
-        $componentConfig = require ROOT . 'App/config/component.php';
+        $componentConfig = require self::COMPONENT_CONFIGURATION;
 
         if($componentConfig !== null){
             foreach($componentConfig as $key => $value){

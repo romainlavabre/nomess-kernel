@@ -122,10 +122,10 @@ class Builder
      * @param string $url
      * @param string $controllers
      * @param string $path
-     * @param string $auth
+     * @param string $filter
      * @throws WorkException
      */
-    private function addRoute(string $url, string $controllers, string $path, ?string $auth): void
+    private function addRoute(string $url, string $controllers, string $path, ?string $filter): void
     {
 
         if(!array_key_exists($url, $this->routes)){
@@ -133,7 +133,7 @@ class Builder
             $this->routes[$url] = [
                 'controller' => $controllers,
                 'path' => $path,
-                'auth' => $auth
+                'filter' => $filter
             ];
         }else{
             throw new WorkException('RoutesBuilder encountered an error: Duplicatation of url ' . $url);
