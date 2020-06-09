@@ -2,8 +2,10 @@
 
 namespace NoMess\Manager;
 
+use NoMess\Components\Forms\FormAccess;
 use NoMess\Components\LightPersists\LightPersists;
 use NoMess\Container\Container;
+use NoMess\Exception\WorkException;
 use NoMess\HttpRequest\HttpRequest;
 use NoMess\HttpResponse\HttpResponse;
 use NoMess\ObserverInterface;
@@ -20,23 +22,23 @@ abstract class Distributor implements SubjectInterface
     /**
      * Twig
      */
-    private const BASE_ENVIRONMENT = 'public';
+    private const BASE_ENVIRONMENT                  = 'public';
 
 
     /**
      * Persiste data for redirect
      */
-    private const SESSION_DATA = 'nomess_persiste_data';
+    private const SESSION_DATA                      = 'nomess_persiste_data';
 
     /**
      * Data type
      */
-    const DEFAULT_DATA = 'php';
-    const JSON_DATA = 'json';
+    const DEFAULT_DATA                              = 'php';
+    const JSON_DATA                                 = 'json';
 
 
-    private const SESSION_NOMESS_SCURITY = 'nomess_session_security';
-    private const SESSION_NOMESS_TOOLBAR = 'nomess_toolbar';
+    private const SESSION_NOMESS_SCURITY            = 'nomess_session_security';
+    private const SESSION_NOMESS_TOOLBAR            = 'nomess_toolbar';
 
     /**
      * Template engine
@@ -48,6 +50,8 @@ abstract class Distributor implements SubjectInterface
     private HttpRequest $request;
 
     private HttpResponse $response;
+
+    private ?array $form;
 
 
     /**
@@ -75,7 +79,7 @@ abstract class Distributor implements SubjectInterface
      *
      * @return Distributor
      */
-    public final function forward(?HttpRequest $request, ?HttpResponse $response, string $dataType = self::DEFAULT_DATA): Distributor
+    protected final function forward(?HttpRequest $request, ?HttpResponse $response, string $dataType = self::DEFAULT_DATA): Distributor
     {
 
         if ($request !== null) {
@@ -118,13 +122,13 @@ abstract class Distributor implements SubjectInterface
 
     /**
      *
-     * Redirect toward an local ressource, if forward method is called, the pending operation
-     * will be executed and the data will be presente in next context
+     * Redirects to a local resource, if the forward method is called, pending operations
+     * will be executed and the data will be presented in the following context
      *
      * @param string $url
      * @return Distributor
      */
-    public final function redirectLocal(string $url): Distributor
+    protected final function redirectLocal(string $url): Distributor
     {
         $this->close();
 
@@ -140,13 +144,12 @@ abstract class Distributor implements SubjectInterface
 
 
     /**
-     * Redirect toward an local ressource, if forward method is called, the pending operation
-     * will be executed
+     * Redirects to an external resource, if the forward method is called, pending operations will be executed
      *
      * @param string $url
      * @return Distributor
      */
-    public final function redirectOutside(string $url): Distributor
+    protected final function redirectOutside(string $url): Distributor
     {
         $this->close();
 
@@ -158,72 +161,11 @@ abstract class Distributor implements SubjectInterface
 
 
     /**
-     * Bind the template engine to the response
-     *
-     * @param string $template
-     * @return Distributor
-     */
-    public final function bindTwig(string $template): Distributor
-    {
-        $this->close();
-
-
-        global $time;
-        $time->setXdebug(xdebug_time_index());
-
-        $loader = new FilesystemLoader(self::BASE_ENVIRONMENT);
-        $this->engine = new Environment($loader, [
-            'debug' => true,
-            'cache' => false,
-            'strict_variables' => true
-        ]);
-
-        $this->engine->addExtension(new \Twig\Extension\DebugExtension());
-
-        echo $this->engine->render($template, [
-            'URL' => URL,
-            'WEBROOT' => WEBROOT,
-            'param' => $this->data,
-            'POST' => $this->request->getPost(true),
-            'GET' => $this->request->getGet(true),
-        ]);
-
-        $this->getDevToolbar();
-
-        return $this;
-    }
-
-
-    /**
-     * Bind an php file to the response
-     *
-     * @param string $template
-     * @return Distributor
-     */
-    public final function bindDefaultEngine(string $template): Distributor
-    {
-        $this->close();
-
-
-        global $time;
-        $time->setXdebug(xdebug_time_index());
-
-        $param = $this->data;
-
-        require(ROOT . 'Web/public/' . $template);
-
-        $this->getDevToolbar();
-
-        return $this;
-    }
-
-
-    /**
      * Return an status code
      *
      * @param int $code
      */
-    public final function statusCode(int $code): void
+    protected final function statusCode(int $code): void
     {
         http_response_code($code);
 
@@ -243,11 +185,87 @@ abstract class Distributor implements SubjectInterface
 
 
     /**
+     * Binds the twig model engine to the response
+     *
+     * @param string $template
+     * @return Distributor
+     */
+    protected final function bindTwig(string $template): Distributor
+    {
+        $this->close();
+
+
+        global $time;
+        $time->setXdebug(xdebug_time_index());
+
+        $loader = new FilesystemLoader(self::BASE_ENVIRONMENT);
+        $this->engine = new Environment($loader, [
+            'debug' => true,
+            'cache' => false,
+            'strict_variables' => true
+        ]);
+
+        $this->engine->addExtension(new \Twig\Extension\DebugExtension());
+
+        echo $this->engine->render($template, [
+            'URL' => URL,
+            'WEBROOT' => WEBROOT,
+            'POST' => $this->request->getPost(true),
+            'GET' => $this->request->getGet(true),
+            'FORM' => isset($this->form) ? $this->form : null,
+            'param' => $this->data
+        ]);
+
+        $this->getDevToolbar();
+
+        return $this;
+    }
+
+
+    /**
+     * Binds a php file to the response
+     *
+     * @param string $template
+     * @return Distributor
+     */
+    protected final function bindDefaultEngine(string $template): Distributor
+    {
+        $this->close();
+
+
+        global $time;
+        $time->setXdebug(xdebug_time_index());
+
+        require(ROOT . 'Web/public/' . $template);
+
+        $this->getDevToolbar();
+
+        return $this;
+    }
+
+
+    /**
+     * Bind one or many form
+     *
+     * @param array $form
+     * @return Distributor
+     * @throws WorkException
+     */
+    protected final function bindForm(array $form): Distributor
+    {
+        foreach ($form as $name){
+            $formAccess = new FormAccess();
+            $this->form[$name] = $formAccess->get($name);
+        }
+    }
+
+
+    /**
      * Return data
      *
      * @return array|null
      */
-    public final function sendData(): ?array
+    protected final function sendData(): ?array
     {
         $this->close();
 
@@ -258,7 +276,7 @@ abstract class Distributor implements SubjectInterface
     /**
      * Kill the current process
      */
-    public function stopProcess(): void
+    protected function stopProcess(): void
     {
         die;
     }

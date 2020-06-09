@@ -2,6 +2,7 @@
 
 namespace NoMess\Manager;
 
+use NoMess\Components\Forms\FormAccess;
 use NoMess\Container\Container;
 use Throwable;
 use Twig\Environment;
@@ -27,6 +28,7 @@ abstract class Distributor implements SubjectInterface
     private const SESSION_NOMESS_SCURITY            = 'nomess_session_security';
 
     private $engine;
+    private ?array $form;
 
     private HttpRequest $request;
 
@@ -140,12 +142,18 @@ abstract class Distributor implements SubjectInterface
         $this->close();
 
 
-        $param = $this->data;
-
         require(ROOT . 'Web/public/' . $template);
 
 
         return $this;
+    }
+
+    protected final function bindForm(array $form): Distributor
+    {
+        foreach ($form as $name){
+            $formAccess = new FormAccess();
+            $this->form[$name] = $formAccess->get($name);
+        }
     }
 
 
