@@ -43,7 +43,7 @@ abstract class Distributor implements SubjectInterface
 
     private ?array $data;
 
-    public final function forward(?HttpRequest $request, ?HttpResponse $response, string $dataType = self::DEFAULT_DATA) : Distributor
+    protected final function forward(?HttpRequest $request, ?HttpResponse $response, string $dataType = self::DEFAULT_DATA) : Distributor
     {
 
         if($request !== null){
@@ -81,7 +81,7 @@ abstract class Distributor implements SubjectInterface
         return $this;
     }
 
-    public final function redirectLocal(string $url) : Distributor
+    protected final function redirectLocal(string $url) : Distributor
     {
 
         $this->close();
@@ -95,7 +95,7 @@ abstract class Distributor implements SubjectInterface
         return $this;
     }
 
-    public final function redirectOutside(string $url) : Distributor
+    protected final function redirectOutside(string $url) : Distributor
     {
 
         $this->close();
@@ -106,7 +106,7 @@ abstract class Distributor implements SubjectInterface
     }
 
 
-    public final function bindTwig(string $template) : Distributor
+    protected final function bindTwig(string $template) : Distributor
     {
 
         $this->close();
@@ -136,7 +136,7 @@ abstract class Distributor implements SubjectInterface
         return $this;
     }
 
-    public final function bindDefaultEngine(string $template) : Distributor
+    protected final function bindDefaultEngine(string $template) : Distributor
     {
 
         $this->close();
@@ -157,7 +157,7 @@ abstract class Distributor implements SubjectInterface
     }
 
 
-    public final function statusCode(int $code): void
+    protected final function statusCode(int $code): void
     {
         http_response_code($code);
 
@@ -176,12 +176,12 @@ abstract class Distributor implements SubjectInterface
     }
 
 
-    public final function sendData() : ?array
+    protected final function sendData() : ?array
     {
         return $this->data;
     }
 
-    public function stopProcess() : void
+    protected function stopProcess() : void
     {
         die;
     }
