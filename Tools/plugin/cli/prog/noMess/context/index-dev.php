@@ -24,6 +24,7 @@ require (ROOT . 'vendor/autoload.php');
 require (ROOT . 'vendor/nomess/kernel/Exception/WorkException.php');
 require (ROOT . 'vendor/nomess/kernel/Tools/tools/time.php');
 
+new NoMess\Environment\EnvAccess();
 /*
 ===================================== Toolbar ==========================================
 */
@@ -35,8 +36,8 @@ $time = new Time();
 */
 
 
-$route = new NoMess\Router\Router();
-$route->getRoute();
+new NoMess\Router\Router();
+
 
 
 ?>

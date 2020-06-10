@@ -4,6 +4,7 @@ namespace NoMess\Router;
 
 use NoMess\Container\Container;
 use NoMess\Router\Builder\Builder;
+use NoMess\Service\Helpers\Response;
 use Twig\Environment;
 use NoMess\SubjectInterface;
 use NoMess\ObserverInterface;
@@ -16,6 +17,8 @@ use NoMess\HttpResponse\HttpResponse;
 
 class Router implements SubjectInterface
 {
+
+    use Response;
 
     private const CACHE_ROUTING             = ROOT . 'App/var/cache/routes/route.php';
     private const COMPONENTS_CONFIG         = ROOT . 'App/config/components.php';
@@ -47,12 +50,24 @@ class Router implements SubjectInterface
         $this->HttpSession = $this->container->get(HttpSession::class);
         $this->HttpSession->initSession();
 
-        $this->resetCache();
+        if(NOMESS_CONTEXT === 'DEV') {
+            $this->resetCache();
+
+            $this->controlCacheFile();
+        }else{
+            if(!file_exists(self::CACHE_ROUTING)){
+                $builder = new Builder();
+                $builder->buildRoute();
+            }
+        }
+
+
+        $this->formToken();
+
+        $this->getRoute();
 
         $this->attach();
         $this->notify();
-
-        $this->controlCacheFile();
     }
 
 
@@ -64,8 +79,7 @@ class Router implements SubjectInterface
     public function getRoute() : void
     {
 
-        $vController = null;
-        $method = null;
+        $action = null;
 
         $route = require self::CACHE_ROUTING;
         $route = unserialize($route);
@@ -119,15 +133,17 @@ class Router implements SubjectInterface
 
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $action = 'doPost';
-                $method = "POST";
             } else {
                 $action = 'doGet';
-                $method = "GET";
             }
         }
 
-        $result = explode('\\', $controller);
-        $vController = $result[count($result) - 1];
+        if(NOMESS_CONTEXT === 'DEV') {
+            $result = explode('\\', $controller);
+            $vController = $result[count($result) - 1];
+            $method = ($action === 'doGet') ? 'GET' : 'POST';
+            $_SESSION['nomess_toolbar'] = [1 => $action, 2 => $vController, 3 => $method];
+        }
 
         $this->bufferExclude();
 
@@ -135,25 +151,10 @@ class Router implements SubjectInterface
         if(file_exists($path) && !empty($controller)){
             $controller = $this->container->get($controller);
 
-            $_SESSION['nomess_toolbar'] = [1 => $action, 2 => $vController, 3 => $method];
-
             $controller->$action($this->container->get(HttpResponse::class), $this->container->get(HttpRequest::class));
         }else{
 
-            http_response_code(404);
-
-            $tabError = require ROOT . 'App/config/error.php';
-
-            if(strpos($tabError[404], '.twig')){
-                if(file_exists(ROOT . 'Web/public/' . $tabError[404])) {
-                    $this->bindTwig($tabError[404]);
-                }
-            }else{
-                if(file_exists(ROOT . $tabError[404])) {
-                    include(ROOT . $tabError[404]);
-                }
-            }
-            die;
+            $this->response(404);
         }
 
     }
@@ -260,4 +261,27 @@ class Router implements SubjectInterface
             $builder->buildRoute();
         }
     }
+
+
+
+    private function formToken(): void
+    {
+        if($this->HttpSession->get('_token') !== null &&
+            (isset($_POST['_token']) || isset($_GET['_token']))){
+
+            if((isset($_POST['_token']) && $_POST['_token'] !== $this->HttpSession->get('_token'))
+                || (isset($_GET['_token']) && $_GET['_token'] !== $this->HttpSession->get('_token'))){
+
+                $this->response(401);
+            }
+        }
+    }
+
+    private function maintenance(): void
+    {
+        if(getenv('NM_MAINTENANCE') === true){
+            $this->response(503);
+        }
+    }
+
 }

@@ -5,10 +5,10 @@ namespace NoMess\Manager;
 use NoMess\Components\Forms\FormAccess;
 use NoMess\Components\LightPersists\LightPersists;
 use NoMess\Container\Container;
-use NoMess\Exception\WorkException;
 use NoMess\HttpRequest\HttpRequest;
 use NoMess\HttpResponse\HttpResponse;
 use NoMess\ObserverInterface;
+use NoMess\Service\Helpers\Response;
 use NoMess\SubjectInterface;
 use Throwable;
 use Twig\Environment;
@@ -17,22 +17,14 @@ use Twig\Loader\FilesystemLoader;
 abstract class Distributor implements SubjectInterface
 {
 
+    use Response;
+
     private const COMPONENT_CONFIGURATION           = ROOT . 'App/config/components.php';
 
-    /**
-     * Twig
-     */
     private const BASE_ENVIRONMENT                  = 'public';
-
-
-    /**
-     * Persiste data for redirect
-     */
+    private const CACHE_TWIG                        = ROOT . 'Web/cache/twig/';
     private const SESSION_DATA                      = 'nomess_persiste_data';
 
-    /**
-     * Data type
-     */
     const DEFAULT_DATA                              = 'php';
     const JSON_DATA                                 = 'json';
 
@@ -40,17 +32,9 @@ abstract class Distributor implements SubjectInterface
     private const SESSION_NOMESS_SCURITY            = 'nomess_session_security';
     private const SESSION_NOMESS_TOOLBAR            = 'nomess_toolbar';
 
-    /**
-     * Template engine
-     *
-     * @var mixed
-     */
     private $engine;
-
     private HttpRequest $request;
-
     private HttpResponse $response;
-
     private ?array $form;
 
 
@@ -59,11 +43,6 @@ abstract class Distributor implements SubjectInterface
      */
     protected Container $container;
 
-
-    /**
-     *
-     * @var ObserverInterface
-     */
     private ?array $observer = array();
 
     private ?array $data;
@@ -103,7 +82,11 @@ abstract class Distributor implements SubjectInterface
             }
 
             unset($dataSession[self::SESSION_NOMESS_SCURITY]);
-            unset($dataSession[self::SESSION_NOMESS_TOOLBAR]);
+
+            if(NOMESS_CONTEXT === 'DEV') {
+                unset($dataSession[self::SESSION_NOMESS_TOOLBAR]);
+            }
+
             $this->data = array_merge($this->data, $dataSession);
 
             if ($dataType === 'json') {
@@ -167,20 +150,7 @@ abstract class Distributor implements SubjectInterface
      */
     protected final function statusCode(int $code): void
     {
-        http_response_code($code);
-
-        $tabError = require ROOT . 'App/config/error.php';
-
-        if(strpos($tabError[$code], '.twig')){
-            if(file_exists(ROOT . 'Web/public/' . $tabError[$code])) {
-                $this->bindTwig($tabError[$code]);
-            }
-        }else{
-            if(file_exists(ROOT . $tabError[$code])) {
-                include(ROOT . $tabError[$code]);
-            }
-        }
-        die;
+        $this->response($code);
     }
 
 
@@ -195,15 +165,24 @@ abstract class Distributor implements SubjectInterface
         $this->close();
 
 
-        global $time;
-        $time->setXdebug(xdebug_time_index());
+        if(NOMESS_CONTEXT === 'DEV') {
+            global $time;
+            $time->setXdebug(xdebug_time_index());
+        }
 
         $loader = new FilesystemLoader(self::BASE_ENVIRONMENT);
-        $this->engine = new Environment($loader, [
-            'debug' => true,
-            'cache' => false,
-            'strict_variables' => true
-        ]);
+
+        if(NOMESS_CONTEXT === 'DEV') {
+            $this->engine = new Environment($loader, [
+                'debug' => true,
+                'cache' => false,
+                'strict_variables' => true
+            ]);
+        }else{
+            $this->engine = new Environment($loader, [
+                'cache' => self::CACHE_TWIG
+            ]);
+        }
 
         $this->engine->addExtension(new \Twig\Extension\DebugExtension());
 
@@ -213,10 +192,13 @@ abstract class Distributor implements SubjectInterface
             'POST' => $this->request->getPost(true),
             'GET' => $this->request->getGet(true),
             'FORM' => isset($this->form) ? $this->form : null,
-            'param' => $this->data
+            'param' => $this->data,
+            '_token' => isset($_SESSION[getenv('NM_TOKEN_NAME_CSRF')]) ? $_SESSION[getenv('NM_TOKEN_NAME_CSRF')] : null
         ]);
 
-        $this->getDevToolbar();
+        if (NOMESS_CONTEXT === 'DEV') {
+            $this->getDevToolbar();
+        }
 
         return $this;
     }
@@ -233,14 +215,18 @@ abstract class Distributor implements SubjectInterface
         $this->close();
 
 
-        global $time;
-        $time->setXdebug(xdebug_time_index());
+        if(NOMESS_CONTEXT === 'DEV') {
+            global $time;
+            $time->setXdebug(xdebug_time_index());
+        }
 
         $param = $this->data;
 
-        require(ROOT . 'Web/public/' . $template);
+        echo require(ROOT . 'Web/public/' . $template);
 
-        $this->getDevToolbar();
+        if(NOMESS_CONTEXT === 'DEV') {
+            $this->getDevToolbar();
+        }
 
         return $this;
     }
@@ -251,7 +237,7 @@ abstract class Distributor implements SubjectInterface
      *
      * @param array $form
      * @return Distributor
-     * @throws WorkException
+     * @throws \NoMess\Exception\WorkException
      */
     protected final function bindForm(array $form): Distributor
     {
@@ -300,9 +286,6 @@ abstract class Distributor implements SubjectInterface
     }
 
 
-    /**
-     * Attach observer
-     */
     public function attach(): void
     {
         $componentConfig = require self::COMPONENT_CONFIGURATION;
@@ -316,10 +299,6 @@ abstract class Distributor implements SubjectInterface
         }
     }
 
-
-    /**
-     * Notify the observer to change state
-     */
     public function notify(): void
     {
         foreach ($this->observer as $value) {

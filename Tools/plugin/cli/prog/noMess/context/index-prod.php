@@ -12,5 +12,5 @@ ini_set('error_log', ROOT .'App/var/log/error.log');
 require (ROOT . 'vendor/autoload.php');
 require (ROOT . 'vendor/nomess/kernel/Exception/WorkException.php');
 
-$route = new NoMess\Router\Router();
-$tab = $route->getRoute();
+new NoMess\Environment\EnvAccess();
+new NoMess\Router\Router();

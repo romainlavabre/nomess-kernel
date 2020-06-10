@@ -22,13 +22,13 @@ class LightPersists extends Component implements ObserverInterface
 
     private Container $container;
 
-    private ?array $content;
+    private ?array $content = null;
 
 
     /**
      * Identifier of file
      */
-    private ?string $id;
+    private ?string $id = null;
 
 
     /**

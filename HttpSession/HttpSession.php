@@ -28,6 +28,7 @@ class HttpSession
 
         if (session_status() === 1) {
 
+            ini_set('session.gc_maxlifetime', getenv('NM_SESSION_LIFETIME'));
             session_start();
 
             if (!isset($_SESSION[self::ID_MODULE_SECURITY])) {
@@ -233,6 +234,10 @@ class HttpSession
         if (!isset($_SESSION[self::ID_MODULE_SECURITY][self::MODULE_INITIALIZE])) {
             session_regenerate_id(true);
             $_SESSION[self::ID_MODULE_SECURITY][self::MODULE_INITIALIZE] = 1;
+        }
+
+        if(!isset($_SESSION[getenv('NM_TOKEN_NAME_CSRF')])){
+            $_SESSION[getenv('NM_TOKEN_NAME_CSRF')] = md5(uniqid('_token::') . str_shuffle('ABCDEFGHIJ'));
         }
     }
 
