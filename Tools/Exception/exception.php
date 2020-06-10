@@ -54,7 +54,6 @@
 
         body{
             background-color: #f0f0f0;
-            overflow: scroll;
             height: 100% !important;
         }
 
@@ -62,6 +61,10 @@
             background-color: rgb(30, 177, 94);
             font-size: 25px;
             color: #333;
+        }
+
+        .card-title{
+            font-size: 20px;
         }
 
         .nav{
@@ -96,23 +99,65 @@
             text-decoration: none !important;
         }
 
+        .color-link{
+            color: #d31c27 !important;
+        }
+
+        .color-link:hover{
+            text-decoraction: none !important;
+        }
+
+        .header li a{
+            font-weight: bold;
+            font-size: 20px !important;
+        }
+
     </style>
 </head>
-<body style="overflow: scroll !important;">
+<body>
 
 
 <div class="container-fluid">
 
+
+    <ul class="nav nav-tabs mt-5 offset-1 col-10 header">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" id="contact-tab"><?php echo $_SERVER['SERVER_PROTOCOL'] . ' ' . $_SERVER['REQUEST_METHOD'] ?></a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" id="contact-tab"><?php echo $_SERVER['REDIRECT_STATUS'] ?></a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link"><?php echo $_SERVER['REDIRECT_URL'] ?></a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" id="profile-tab"><?php echo $_SERVER['HTTP_HOST'] . '=' . $_SERVER['SERVER_ADDR'] . ':' . $_SERVER['SERVER_PORT'] ?></a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" id="contact-tab"><?php echo $_SERVER['SERVER_SOFTWARE'] ?></a>
+        </li>
+        <li class="nav-item" style="width: 100%; margin: 0px">
+            <a class="nav-link" id="contact-tab"></a>
+        </li>
+    </ul>
+
     <div class="row">
         <div class="col-12">
             <div class="row">
-                <div class="offset-1 col-10 mt-5 text-lg-center">
+                <div class="offset-1 col-10 text-lg-center">
                     <div class="card">
                         <div class="card-header font-weight-bold">
-                            <div class="card-title"><?php  echo "Line " . $e->getLine() . " in " . str_replace(ROOT, '', $e->getFile()) ?></div>
+                            <div class="card-title font-weight-bolder">
+                                <?php
+                                echo "Line " . $e->getLine() . " in " . str_replace(ROOT, '', $e->getFile())
+                                ?></div>
                         </div>
                         <div class="card-body">
-                            <?php echo ucfirst($e->getMessage()) ?>
+                            <?php echo ucfirst($e->getMessage()) ?><br>
+
+                        </div>
+                        <div class="card-footer text-left">
+                            <a class="color-link" href="https://google.com/search?q=<?php echo urlencode('php ' . phpversion() . ' ' . $e->getMessage()) ?>" target="_blank">Google</a>
                         </div>
                     </div>
                 </div>

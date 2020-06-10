@@ -154,6 +154,8 @@ abstract class Distributor implements SubjectInterface
             $formAccess = new FormAccess();
             $this->form[$name] = $formAccess->get($name);
         }
+
+        return $this;
     }
 
 
