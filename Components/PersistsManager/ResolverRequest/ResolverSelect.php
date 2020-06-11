@@ -148,21 +148,23 @@ class ResolverSelect extends Resolver
         preg_match_all('/[a-zA-Z0-9-_&\/\\\~@#]+\s*AS\s*[A-Za-z0-9-_\.]+/', $searchPortion[1], $table);
 
 
-        foreach ($table[0] as $value){
-            $tmp = explode('AS', $value);
+        if(!empty($table)) {
+            foreach ($table[0] as $value) {
+                $tmp = explode('AS', $value);
 
-            if(isset($this->dependency)){
-                foreach($this->dependency as $className => $configuration){
+                if (isset($this->dependency)) {
+                    foreach ($this->dependency as $className => $configuration) {
 
-                    foreach ($configuration as $array) {
-                        if ($array['table'] === trim($tmp[0])) {
+                        foreach ($configuration as $array) {
+                            if ($array['table'] === trim($tmp[0])) {
 
-                            foreach ($tabColumn as &$arrayColumn){
+                                foreach ($tabColumn as &$arrayColumn) {
 
-                                $prefixFind = trim($tmp[1]);
+                                    $prefixFind = trim($tmp[1]);
 
-                                if($arrayColumn['prefix'] === $prefixFind){
-                                    $arrayColumn['objectRelation'] = $className;
+                                    if ($arrayColumn['prefix'] === $prefixFind) {
+                                        $arrayColumn['objectRelation'] = $className;
+                                    }
                                 }
                             }
                         }
@@ -170,8 +172,6 @@ class ResolverSelect extends Resolver
                 }
             }
         }
-
-        unset($value);
 
         //If relation object doesn't exist, column is to object target
         foreach ($tabColumn as &$value){

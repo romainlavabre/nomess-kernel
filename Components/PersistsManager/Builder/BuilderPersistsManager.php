@@ -18,8 +18,11 @@ class BuilderPersistsManager
         'column' => '@PM\\Column',
         'dependency' => '@PM\\Dependency',
         'keyArray' => '@PM\\KeyArray',
-        'patch' => '@PM\\Patch'
+        'patch' => '@PM\\Patch',
+        'extends' => '@PM\\Extends'
     ];
+
+    private array $extends = array();
 
     private string $className;
 
@@ -104,12 +107,28 @@ class BuilderPersistsManager
         $commentClass = $reflectionClass->getDocComment();
 
         if(strpos($commentClass, self::$comment['table']) !== false){
-            preg_match('/@PM\\\Table\([a-zA-Z0-9-_&\/\\\~@#]+\)/', $commentClass, $output);
+            preg_match('/@PM\\\Table\([a-zA-Z0-9-_&\/\\\~@#]+\)/', $commentClass, $outputTable);
 
-            if(!empty($output[0])){
-                $this->table = str_replace(['@PM\\Table(', ')'], '', $output[0]);
+            if(!empty($outputTable[0])){
+                $this->table = str_replace(['@PM\\Table(', ')'], '', $outputTable[0]);
             }else{
                 throw new WorkException('BuilderPersistsManager encountered an error: table name could not be resolved for ' . $reflectionClass->getName() . ', but exists, please, verify your syntax');
+            }
+
+            if(strpos($commentClass, self::$comment['extends']) !== false){
+                preg_match_all('/@PM\\\Extends\([a-zA-Z0-9-_&\/\~@#]+,[a-zA-Z0-9-_&\/\~@#]+\)/', $commentClass, $outputExtends);
+
+                if(!empty($outputExtends)) {
+                    foreach ($outputExtends[0] as $value) {
+
+                        $value = str_replace(['@PM\\Extends(', ')'], '', $value);
+
+                        $result = explode(',', $value);
+
+                        $this->extends[$result[0]] = $result[1];
+
+                    }
+                }
             }
         }else {
 
@@ -122,6 +141,8 @@ class BuilderPersistsManager
      * Create properties configuration
      *
      * @param array $properties
+     * @param \ReflectionClass $reflectionClass
+     * @throws WorkException
      * @throws \ReflectionException
      */
     private function getCommentProperty(array $properties, \ReflectionClass $reflectionClass): void
@@ -273,6 +294,8 @@ class BuilderPersistsManager
             } else {
                 throw new WorkException('BuilderPersistsManager encountered an error: column name could not be resolved for ' . $reflectionClass->getName() . '::'. $reflectionProperty->getName() . ', but exists, please, verify your syntax');
             }
+        }elseif(isset($this->extends[$reflectionProperty->getName()])){
+            return $this->extends[$reflectionProperty->getName()];
         }
 
         return null;

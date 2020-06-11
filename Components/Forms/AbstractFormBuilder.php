@@ -15,7 +15,6 @@ abstract class AbstractFormBuilder extends Component
     protected const DEFAULT_ENGINE         = 'php';
 
 
-    private array $form = array();
     private array $config;
 
     private array $groupId = array();
@@ -26,8 +25,9 @@ abstract class AbstractFormBuilder extends Component
 
 
 
-    public function __construct()
+    public final function __construct()
     {
+        parent::__construct();
         $this->config = require self::COMPONENT_CONFIG;
     }
 
@@ -60,13 +60,7 @@ abstract class AbstractFormBuilder extends Component
     {
         $config = $this->getConfigAttribute('form');
 
-        if($config !== null && $attributes !== null) {
-            $result = array_replace($config, $attributes);
-        }elseif($config !== null){
-            $result = $config;
-        }elseif($attributes !== null){
-            $result = $attributes;
-        }
+        $result = $this->mergedAttributes($config, $attributes);
 
 
 
@@ -85,15 +79,7 @@ abstract class AbstractFormBuilder extends Component
     {
         $config = $this->getConfigAttribute('group');
 
-        $result = null;
-
-        if($config !== null && $attributes !== null) {
-            $result = array_replace($config, $attributes);
-        }elseif($config !== null){
-            $result = $config;
-        }elseif($attributes !== null){
-            $result = $attributes;
-        }
+        $result = $this->mergedAttributes($config, $attributes);
 
         $this->buildGroup($result, true);
         return $this;
@@ -123,15 +109,7 @@ abstract class AbstractFormBuilder extends Component
         $config = $this->getConfigAttribute('label');
         $this->setId($attributes);
 
-        $result = null;
-
-        if($config !== null && $attributes !== null) {
-            $result = array_replace($config, $attributes);
-        }elseif($config !== null){
-            $result = $config;
-        }elseif($attributes !== null){
-            $result = $attributes;
-        }
+        $result = $this->mergedAttributes($config, $attributes);
 
         $this->buildLabel($result);
 
@@ -142,7 +120,7 @@ abstract class AbstractFormBuilder extends Component
     /**
      * Create an input element
      *
-     * @param array $attribute
+     * @param array $attributes
      * @param bool $completeValue
      * @return $this
      * @throws WorkException
@@ -152,15 +130,7 @@ abstract class AbstractFormBuilder extends Component
         $this->vType($attributes);
         $config = $this->getConfigAttribute('input', $attributes['type']);
 
-        $result = null;
-
-        if($config !== null && $attributes !== null) {
-            $result = array_replace($config, $attributes);
-        }elseif($config !== null){
-            $result = $config;
-        }elseif($attributes !== null){
-            $result = $attributes;
-        }
+        $result = $this->mergedAttributes($config, $attributes);
 
         $this->buildInput($result, $completeValue);
         return $this;
@@ -170,7 +140,7 @@ abstract class AbstractFormBuilder extends Component
     /**
      * Create an textarea element
      *
-     * @param array $attribute
+     * @param array $attributes
      * @param bool $completeValue
      * @return $this
      * @throws WorkException
@@ -179,15 +149,7 @@ abstract class AbstractFormBuilder extends Component
     {
         $config = $this->getConfigAttribute('textarea');
 
-        $result = null;
-
-        if($config !== null && $attributes !== null) {
-            $result = array_replace($config, $attributes);
-        }elseif($config !== null){
-            $result = $config;
-        }elseif($attributes !== null){
-            $result = $attributes;
-        }
+        $result = $this->mergedAttributes($config, $attributes);
 
         $this->buildTextarea($result, $completeValue);
         return $this;
@@ -197,9 +159,10 @@ abstract class AbstractFormBuilder extends Component
     /**
      * Create an select element
      *
-     * @param array $attribute
+     * @param array $attributes
      * @param array $option
      * @param bool $completeValue
+     * @param \Closure|null $closure
      * @return $this
      * @throws WorkException
      */
@@ -207,17 +170,9 @@ abstract class AbstractFormBuilder extends Component
     {
         $config = $this->getConfigAttribute('select');
 
-        $result = null;
+        $result = $this->mergedAttributes($config, $attributes);
 
-        if($config !== null && $attributes !== null) {
-            $result = array_replace($config, $attributes);
-        }elseif($config !== null){
-            $result = $config;
-        }elseif($attributes !== null){
-            $result = $attributes;
-        }
-
-        $this->buildSelect($result, $option, true, $closure);
+        $this->buildSelect($result, $option, $completeValue, $closure);
 
         return $this;
     }
@@ -252,7 +207,7 @@ abstract class AbstractFormBuilder extends Component
 
 
     /**
-     * Valid the prensence of type attribute, return an Exception if doesn't exists
+     * Valid the presence  of type attribute, return an Exception if doesn't exists
      *
      * @param array $attributes
      * @throws WorkException
@@ -354,7 +309,7 @@ abstract class AbstractFormBuilder extends Component
 
                         if($completeValue === true){
                             if(isset($attributesOption['value'])) {
-                                $field .= $this->completeOption($content, $attributesOption['value']);
+                                $field .= $this->completeOption($attributesOption['value']);
                             }else{
                                 throw new WorkException('FormBuilder encountered an error: attribute "value" must be specified for completes value with POST for option balise');
                             }
@@ -461,14 +416,14 @@ abstract class AbstractFormBuilder extends Component
                 if ($completeValue === false && array_key_exists('value', $attributes)) {
                     $content .= '>' . $attributes['value'];
                 } elseif($completeValue === true) {
-                    $content .= '>' . $this->completeValue($provider, $attributes);
+                    $content .= '>' . $this->completeValue($attributes);
                 }
             }else{
                 throw new WorkException('FormBuilder encountered an error: for push value to the end, array attribute with "name" attribute or "value" attribute must be declared');
             }
         }elseif($completeValue === true){
             if($attribute !== null) {
-                $content .= ' value="' . $this->completeValue($provider, $attributes) . '">';
+                $content .= ' value="' . $this->completeValue($attributes) . '">';
             }else{
                 throw new WorkException('FormBuilder encountered an error: for create an completed value with POST variable, array attribute with "name" attribute must be declared');
             }
@@ -487,21 +442,18 @@ abstract class AbstractFormBuilder extends Component
     /**
      * Add the post value
      *
-     * @param string|null $defaultValue
-     * @param string $provider
      * @param array $attributes
-     * @param string|null $nameOption
      * @return string
      * @throws WorkException
      */
-    private function completeValue(string $provider, array $attributes, ?string $nameOption = null): string
+    private function completeValue(array $attributes): string
     {
 
         if(!array_key_exists('name', $attributes) || empty($attributes['name'])){
             throw new WorkException('FormBuilder encountered an error: cannot create an value for "value" attribute, attribute name is not found or empty');
         }
 
-        $defaultValue = ' }}';
+        $defaultValue = '';
 
         if(!isset($attributes['value'])){
             if($this->engine === 'twig'){
@@ -536,11 +488,10 @@ abstract class AbstractFormBuilder extends Component
 
 
     /**
-     * @param string|null $content
      * @param string $name
      * @return string
      */
-    private function completeOption(?string $content, string $name): string
+    private function completeOption(string $name): string
     {
         if($this->engine === 'twig'){
             return ' {{ POST.' . $name . ' is defined and POST.' . $name . ' == ' . $name . ' ? "selected" }}';
@@ -602,4 +553,22 @@ abstract class AbstractFormBuilder extends Component
         file_put_contents(self::PATH_CACHE . str_replace('App\\Forms\\', '', get_class($this)) . '.' . $this->engine, $this->content);
     }
 
+
+    /**
+     * @param array|null $config
+     * @param array|null $attributes
+     * @return array|null
+     */
+    private function mergedAttributes(?array $config, ?array $attributes): ?array
+    {
+        if($config !== null && $attributes !== null) {
+            return array_replace($config, $attributes);
+        }elseif($config !== null){
+            return $config;
+        }elseif($attributes !== null){
+            return $attributes;
+        }
+
+        return null;
+    }
 }
