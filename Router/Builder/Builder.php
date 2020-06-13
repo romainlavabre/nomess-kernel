@@ -32,7 +32,7 @@ class Builder
                 if(pathinfo($path . $item, PATHINFO_EXTENSION) === 'php'){
                     $reflectionClass = new \ReflectionClass($this->getClassName($path . $item));
 
-                    $auth = $this->getAuth($reflectionClass);
+                    $auth = $this->getFilters($reflectionClass);
 
                     foreach ($this->getRoute($reflectionClass) as $route){
                         if(!empty($route)) {
@@ -99,8 +99,11 @@ class Builder
      * @param \ReflectionClass $reflectionClass
      * @return string|null
      */
-    private function getAuth(\ReflectionClass $reflectionClass): ?string
+    private function getFilters(\ReflectionClass $reflectionClass): ?array
     {
+
+        $array = array();
+
         $comment = $reflectionClass->getDocComment();
 
         if(strpos($comment, '@Filter')){
@@ -108,12 +111,12 @@ class Builder
 
             foreach ($lineComment as $line){
                 if(strpos($comment, '@Filter')){
-                    return trim(str_replace(['@Filter(', ')'], '', $line));
+                    $array[] =  trim(str_replace(['@Filter(', ')'], '', $line));
                 }
             }
         }
 
-        return null;
+        return $array;
     }
 
 
@@ -125,7 +128,7 @@ class Builder
      * @param string $filter
      * @throws WorkException
      */
-    private function addRoute(string $url, string $controllers, string $path, ?string $filter): void
+    private function addRoute(string $url, string $controllers, string $path, ?array $filters): void
     {
 
         if(!array_key_exists($url, $this->routes)){
@@ -133,10 +136,10 @@ class Builder
             $this->routes[$url] = [
                 'controller' => $controllers,
                 'path' => $path,
-                'filter' => $filter
+                'filters' => $filters
             ];
         }else{
-            throw new WorkException('RoutesBuilder encountered an error: Duplicatation of url ' . $url);
+            throw new WorkException('RoutesBuilder encountered an error: Conflict with url ' . $url);
         }
     }
 

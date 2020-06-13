@@ -453,7 +453,7 @@ abstract class AbstractFormBuilder extends Component
             throw new WorkException('FormBuilder encountered an error: cannot create an value for "value" attribute, attribute name is not found or empty');
         }
 
-        $defaultValue = '';
+        $defaultValue = null;
 
         if(!isset($attributes['value'])){
             if($this->engine === 'twig'){

@@ -1,8 +1,8 @@
 <?php
 
-namespace NoMess\HttpResponse;
+namespace NoMess\Http;
 
-use NoMess\HttpRequest\HttpRequest;
+
 
 
 class HttpResponse
@@ -24,7 +24,7 @@ class HttpResponse
     }
 
     /**
-     * Create an cookie accepte an array with multiple entry
+     * Create an cookie accept an array with multiple entry
      *
      * @param string $name
      * @param mixed $value
@@ -54,13 +54,12 @@ class HttpResponse
 
 
     /**
-     * Delete the cookie correspondance with index varible
+     * Delete the cookie correspondence with index variable
      *
      * @param string $index
      */
     public function removeCookie(string $index): void
     {
-        $cookie = $this->request->getCookie($index);
         $cookie = null;
         $this->action['cookie'][] = ['setcookie' => [$index, null, -1, '/']];
 

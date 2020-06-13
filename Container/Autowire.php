@@ -9,8 +9,6 @@ use NoMess\Exception\WorkException;
 class Autowire
 {
 
-    private const PATH_CACHE                        = ROOT . 'App/var/cache/di/';
-
     public array $instance = array();
     public array $definitions;
     public array $cache = array();
@@ -121,6 +119,8 @@ class Autowire
      * Revolve parameters of method
      *
      * @param array $tabReflectionParameters
+     * @param bool $make
+     * @param \ReflectionClass $reflectionClass
      * @return \ReflectionParameter[]
      * @throws WorkException
      * @throws \ReflectionException
@@ -141,8 +141,8 @@ class Autowire
 
             } elseif(array_key_exists($reflectionParameter->getType()->getName(), $this->instance) && $make === false){
 
-                $tabParameters[] = $this->instance[$reflectionParameter->getType()->getName()];
                 $keySearch = $this->searchForKey($reflectionParameter->getType()->getName());
+                $tabParameters[] = $this->instance[$keySearch];
 
 
             } elseif ($reflectionParameter->getType() === null) {

@@ -2,16 +2,20 @@
 
 namespace NoMess\Router;
 
+use NoMess\Components\Slug\Slug;
 use NoMess\Container\Container;
 use NoMess\Router\Builder\Builder;
 use NoMess\Service\Helpers\Response;
 use Twig\Environment;
 use NoMess\SubjectInterface;
 use NoMess\ObserverInterface;
+use Twig\Error\LoaderError;
+use Twig\Error\RuntimeError;
+use Twig\Error\SyntaxError;
 use Twig\Loader\FilesystemLoader;
-use NoMess\HttpRequest\HttpRequest;
-use NoMess\HttpSession\HttpSession;
-use NoMess\HttpResponse\HttpResponse;
+use NoMess\Http\HttpRequest;
+use NoMess\Http\HttpSession;
+use NoMess\Http\HttpResponse;
 
 
 
@@ -51,23 +55,34 @@ class Router implements SubjectInterface
         $this->HttpSession->initSession();
 
         if(NOMESS_CONTEXT === 'DEV') {
-            $this->resetCache();
+            if(isset($_POST['resetCache'])){
+                opcache_reset();
+                unset($_POST);
+            }
+
+            if(isset($_POST['invalide'])){
+                opcache_invalidate($_POST['invalide'], true);
+                unset($_POST);
+            }
 
             $this->controlCacheFile();
-        }else{
-            if(!file_exists(self::CACHE_ROUTING)){
-                $builder = new Builder();
-                $builder->buildRoute();
-            }
+        }
+
+        if(!file_exists(self::CACHE_ROUTING)){
+            $builder = new Builder();
+            $builder->buildRoute();
         }
 
 
+        $this->maintenance();
         $this->formToken();
-
-        $this->getRoute();
 
         $this->attach();
         $this->notify();
+
+        $this->initiator();
+
+
     }
 
 
@@ -76,67 +91,19 @@ class Router implements SubjectInterface
      *
      * @return void
      */
-    public function getRoute() : void
+    public function initiator() : void
     {
+        $applicationRoutes = require self::CACHE_ROUTING;
+        $applicationRoutes = unserialize($applicationRoutes);
 
-        $action = null;
+        $config = $this->routeResolver($_GET['p'], $applicationRoutes);
 
-        $route = require self::CACHE_ROUTING;
-        $route = unserialize($route);
+        $this->filterResolver($config['filters']);
 
-        $controller = null;
-        $path = null;
+        $controller = $config['controller'];
+        $action = $this->getMethodToCall();
 
-        if(strpos($_GET['p'], 'param') !== false){
-            $get = array();
 
-            $findParam = false;
-
-            $lastValue = null;
-
-            $i = 1;
-
-            $url = explode('/', $_GET['p']);
-
-            foreach($url as $value){
-                if($findParam === false && strpos($value, 'param') === false){
-                    $get[] = $value;
-                }else if($findParam === false){
-                    $findParam = true;
-                }else{
-                    if(is_float($i / 2)){
-                        $_GET[$value] = null;
-                        $lastValue = $value;
-                    }else{
-                        $_GET[$lastValue] = $value;
-                    }
-
-                    $i++;
-                }
-            }
-
-            $_GET['p'] = implode('/', $get);
-        }
-
-        if(isset($route[$_GET['p']])) {
-            $controller = $route[$_GET['p']]['controller'];
-            $path = $route[$_GET['p']]['path'];
-            $useFilter = $route[$_GET['p']]['filter'];
-
-            if (!empty($useFilter)) {
-                $className = 'App\\Filters\\' . $useFilter;
-
-                $filter = $this->container->get($className);
-                $filter->filtrate($this->container->get(HttpRequest::class), $this->container->get(HttpResponse::class));
-
-            }
-
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                $action = 'doPost';
-            } else {
-                $action = 'doGet';
-            }
-        }
 
         if(NOMESS_CONTEXT === 'DEV') {
             $result = explode('\\', $controller);
@@ -145,51 +112,13 @@ class Router implements SubjectInterface
             $_SESSION['nomess_toolbar'] = [1 => $action, 2 => $vController, 3 => $method];
         }
 
-        $this->bufferExclude();
-
-
-        if(file_exists($path) && !empty($controller)){
+        if(class_exists($controller)) {
             $controller = $this->container->get($controller);
-
             $controller->$action($this->container->get(HttpResponse::class), $this->container->get(HttpRequest::class));
         }else{
-
             $this->response(404);
         }
-
     }
-
-
-    private function bufferExclude() : void
-    {
-        if(isset($_GET['buffer'])){
-            $_SESSION['nomess_buffer'] = $_GET['buffer'];
-        }
-    }
-
-    private function resetCache() : void
-    {
-        if(isset($_POST['resetCache'])){
-            opcache_reset();
-            unset($_POST);
-        }
-
-        if(isset($_POST['invalide'])){
-            opcache_invalidate($_POST['invalide'], true);
-            unset($_POST);
-        }
-
-        if(isset($_POST['resetCacheRoute'])){
-            @unlink(self::CACHE_ROUTING);
-            unset($_POST);
-        }
-
-        if(isset($_POST['resetCacheMon'])){
-            @unlink(ROOT . 'App/var/cache/dm/datamanager.xml');
-            unset($_POST);
-        }
-    }
-
 
 
     /**
@@ -231,8 +160,9 @@ class Router implements SubjectInterface
      * Load error template with twig engine
      *
      * @param string $template
-     *
-     * @return void
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
      */
     public function bindTwig(string $template) : void
     {
@@ -281,6 +211,73 @@ class Router implements SubjectInterface
     {
         if(getenv('NM_MAINTENANCE') === true){
             $this->response(503);
+        }
+    }
+
+    private function filterResolver(?array $filters): void
+    {
+        if (!empty($filters)) {
+
+            foreach ($filters as $filter) {
+                $className = 'App\\Filters\\' . $filter;
+
+                $filter = $this->container->get($className);
+                $filter->filtrate($this->container->get(HttpRequest::class), $this->container->get(HttpResponse::class));
+
+            }
+        }
+    }
+
+    private function routeResolver(string $url, array $applicationRoutes): array
+    {
+        foreach ($applicationRoutes as $route => $value){
+
+            if (strpos($url, '/' .getenv('NM_KEYWORD_PARAMETER') . '/')) {
+                $tmp = explode('/' .getenv('NM_KEYWORD_PARAMETER') . '/', $url);
+
+                if($tmp[0] === $route) {
+                    $parameters = $tmp[1];
+                    $this->parameterResolver($parameters);
+
+                    return $value;
+                }
+            }elseif($route === $url){
+                return $value;
+            }
+        }
+
+        $this->response(404);
+    }
+
+    private function parameterResolver(string $unformatedParameters): void
+    {
+
+        $slug = $this->container->get(Slug::class);
+
+        $parameters = explode('/', $unformatedParameters);
+
+
+        //1 = key, 2 = value
+        $last = 1;
+
+        foreach ($parameters as $parameter){
+
+            if($last === null){
+                $_GET[$parameter] = null;
+                $last = $parameter;
+            }else{
+                $_GET[$last] = ($slug->searchSlug($parameter) !== null) ? $slug->searchSlug($parameter) : $parameter;
+                $last = null;
+            }
+        }
+    }
+
+    private function getMethodToCall(): string
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            return 'doPost';
+        } else {
+            return 'doGet';
         }
     }
 

@@ -10,11 +10,10 @@ class BuilderDataManager
     private const DIR                   = ROOT . 'App/src/Modules/';
     private const CACHE_PATH            = ROOT . 'App/var/cache/dm/datamanager.xml';
 
+    private ?array $tabDir = array();
 
     /**
-     * Builder
-     *
-     * @return void
+     * @throws WorkException
      */
     public function builderManager() : void
     {
@@ -131,9 +130,7 @@ class BuilderDataManager
     private function getDir() : ?array
     {
         $pathDirSrc = self::DIR;
-        
-        $tabGeneral = scandir($pathDirSrc);
-    
+
         $tabDirWait = array();
     
         $dir = $pathDirSrc;

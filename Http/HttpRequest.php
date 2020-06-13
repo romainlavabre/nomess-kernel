@@ -1,6 +1,6 @@
 <?php
 
-namespace NoMess\HttpRequest;
+namespace NoMess\Http;
 
 use NoMess\Exception\WorkException;
 
@@ -82,7 +82,7 @@ class HttpRequest
 
     /**
      *
-     * Return an paremeter from GET or POST, if conflict exists, POST is the default choice
+     * Return an parameter from GET or POST, if conflict exists, POST is the default choice
      * If doesn't exists parameter, null is retuned
      *
      * @param string $index

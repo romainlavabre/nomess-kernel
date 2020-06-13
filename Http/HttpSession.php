@@ -1,6 +1,6 @@
 <?php
 
-namespace NoMess\HttpSession;
+namespace NoMess\Http;
 
 use Exception;
 use NoMess\Exception\WorkException;

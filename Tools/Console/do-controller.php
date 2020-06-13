@@ -85,8 +85,8 @@ class Controller
 
 namespace " . $this->getNamespace() . ";
 
-use NoMess\HttpResponse\HttpResponse;
-use NoMess\HttpRequest\HttpRequest;
+use NoMess\Http\HttpResponse;
+use NoMess\Http\HttpRequest;
 use NoMess\Manager\Distributor;
 
 

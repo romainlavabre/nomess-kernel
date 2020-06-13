@@ -99,7 +99,6 @@ class BuilderPersistsManager
      * Get comment of the class if exists
      *
      * @param \ReflectionClass $reflectionClass
-     * @return bool
      * @throws WorkException
      */
     private function getCommentClass(\ReflectionClass $reflectionClass): void

@@ -1,7 +1,5 @@
 <?php
 
-use NoMess\DiBuilder\DiBuilder;
-
 echo "Lancement de la configuration...\n";
 
 require __DIR__ . '/function-Installer.php';

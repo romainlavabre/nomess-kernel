@@ -7,8 +7,7 @@ use NoMess\Components\PersistsManager\PersistsManager;
 use NoMess\Container\Container;
 use NoMess\Database\IPDOFactory;
 use NoMess\Exception\WorkException;
-use NoMess\HttpRequest\HttpRequest;
-use NoMess\HttpSession\HttpSession;
+use NoMess\Http\HttpRequest;
 use NoMess\Service\DataCenter;
 use SimpleXMLElement;
 use Throwable;
@@ -106,7 +105,7 @@ class DataManager
      * @param array $data
      * @param string $idConfigDatabase
      * @return bool
-     * @throws WorkException
+     * @throws WorkException|\ReflectionException
      */
     public function database(array $data, string $idConfigDatabase): bool
     {
@@ -149,7 +148,7 @@ class DataManager
 
                     } catch (\Throwable $e) {
 
-                        //If an error occured, rollback
+                        //If an error occurred, rollback
                         $this->connection->rollBack();
 
                         if(NOMESS_CONTEXT === 'DEV') {
@@ -204,14 +203,16 @@ class DataManager
 
 
     /**
-     * Get an connection
+     * Get a configuration
      *
-     * @return void
+     * @param string $idConfiguration
+     * @throws WorkException
+     * @throws \ReflectionException
      */
-    private function getConnection(): void
+    private function getConnection(string $idConfiguration): void
     {
         $factory = $this->container->get(IPDOFactory::class);
-        $this->connection = $factory->getConnection();
+        $this->connection = $factory->getConnection($idConfiguration);
     }
 
 

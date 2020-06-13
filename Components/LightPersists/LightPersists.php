@@ -6,8 +6,8 @@ namespace NoMess\Components\LightPersists;
 use NoMess\Components\Component;
 use NoMess\Container\Container;
 use NoMess\Exception\WorkException;
-use NoMess\HttpRequest\HttpRequest;
-use NoMess\HttpResponse\HttpResponse;
+use NoMess\Http\HttpRequest;
+use NoMess\Http\HttpResponse;
 use NoMess\ObserverInterface;
 use Throwable;
 

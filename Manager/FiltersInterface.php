@@ -4,8 +4,9 @@
 namespace NoMess\Manager;
 
 
-use NoMess\HttpRequest\HttpRequest;
-use NoMess\HttpResponse\HttpResponse;
+
+use NoMess\Http\HttpRequest;
+use NoMess\Http\HttpResponse;
 
 interface FiltersInterface extends Distributor
 {

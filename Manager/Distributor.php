@@ -5,8 +5,9 @@ namespace NoMess\Manager;
 use NoMess\Components\Forms\FormAccess;
 use NoMess\Components\LightPersists\LightPersists;
 use NoMess\Container\Container;
-use NoMess\HttpRequest\HttpRequest;
-use NoMess\HttpResponse\HttpResponse;
+use NoMess\Exception\WorkException;
+use NoMess\Http\HttpRequest;
+use NoMess\Http\HttpResponse;
 use NoMess\ObserverInterface;
 use NoMess\Service\Helpers\Response;
 use NoMess\SubjectInterface;
@@ -237,7 +238,7 @@ abstract class Distributor implements SubjectInterface
      *
      * @param array $form
      * @return Distributor
-     * @throws \NoMess\Exception\WorkException
+     * @throws WorkException
      */
     protected final function bindForm(array $form): Distributor
     {
