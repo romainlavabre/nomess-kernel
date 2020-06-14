@@ -4,6 +4,7 @@ namespace NoMess\Router;
 
 use NoMess\Components\Slug\Slug;
 use NoMess\Container\Container;
+use NoMess\Environment\EnvAccess;
 use NoMess\Exception\WorkException;
 use NoMess\Router\Builder\Builder;
 use NoMess\Service\Helpers\Response;
@@ -226,9 +227,8 @@ class Router implements SubjectInterface
         if (!empty($filters)) {
 
             foreach ($filters as $filter) {
-                $className = 'App\\Filters\\' . $filter;
 
-                $filter = $this->container->get($className);
+                $filter = $this->container->get($filter);
                 $filter->filtrate($this->container->get(HttpRequest::class), $this->container->get(HttpResponse::class));
 
             }

@@ -94,10 +94,11 @@ class Builder
 
 
     /**
-     * Return auth
+     * Return filter
      *
      * @param \ReflectionClass $reflectionClass
-     * @return string|null
+     * @return array|null
+     * @throws WorkException
      */
     private function getFilters(\ReflectionClass $reflectionClass): ?array
     {
@@ -110,8 +111,14 @@ class Builder
             $lineComment = explode('*', $comment);
 
             foreach ($lineComment as $line){
-                if(strpos($comment, '@Filter')){
-                    $array[] =  trim(str_replace(['@Filter(', ')'], '', $line));
+                if(strpos($line, '@Filter') !== false){
+                    $filter = trim(str_replace(['@Filter(', ')'], '', $line));
+
+                    if(class_exists('App\\Filters\\' . $filter)){
+                        $array[] = 'App\\Filters\\' . $filter;
+                    }else{
+                        throw new WorkException('RouteBuilder encountered an error: the filer App\\Filters\\' . $filter . ' doesn\'t exists. Found in class ' . $reflectionClass->getName());
+                    }
                 }
             }
         }
@@ -120,12 +127,11 @@ class Builder
     }
 
 
-
     /**
      * @param string $url
      * @param string $controllers
      * @param string $path
-     * @param string $filter
+     * @param array|null $filters
      * @throws WorkException
      */
     private function addRoute(string $url, string $controllers, string $path, ?array $filters): void
