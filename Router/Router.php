@@ -4,6 +4,7 @@ namespace NoMess\Router;
 
 use NoMess\Components\Slug\Slug;
 use NoMess\Container\Container;
+use NoMess\Exception\WorkException;
 use NoMess\Router\Builder\Builder;
 use NoMess\Service\Helpers\Response;
 use Twig\Environment;
@@ -44,7 +45,7 @@ class Router implements SubjectInterface
 
 
     /**
-     * @throws \NoMess\Exception\WorkException
+     * @throws WorkException
      * @throws \ReflectionException
      */
     public function __construct()
@@ -109,7 +110,7 @@ class Router implements SubjectInterface
             $result = explode('\\', $controller);
             $vController = $result[count($result) - 1];
             $method = ($action === 'doGet') ? 'GET' : 'POST';
-            $_SESSION['nomess_toolbar'] = [1 => $action, 2 => $vController, 3 => $method];
+            $_SESSION['nomess_toolbar'] = ['action' => $action, 'controller' => $vController, 'method' => $method];
         }
 
         if(class_exists($controller)) {

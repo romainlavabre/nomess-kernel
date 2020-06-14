@@ -35,7 +35,7 @@ class WorkException extends \ErrorException{
         if(NOMESS_CONTEXT === 'DEV') {
             return '<strong>' . $type . '</strong> : [' . $this->code . '] ' . $this->message . '<br /><strong>' . $this->file . '</strong> à la ligne <strong>' . $this->line . '</strong><br>';
         }else{
-            $this->launchResponse(500);
+            $this->launchResponse();
         }
 
     }
@@ -63,10 +63,10 @@ function customException($e) {
         global $vController, $method, $action;
 
         if (isset($_SESSION['nomess_toolbar'])) {
-            $vController = $_SESSION['nomess_toolbar'][2];
-            $method = $_SESSION['nomess_toolbar'][3];
+            $vController = $_SESSION['nomess_toolbar']['controller'];
+            $method = $_SESSION['nomess_toolbar']['method'];
 
-            $action = $_SESSION['nomess_toolbar'][1];
+            $action = $_SESSION['nomess_toolbar']['action'];
 
             unset($_SESSION['nomess_toolbar']);
 

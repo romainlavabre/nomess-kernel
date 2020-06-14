@@ -276,10 +276,10 @@ abstract class Distributor implements SubjectInterface
     private function getDevToolbar(): void
     {
         global $vController, $method, $action;
-        $vController = $_SESSION['nomess_toolbar'][2];
-        $method = $_SESSION['nomess_toolbar'][3];
+        $vController = $_SESSION['nomess_toolbar']['controller'];
+        $method = $_SESSION['nomess_toolbar']['method'];
 
-        $action = $_SESSION['nomess_toolbar'][1];
+        $action = $_SESSION['nomess_toolbar']['action'];
 
         unset($_SESSION['nomess_toolbar']);
 
