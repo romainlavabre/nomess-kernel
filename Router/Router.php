@@ -51,6 +51,7 @@ class Router implements SubjectInterface
     public function __construct()
     {
         $this->container = new Container();
+        $this->getEnv();
 
         $this->HttpSession = $this->container->get(HttpSession::class);
         $this->HttpSession->initSession();
@@ -213,6 +214,11 @@ class Router implements SubjectInterface
         if(getenv('NM_MAINTENANCE') === true){
             $this->response(503);
         }
+    }
+
+    private function getEnv(): void
+    {
+        $envAccess = $this->container->get(EnvAccess::class);
     }
 
     private function filterResolver(?array $filters): void

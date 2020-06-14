@@ -12,14 +12,14 @@ try{
     $tabStatus = opcache_get_status();
 }catch(Error $e){}
 
-    $function = function()
-    {
-        $path = 'Tests/reports/FullTest/index.html';
+$function = function()
+{
+    $path = 'Tests/reports/FullTest/index.html';
 
-        if (file_exists($path)) {
-            return $path;
-        }
-    };
+    if (file_exists($path)) {
+        return $path;
+    }
+};
 
 
 $fileIndex = $function();
@@ -37,7 +37,7 @@ $fileIndex = $function();
                 <?php echo (string) $vController.' - '.(string) $action.' - '.$method; ?>
             </button>
         </div>
-        <?php if ($tabOpcache !== null && $tabOpcache['directives']['opcache.enable']) {
+        <?php if ($tabOpcache !== null && isset($tabOpcache['directives']['opcache.enable']) && $tabOpcache['directives']['opcache.enable']) {
             ?>
             <div class="nm_btn-group nm_dropup">
                 <button type="button" class="nm_btn nm_noir nm_dropdown-toggle nm_no-radius" data-toggle="nm_dropdown" aria-haspopup="true" aria-expanded="false">
@@ -133,7 +133,7 @@ $fileIndex = $function();
                             <button class="nm_btn nm_dropdown-item nm_rouge nm_no-cursor">xDebug</button>
                             <?php
                         }
-                        if ($tabOpcache['directives']['opcache.enable']) {
+                        if ($tabOpcache !== null && $tabOpcache['directives']['opcache.enable'] === true) {
                             ?>
                             <button class="nm_btn nm_dropdown-item nm_vert nm_no-cursor">OpCache</button>
                             <?php
@@ -158,7 +158,7 @@ $fileIndex = $function();
     <!-- Button trigger nm_modal -->
     <?php
     try{
-        if (@$tabOpcache['directives']['opcache.enable']) {
+        if ($tabOpcache !== null && $tabOpcache['directives']['opcache.enable']) {
             ?>
             <div class="nm_modal fade" id="cache" tabindex="-1" role="dialog" aria-labelledby="examplenm_modalLabel" aria-hidden="true">
                 <div class="nm_modal-dialog nm_modal-lg" role="document">
