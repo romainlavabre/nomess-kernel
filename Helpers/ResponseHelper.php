@@ -20,7 +20,7 @@ trait ResponseHelper
         $tabError = require ROOT . 'config/error.php';
 
         if(strpos($tabError[$code], '.twig')){
-            if(file_exists(ROOT . 'public/' . $tabError[$code])) {
+            if(file_exists(ROOT . 'templates/' . $tabError[$code])) {
                 $this->bindTwigEngine($tabError[$code]);
             }
         }else{
@@ -152,12 +152,17 @@ trait ResponseHelper
     private function getDevToolbar($time): void
     {
 
-        $controller = $_SESSION['app']['toolbar']['controller'];
-        $method = $_SESSION['app']['toolbar']['method'];
+        $controller = NULL;
+        $method = NULL;
+        $action = NULL;
 
-        $action = $_SERVER['REQUEST_METHOD'];
+        if(isset($_SESSION['app']['toolbar'])) {
+            $controller = $_SESSION['app']['toolbar']['controller'];
+            $method = $_SESSION['app']['toolbar']['method'];
+            $action = $_SERVER['REQUEST_METHOD'];
 
-        unset($_SESSION['app']['toolbar']);
+            unset($_SESSION['app']['toolbar']);
+        }
 
         require_once ROOT . 'vendor/nomess/kernel/Tools/tools/toolbar.php';
     }

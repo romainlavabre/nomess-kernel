@@ -42,25 +42,23 @@ function error2exception($code, $message, $fichier, $ligne) {
 function customException($e) {
 
     if(NOMESS_CONTEXT === 'DEV') {
-        require ROOT . '.kernel/Tools/Exception/exception.php';
+        require ROOT . 'vendor/nomess/kernel/Tools/Exception/exception.php';
 
         $time = xdebug_time_index();
+
         $controller = NULL;
         $method = NULL;
         $action = NULL;
 
-        if (isset($_SESSION['app']['toolbar'])) {
+        if(isset($_SESSION['app']['toolbar'])) {
             $controller = $_SESSION['app']['toolbar']['controller'];
             $method = $_SESSION['app']['toolbar']['method'];
-
             $action = $_SERVER['REQUEST_METHOD'];
 
             unset($_SESSION['app']['toolbar']);
-
-
         }
 
-        require ROOT . '.kernel/Tools/tools/toolbar.php';
+        require ROOT . 'vendor/nomess//Tools/tools/toolbar.php';
     }else{
 
         http_response_code(500);
