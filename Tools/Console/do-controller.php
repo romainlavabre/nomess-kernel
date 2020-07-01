@@ -2,10 +2,9 @@
 
 require 'function-Installer.php';
 
-$generate  = new Controller();
-$generate->generator();
+(new Controller())->generator();
 
-class Controller 
+class Controller
 {
 
     /**
@@ -49,7 +48,7 @@ class Controller
         do{
             $this->controller = rdl("Precise name of controller: ");
 
-            file_put_contents('App/src/Controllers/' . $this->dir . ucfirst($this->controller) . '.php', $this->getContent());
+            file_put_contents('src/Controllers/' . $this->dir . ucfirst($this->controller) . 'Controller.php', $this->getContent());
 
             $restart = rdl("Pursue ? [N: n | O: Enter] ");
 
@@ -87,18 +86,19 @@ namespace " . $this->getNamespace() . ";
 use Nomess\Http\HttpResponse;
 use Nomess\Http\HttpRequest;
 use Nomess\Manager\Distributor;
-use Nomess\Annotations\Route
-use Nomess\Components\EntityManagerInterface
+use Nomess\Annotations\Route;
+use Nomess\Components\EntityManager\EntityManagerInterface;
+use Nomess\Annotations\Inject;
 
 
 /**
  * @Route(\"/" . mb_strtolower($this->controller) . "\") 
  */
-class " . ucfirst($this->controller) . " extends Distributor
+class " . ucfirst($this->controller) . "Controller extends Distributor
 {
     
     /**
-     * @Inject
+     * @Inject()
      */
     private EntityManagerInterface \$entityManager;
 
@@ -106,40 +106,44 @@ class " . ucfirst($this->controller) . " extends Distributor
      * @Route(\"/\", name=\"" . mb_strtolower($this->controller) . ".index\", methods=\"GET\")
      * @param HttpRequest \$request
      * @param HttpResponse \$response
+     * @return Home|Distributor|array
      */
     public function index(HttpResponse \$response, HttpRequest \$request)
     {
-        return \$this->forward(\$request, \$response)->bindTwig(\this->getTemplate('index'));
+        return \$this->forward(\$request, \$response)->bindTwig(\$this->getTemplate('index'));
     }
 
     /**
-     * @Route(\"/{id}\", name=\"" . mb_strtolower($this->controller) . ".show\", methods=\"GET\")
+     * @Route(\"/{id}\", name=\"" . mb_strtolower($this->controller) . ".show\", methods=\"GET\", requirements=[\"id\" => \"[0-9]+\"])
      * @param HttpRequest \$request
      * @param HttpResponse \$response
+     * @return Home|Distributor|array
      */
     public function show(HttpResponse \$response, HttpRequest \$request)
     {
-        return \$this->forward(\$request, \$response)->bindTwig(\this->getTemplate('show'));
+        return \$this->forward(\$request, \$response)->bindTwig(\$this->getTemplate('show'));
     }
     
     /**
      * @Route(\"/create\", name=\"" . mb_strtolower($this->controller) . ".create\", methods=\"GET,POST\")
      * @param HttpRequest \$request
      * @param HttpResponse \$response
+     * @return Home|Distributor|array
      */
     public function create(HttpResponse \$response, HttpRequest \$request)
     {
-        return \$this->forward(\$request, \$response)->bindTwig(\this->getTemplate('create'));
+        return \$this->forward(\$request, \$response)->bindTwig(\$this->getTemplate('create'));
     }
     
     /**
      * @Route(\"/edit/{id}\", name=\"" . mb_strtolower($this->controller) . ".edit\", methods=\"GET,POST\")
      * @param HttpRequest \$request
      * @param HttpResponse \$response
+     * @return Home|Distributor|array
      */
     public function edit(HttpResponse \$response, HttpRequest \$request)
     {
-        return \$this->forward(\$request, \$response)->bindTwig(\this->getTemplate('edit'));
+        return \$this->forward(\$request, \$response)->bindTwig(\$this->getTemplate('edit'));
     }
     
     /**
@@ -147,7 +151,7 @@ class " . ucfirst($this->controller) . " extends Distributor
      * @param HttpRequest \$request
      * @param HttpResponse \$response
      */
-    public function create(HttpResponse \$response, HttpRequest \$request)
+    public function delete(HttpResponse \$response, HttpRequest \$request)
     {
         return \$this->redirectLocal('" . mb_strtolower($this->controller) . ".index');
     }

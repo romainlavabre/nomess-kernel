@@ -39,10 +39,10 @@ class RouteBuilder
         $comment = $reflectionClass->getDocComment();
 
         if(strpos($comment, '@Route') !== FALSE){
-            preg_match('/@Route\("[a-z\/0-9-_]+"\)/', $comment, $routeHeader);
+            preg_match('/@Route\("([a-z\/0-9-_]+)"\)/', $comment, $routeHeader);
 
-            if(is_string($routeHeader)){
-                $this->header = $routeHeader;
+            if(isset($routeHeader[1])){
+                $this->header = $routeHeader[1];
             }
         }
     }
@@ -59,21 +59,47 @@ class RouteBuilder
                 preg_match('/@Route\(.+\)/', $comment, $annotation);
 
                 if(!empty($annotation)){
-                    preg_match('/"[a-z\/0-9-_{}]+"/', $annotation[0], $route);
-                    preg_match('/name=".+"/', $annotation[0], $name);
+                    preg_match('/"([a-z\/0-9-_{}]+)"/', $annotation[0], $route);
+                    preg_match('/name="([A-Za-z._-]+)"/', $annotation[0], $name);
                     preg_match('/methods="([GETPOS,]+)"/', $annotation[0], $requestMethod);
+                    preg_match('/requirements=\[(".+" *=> *".+",? ?)\]/', $annotation[0], $requirements);
 
-                    if(!empty($route)) {
-                        $this->routes[$this->header . str_replace('"', '', $route[0])] = [
-                            'name' => (!empty($name)) ? str_replace(['name="', '"'], '', $name[0]) : NULL,
-                            'request_method' => (!empty($reflectionMethod) && isset($requestMethod[1])) ? $requestMethod[1] : NULL,
+                    if(isset($route[1])) {
+                        $this->routes[$this->header . $route[1]] = [
+                            'name' => (isset($name[1])) ? $name[1] : NULL,
+                            'request_method' => (isset($requestMethod[1])) ? $requestMethod[1] : NULL,
                             'method' => $reflectionMethod->getName(),
-                            'controller' => $reflectionMethod->getDeclaringClass()->getName()
+                            'controller' => $reflectionMethod->getDeclaringClass()->getName(),
+                            'requirements' => $this->requirementsToArray($requirements)
                         ];
                     }
                 }
             }
         }
+    }
+
+    private function requirementsToArray(array $requirements): array
+    {
+        $list = array();
+
+        if(isset($requirements[1])){
+            $str = preg_replace(['/ ?=> ?/', '/,/', '/ */'], '', $requirements[1]);
+            $str = str_replace('""', '|', $str);
+            $str = str_replace('"', '', $str);
+
+            $key = NULL;
+
+            foreach(explode('|', $str) as $data){
+                if($key === NULL){
+                    $list[$data] = NULL;
+                    $key = $data;
+                }else{
+                    $list[$key] = $data;
+                    $key = NULL;
+                }
+            }
+        }
+        return $list;
     }
 
     private function getNamespace(string $filename): string

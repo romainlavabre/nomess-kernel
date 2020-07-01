@@ -4,7 +4,7 @@
 namespace Nomess\Components\ApplicationScope;
 
 
-class ApplicationScope
+class ApplicationScope implements ApplicationScopeInterface
 {
     private const PATH_CACHE            = ROOT . 'var/cache/as/as.php';
 

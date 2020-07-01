@@ -59,11 +59,9 @@ abstract class Distributor
     {
 
         if ($request !== null) {
-            $this->data = $request->getData();
+            $this->data = $request->getParameters();
 
             unset($_SESSION[self::SESSION_NOMESS_SCURITY]);
-
-            $this->data = array_merge($this->data, $_SESSION);
 
             if ($dataType === 'json') {
                 $this->data = json_encode($this->data);
@@ -131,10 +129,10 @@ abstract class Distributor
      */
     protected final function bindTwig(string $template): self
     {
+
         $this->bindTwigEngine(
             $template,
-            (isset($this->request)) ? $this->request : NULL,
-            (isset($this->data)) ? $this->data : NULL);
+            $this->data);
 
         return $this;
     }

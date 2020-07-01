@@ -122,9 +122,11 @@ class HttpRequest
                 return $_GET[$index];
             }
 
-        } else {
+        } elseif(isset($this->parameters[$index])) {
 
-            return null;
+            return $this->parameters[$index];
+        }else{
+            return NULL;
         }
     }
 
@@ -136,7 +138,12 @@ class HttpRequest
      */
     public function getParameters(): ?array
     {
-        return ['POST' => $_POST, 'GET' => $_GET];
+        return array_merge([
+            'POST' => $_POST,
+            'GET' => $_GET,
+            'success' => $this->success,
+            'error' => $this->error
+        ], $this->parameters);
     }
 
 
@@ -271,25 +278,5 @@ class HttpRequest
     public function isRequestMethod(string $methodName): bool
     {
         return $_SERVER['REQUEST_METHOD'] === mb_strtoupper($methodName);
-    }
-
-
-    public function getData(): array
-    {
-        $array = array();
-
-        if (!empty($this->error)) {
-            $array['error'] = $this->error;
-        }
-
-        if (!empty($this->success)) {
-            $array['success'] = $this->success;
-        }
-
-        if (!empty($this->parameters)) {
-            $array = array_merge($array, $this->parameters);
-        }
-
-        return $array;
     }
 }

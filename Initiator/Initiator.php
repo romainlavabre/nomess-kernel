@@ -38,7 +38,7 @@ class Initiator
 
         if($arrayEntryPoint !== NULL){
 
-            if($arrayEntryPoint['request_method'] === NULL || strpos($arrayEntryPoint['request_method'], $_SERVER['REQUEST_METHOD'])) {
+            if($arrayEntryPoint['request_method'] === NULL || strpos($arrayEntryPoint['request_method'], $_SERVER['REQUEST_METHOD']) !== FALSE) {
 
                 if(NOMESS_CONTEXT === 'DEV') {
                     $_SESSION['app']['toolbar'] = [

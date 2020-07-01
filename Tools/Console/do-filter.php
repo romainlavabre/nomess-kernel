@@ -6,7 +6,7 @@ require 'function-Installer.php';
 
 class Filter
 {
-    private const PATH              = 'App/src/Filters/';
+    private const PATH              = 'src/Filters/';
 
 
     public function generate()
@@ -16,6 +16,8 @@ class Filter
         }while($filtername === NULL);
 
         file_put_contents(self::PATH . ucfirst($filtername) . '.php', $this->getContent($filtername));
+
+        echo 'Filter generate';
     }
 
     private function getContent(string $name): string
@@ -25,10 +27,10 @@ class Filter
 namespace App\Filters;
 
 use Nomess\Annotations\Filter;
-use Nomess\FilterInterface;
+use Nomess\Manager\FilterInterface;
 
 /**
- * @Filter(\"/your_regex_here/\")
+ * @Filter(\"your_regex_here\")
  */
 class " . ucfirst($name) . " implements FilterInterface
 {

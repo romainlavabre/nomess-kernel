@@ -10,6 +10,7 @@ use Nomess\Tools\Twig\Form\CsrfExtension;
 use Nomess\Tools\Twig\PathExtension;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
+use Twig\Node\NodeOutputInterface;
 
 trait ResponseHelper
 {
@@ -24,14 +25,14 @@ trait ResponseHelper
                 $this->bindTwigEngine($tabError[$code]);
             }
         }else{
-            if(file_exists(ROOT . $tabError[$code])) {
-                include(ROOT . $tabError[$code]);
+            if(file_exists(ROOT . 'templates/' . $tabError[$code])) {
+                $this->bindPHPEngine($tabError[$code]);
             }
         }
         die;
     }
 
-    public function bindTwigEngine(string $template, ?HttpRequest $request = NULL, ?array $data = NULL) : void
+    public function bindTwigEngine(string $template, ?array $data = NULL) : void
     {
         $time = 0;
 
@@ -56,11 +57,7 @@ trait ResponseHelper
         $engine->addExtension(new PathExtension());
         $engine->addExtension(new CsrfExtension());
 
-        echo $engine->render($template, [
-            'POST' => ($request !== NULL) ? $request->getPost(true) : NULL,
-            'GET' => ($request !== NULL) ? $request->getGet(true) : NULL,
-            $data,
-        ]);
+        echo $engine->render($template, $data);
 
         if (NOMESS_CONTEXT === 'DEV') {
             $this->getDevToolbar($time);
@@ -73,7 +70,7 @@ trait ResponseHelper
      * @param string $template
      * @return void
      */
-    public final function bindPHPEngine(string $template, ?array $param, ?array $post, ?array $get): void
+    public final function bindPHPEngine(string $template, ?array $param = NULL): void
     {
         $time = NULL;
 
@@ -151,7 +148,6 @@ trait ResponseHelper
 
     private function getDevToolbar($time): void
     {
-
         $controller = NULL;
         $method = NULL;
         $action = NULL;
@@ -164,7 +160,7 @@ trait ResponseHelper
             unset($_SESSION['app']['toolbar']);
         }
 
-        require_once ROOT . 'vendor/nomess/kernel/Tools/tools/toolbar.php';
+        require ROOT . 'vendor/nomess/kernel/Tools/tools/toolbar.php';
     }
 
     private function getCacheRoute(): array

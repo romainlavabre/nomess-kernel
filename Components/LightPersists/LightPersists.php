@@ -4,22 +4,22 @@
 namespace Nomess\Components\LightPersists;
 
 use Nomess\Annotations\Inject;
-use NoMess\Container\Container;
+use Nomess\Container\ContainerInterface;
 use Nomess\Exception\NomessException;
-use NoMess\Http\HttpRequest;
-use NoMess\Http\HttpResponse;
+use Nomess\Http\HttpRequest;
+use Nomess\Http\HttpResponse;
 use Throwable;
 
 
 
-class LightPersists
+class LightPersists implements LightPersistsInterface
 {
 
     private const COOKIE_NAME = 'psd_';
-    private const STORAGE_PATH = 'var/nomess/';
+    private const STORAGE_PATH = '/var/nomess/';
 
 
-    private Container $container;
+    private ContainerInterface $container;
 
     private ?array $content = null;
 
@@ -33,10 +33,10 @@ class LightPersists
     /**
      * @Inject
      *
-     * @param Container $container
+     * @param ContainerInterface $container
      * @throws NomessException
      */
-    public function __construct(Container $container)
+    public function __construct(ContainerInterface $container)
     {
         $this->container = $container;
         $this->getContent();
@@ -90,7 +90,6 @@ class LightPersists
      * Return value associate to index variable or null if doesn't exists
      *
      * @param mixed $index
-     *
      * @return mixed
      */
     public function get($index)
@@ -110,7 +109,6 @@ class LightPersists
      * Delete an pair key/value
      *
      * @param string $index
-     *
      * @return void
      * @throws NomessException
      */
@@ -158,7 +156,7 @@ class LightPersists
     {
 
         try {
-            file_put_contents(self::STORAGE_PATH . $this->id . '.txt', serialize($this->content));
+            file_put_contents(self::STORAGE_PATH . $this->id, serialize($this->content));
         } catch (Throwable $e) {
             throw new NomessException('Impossible of access to' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
         }
@@ -183,6 +181,9 @@ class LightPersists
 
         if ($id === null) {
 
+            /**
+             * @var HttpResponse
+             */
             $response = $this->container->get(HttpResponse::class);
 
             $id = uniqid();
@@ -190,17 +191,17 @@ class LightPersists
             $response->addCookie(self::COOKIE_NAME, $id, time() + 60 * 60 * 24 * 3650, '/');
 
             try {
-                file_put_contents(self::STORAGE_PATH . $id . '.txt', '');
+                file_put_contents(self::STORAGE_PATH . $id, '');
             } catch (Throwable $e) {
-                throw new NomessException('Impossible of access to' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
+                throw new NomessException('Impossible of access to ' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
             }
 
         } else {
             try {
-                $data = file_get_contents(self::STORAGE_PATH . $id . '.txt');
+                $data = file_get_contents(self::STORAGE_PATH . $id);
                 $this->content = unserialize($data);
             } catch (Throwable $e) {
-                throw new NomessException('Impossible of access to' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
+                throw new NomessException('Impossible of access to ' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
             }
         }
 

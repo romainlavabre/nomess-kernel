@@ -23,6 +23,8 @@ class RouteResolver
             $arrayRoute = explode('/', $key);
             $arrayUrl = explode('/', $_GET['p']);
 
+            unset($arrayRoute[0]);
+
             $success = TRUE;
             $i = 0;
 
@@ -47,6 +49,19 @@ class RouteResolver
                     }else{
                         $success = FALSE;
                         break 1;
+                    }
+                }else{
+                    if(empty($arrayUrl[$i])){
+                        $success = FALSE;
+                        break 1;
+                    }
+
+                    $sectionPurged = $this->getIdSection($section);
+                    if(isset($route['requirements'][$sectionPurged])){
+                        if(!preg_match('/' . $route['requirements'][$sectionPurged] . '/', $arrayUrl[$i])){
+                            $success = FALSE;
+                            break 1;
+                        }
                     }
                 }
 
@@ -73,6 +88,11 @@ class RouteResolver
     private function setCache(array $routes): void
     {
         file_put_contents(self::CACHE, '<?php return unserialize(\'' . serialize($routes) . '\');');
+    }
+
+    private function getIdSection(string $section): string
+    {
+        return str_replace(['{', '}'], '', $section);
     }
 
 }
