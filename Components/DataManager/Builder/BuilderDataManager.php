@@ -1,11 +1,17 @@
 <?php 
 
-namespace NoMess\Components\DataManager\Builder;
+namespace Nomess\Components\DataManager\Builder;
 
-use NoMess\Exception\WorkException;
 
-class BuilderDataManager 
+use Nomess\Exception\MissingConfigurationException;
+use Nomess\Exception\NotFoundException;
+use Nomess\Exception\SyntaxException;
+use Nomess\Internal\Scanner;
+
+class BuilderDataManager
 {
+
+    use Scanner;
 
     private const DIR                   = ROOT . 'App/src/Modules/';
     private const CACHE_PATH            = ROOT . 'App/var/cache/dm/datamanager.xml';
@@ -13,11 +19,14 @@ class BuilderDataManager
     private ?array $tabDir = array();
 
     /**
-     * @throws WorkException
+     * @throws MissingConfigurationException
+     * @throws NotFoundException
+     * @throws SyntaxException
+     * @throws \ReflectionException
      */
     public function builderManager() : void
     {
-        $this->tabDir = $this->getDir();
+        $this->tabDir = $this->scanRecursive();
 
         $xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n\n<data>\n";
         foreach($this->tabDir as $path){
@@ -70,11 +79,11 @@ class BuilderDataManager
                                         $tabValue = explode('::', $key);
 
                                         if(!isset($tabValue[1])){
-                                            throw new WorkException('Erreur de syntaxe dans la class ' . $cls->getClassName() . ' pour la clause @database{"depend", "' . $tabValue[0] .  '"}<br><br>Vous pourriez avoir oublié la methode ?<br>Rappel: "@database{"depend", "Full\Qualified\Class::methodName"}');
+                                            throw new SyntaxException('Erreur de syntaxe dans la class ' . $cls->getClassName() . ' pour la clause @database{"depend", "' . $tabValue[0] .  '"}<br><br>Vous pourriez avoir oublié la methode ?<br>Rappel: "@database{"depend", "Full\Qualified\Class::methodName"}');
                                         }
 
                                         if(strpos($tabValue[1], '()') !== false){
-                                            throw new WorkException('Erreur de syntaxe dans la class ' . $cls->getClassName() . ' pour la clause @database{"depend", "' . $tabValue[0] .  '"}<br>Unexcepted "()"');
+                                            throw new SyntaxException('Erreur de syntaxe dans la class ' . $cls->getClassName() . ' pour la clause @database{"depend", "' . $tabValue[0] .  '"}<br>Unexcepted "()"');
                                         }
 
                                         $xml = $xml . "\t\t\t<depend class=\"" . $tabValue[0] .  "\" set=\"" . $value . "\" get=\"" . $tabValue[1] . "\"/>\n";
@@ -88,7 +97,7 @@ class BuilderDataManager
                                         $noTransactionContent = $noTransactionContent . "name=\"" . $key . "\" ";
 
 
-                                        foreach($value as $key => $no){
+                                        foreach($value as $no){
                                             $noTransactionContent = $noTransactionContent . $no . "=\"false\" " ;
                                         }
 
@@ -118,70 +127,8 @@ class BuilderDataManager
         $xml = $xml . "</data>";
 
         if(!file_put_contents(self::CACHE_PATH, $xml)){
-            throw new WorkException('BuilderDataManager encountered an error: Impossible to access to cache file');
+            throw new NotFoundException('BuilderDataManager encountered an error: Impossible to access to cache file');
         }
-    }
-
-
-    /**
-     *
-     * @return array|null
-     */
-    private function getDir() : ?array
-    {
-        $pathDirSrc = self::DIR;
-
-        $tabDirWait = array();
-    
-        $dir = $pathDirSrc;
-    
-        $noPass = count(explode('/', $dir));
-    
-        do{
-            $stop = false;
-    
-            do{
-                $tabGeneral = scandir($dir);
-                $dirFind = false;
-    
-                for($i = 0; $i < count($tabGeneral); $i++){
-                    if(is_dir($dir . $tabGeneral[$i] . '/') && $tabGeneral[$i] !== '.' && $tabGeneral[$i] !== '..'){
-                        if(!$this->controlDir($dir . $tabGeneral[$i] . '/', $tabDirWait)){
-                            $dir = $dir . $tabGeneral[$i] . '/';
-                            $dirFind = true;
-                            break;
-                        }
-                    }
-                }
-    
-                if(!$dirFind){
-                    $tabDirWait[] = $dir;
-                    $tabEx = explode('/', $dir);
-                    unset($tabEx[count($tabEx) - 2]);
-                    $dir = implode('/', $tabEx);
-                }
-    
-                if(count(explode('/', $dir)) < $noPass){
-                    $stop = true;
-                    break;
-                }
-            }
-            while($dirFind === true);
-        }
-        while($stop === false);
-
-        return $tabDirWait;
-    }
-
-    private function controlDir(string $path, array $tab) : bool
-    {
-        foreach($tab as $value){
-            if($value === $path){
-                return true;
-            }
-        }
-
-        return false;
     }
 
 
@@ -189,6 +136,7 @@ class BuilderDataManager
      *
      * @param string $path
      * @return string
+     * @throws NotFoundException
      */
     private function getClassName(string $path) : string
     {
@@ -212,9 +160,9 @@ class BuilderDataManager
                 }
             }
 
-            throw new WorkException('BuilderDataManager encountered an error: the class name can\'t be resolved in file . ' . $path);
+            throw new NotFoundException('BuilderDataManager encountered an error: the class name can\'t be resolved in file . ' . $path);
         }else{
-            throw new WorkException('BuilderDataManager encountered an error: the file ' . $file . ' can\'t be resolved');
+            throw new NotFoundException('BuilderDataManager encountered an error: the file ' . $file . ' can\'t be resolved');
         }
     }
 
@@ -223,6 +171,7 @@ class BuilderDataManager
      *
      * @param string $path
      * @return string|null
+     * @throws NotFoundException
      */
     private function getNamespace(string $path) : ?string
     {
@@ -238,10 +187,17 @@ class BuilderDataManager
                 }
             }
         }else{
-            throw new WorkException('BuilderDataManager encountered an error: the file ' . $file . ' could not be opened');
+            throw new NotFoundException('BuilderDataManager encountered an error: the file ' . $file . ' could not be opened');
         }
     }
 
+    /**
+     * @param string $className
+     * @return DocComment|null
+     * @throws MissingConfigurationException
+     * @throws SyntaxException
+     * @throws \ReflectionException
+     */
     private function getComment(string $className) : ?DocComment
     {
         $util = false;
@@ -273,7 +229,7 @@ class BuilderDataManager
                     if(isset($floorOne[3])){
                         $cls->setAlias($floorOne[1], $floorOne[3]);
                     }else{
-                        throw new WorkException('BuilderDataManager: syntaxe error in the class ' . $className);
+                        throw new SyntaxException('BuilderDataManager: syntaxe error in the class ' . $className);
                     }
                 }
             }
@@ -351,13 +307,11 @@ class BuilderDataManager
         if($util === true){
 
             if((!empty($cls->getSesDepend()) || !empty($cls->getKeyArray())) && empty($cls->getKey())){
-                throw new WorkException('BuilderDataManager encountered an error: session key expected for this class: ' . $cls->getClassName());
-                die;
+                throw new MissingConfigurationException('BuilderDataManager encountered an error: session key expected for this class: ' . $cls->getClassName());
             }
 
             if((!empty($cls->getDbDepend()) || !empty($cls->getInsert())) && empty($cls->getBase())){
-                throw new WorkException('BuilderDataManager encountered an error: class of persistence expected for this class: '  . $cls->getClassName());
-                die;
+                throw new MissingConfigurationException('BuilderDataManager encountered an error: class of persistence expected for this class: '  . $cls->getClassName());
             }
             
             

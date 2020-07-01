@@ -1,23 +1,22 @@
 <?php
 
 
-namespace NoMess\Components\LightPersists;
+namespace Nomess\Components\LightPersists;
 
-use NoMess\Components\Component;
+use Nomess\Annotations\Inject;
 use NoMess\Container\Container;
-use NoMess\Exception\WorkException;
+use Nomess\Exception\NomessException;
 use NoMess\Http\HttpRequest;
 use NoMess\Http\HttpResponse;
-use NoMess\ObserverInterface;
 use Throwable;
 
 
 
-class LightPersists extends Component implements ObserverInterface
+class LightPersists
 {
 
     private const COOKIE_NAME = 'psd_';
-    private const STORAGE_PATH = '/var/nomess/';
+    private const STORAGE_PATH = 'var/nomess/';
 
 
     private Container $container;
@@ -35,10 +34,12 @@ class LightPersists extends Component implements ObserverInterface
      * @Inject
      *
      * @param Container $container
+     * @throws NomessException
      */
     public function __construct(Container $container)
     {
         $this->container = $container;
+        $this->getContent();
     }
 
 
@@ -46,6 +47,7 @@ class LightPersists extends Component implements ObserverInterface
      * Return value associate to index variable or null if doesn't exists
      *
      * @param mixed $index
+     * @return mixed|void
      */
     public function &getReference($index)
     {
@@ -96,7 +98,7 @@ class LightPersists extends Component implements ObserverInterface
 
         if (isset($this->content[$index])) {
             return $this->content[$index];
-        } else if ($index === null) {
+        } else if ($index === '*') {
             return $this->content;
         } else {
             return null;
@@ -110,6 +112,7 @@ class LightPersists extends Component implements ObserverInterface
      * @param string $index
      *
      * @return void
+     * @throws NomessException
      */
     public function delete(string $index)
     {
@@ -126,8 +129,6 @@ class LightPersists extends Component implements ObserverInterface
 
     /**
      * Delete the persistence file
-     *
-     * @throws WorkException
      */
     public function purge(): void
     {
@@ -142,7 +143,7 @@ class LightPersists extends Component implements ObserverInterface
         try {
             unlink(self::STORAGE_PATH . $this->id);
         } catch (Throwable $e) {
-            throw new WorkException('Impossible d\'acceder à' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
+            throw new NomessException('Impossible of access to' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
         }
     }
 
@@ -151,8 +152,7 @@ class LightPersists extends Component implements ObserverInterface
      * Save changes
      *
      * @return void
-     * @throws WorkException
-     *
+     * @throws NomessException
      */
     private function persists(): void
     {
@@ -160,7 +160,7 @@ class LightPersists extends Component implements ObserverInterface
         try {
             file_put_contents(self::STORAGE_PATH . $this->id . '.txt', serialize($this->content));
         } catch (Throwable $e) {
-            throw new WorkException('Impossible d\'acceder à' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
+            throw new NomessException('Impossible of access to' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
         }
     }
 
@@ -168,9 +168,7 @@ class LightPersists extends Component implements ObserverInterface
     /**
      * Get content of file or create it
      *
-     * @return void
-     * @throws WorkException
-     *
+     * @throws NomessException
      */
     private function getContent(): void
     {
@@ -194,7 +192,7 @@ class LightPersists extends Component implements ObserverInterface
             try {
                 file_put_contents(self::STORAGE_PATH . $id . '.txt', '');
             } catch (Throwable $e) {
-                throw new WorkException('Impossible d\'acceder à' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
+                throw new NomessException('Impossible of access to' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
             }
 
         } else {
@@ -202,20 +200,14 @@ class LightPersists extends Component implements ObserverInterface
                 $data = file_get_contents(self::STORAGE_PATH . $id . '.txt');
                 $this->content = unserialize($data);
             } catch (Throwable $e) {
-                throw new WorkException('Impossible d\'acceder à' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
+                throw new NomessException('Impossible of access to' . self::STORAGE_PATH . ' message: ' . $e->getMessage());
             }
         }
 
         $this->id = $id;
     }
 
-
-    public function notifiedInput(): void
-    {
-        $this->getContent();
-    }
-
-    public function notifiedOutput(): void
+    public function __destruct()
     {
         $this->persists();
     }

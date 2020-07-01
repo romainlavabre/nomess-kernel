@@ -1,21 +1,28 @@
 <?php
 
-namespace NoMess\Components\DataManager;
+namespace Nomess\Components\DataManager;
 
 use Closure;
-use NoMess\Components\PersistsManager\PersistsManager;
+use Nomess\Annotations\Inject;
+use Nomess\Components\PersistsManager\PersistsManager;
 use NoMess\Container\Container;
 use NoMess\Database\IPDOFactory;
-use NoMess\Exception\WorkException;
-use NoMess\Http\HttpRequest;
-use NoMess\Service\DataCenter;
+use Nomess\Exception\InvalidParamException;
+use Nomess\Exception\NomessException;
+use Nomess\Exception\NotFoundException;
+use Nomess\Exception\SyntaxException;
+use Nomess\Helpers\DataHelper;
+use Nomess\Http\HttpRequest;
 use SimpleXMLElement;
 use Throwable;
 
 
 class DataManager
 {
-    private const CONFIG            = ROOT . 'App/var/cache/dm/datamanager.xml';
+    use DataHelper;
+
+
+    private const CONFIG            = ROOT . 'var/cache/dm/datamanager.xml';
 
     /**
      * Contains object has incur treatment but hasn't push in session
@@ -91,7 +98,7 @@ class DataManager
 
 
     /**
-     * @Inject
+     * @Inject()
      *
      * @param Container $ci
      */
@@ -105,7 +112,7 @@ class DataManager
      * @param array $data
      * @param string $idConfigDatabase
      * @return bool
-     * @throws WorkException|\ReflectionException
+     * @throws NomessException
      */
     public function database(array $data, string $idConfigDatabase): bool
     {
@@ -154,17 +161,15 @@ class DataManager
                         if(NOMESS_CONTEXT === 'DEV') {
 
                             if ($this->definition !== null) {
-                                throw new WorkException('The transaction ' . (string)$this->definition->base->attributes()['class'] . '->' . $this->method . '() have crash<br><br><br><span>Line ' . $e->getLine() . ' in ' . str_replace(ROOT, '', $e->getFile()) . '<br> ' . $e->getMessage() . '</span>');
+                                throw new NomessException('The transaction ' . (string)$this->definition->base->attributes()['class'] . '->' . $this->method . '() have crash<br><br><br><span>Line ' . $e->getLine() . ' in ' . str_replace(ROOT, '', $e->getFile()) . '<br> ' . $e->getMessage() . '</span>');
                             } else {
-                                throw new WorkException('<span>Line ' . $e->getLine() . ' in ' . str_replace(ROOT, '', $e->getFile()) . '<br> ' . $e->getMessage() . '</span>');
+                                throw new NomessException('<span>Line ' . $e->getLine() . ' in ' . str_replace(ROOT, '', $e->getFile()) . '<br> ' . $e->getMessage() . '</span>');
                             }
 
                         }else{
 
                             $request = $this->container->get(HttpRequest::class);
-                            $datacenter = $this->container->get(DataCenter::class);
-
-                            $message = $datacenter->get('error_data_manager');
+                            $message = $this->get('error_data_manager');
 
                             if($message === null){
                                 $request->setError('Une erreur s\'est produite');
@@ -193,7 +198,6 @@ class DataManager
 
 
     /**
-     *
      * @return void
      */
     private function getCache(): void
@@ -206,8 +210,6 @@ class DataManager
      * Get a configuration
      *
      * @param string $idConfiguration
-     * @throws WorkException
-     * @throws \ReflectionException
      */
     private function getConnection(string $idConfiguration): void
     {
@@ -264,7 +266,7 @@ class DataManager
      * return a correct method for transaction
      *
      * @param string $req
-     * @return string
+     * @return void
      */
     private function getMethod(string $req): void
     {
@@ -282,8 +284,6 @@ class DataManager
      */
     private function getDefinition(string $type): ?SimpleXMLElement
     {
-        $tabDef = array();
-
         foreach ($this->cache->class as $value) {
             if ((string)$value->attributes()['class'] === $type) {
 
@@ -317,7 +317,7 @@ class DataManager
                     $this->pushData($insert, $back, true);
                 }
 
-                $this->runtimeConfigInsert($back, $insert);
+                $this->runtimeConfigInsert($back);
             }
         }
 
@@ -329,11 +329,9 @@ class DataManager
      * Manage runtime configuration for this option
      *
      * @param mixed $back
-     * @param string|null $insert
-     *
      * @return void
      */
-    private function runtimeConfigInsert($back, ?string $insert = null): void
+    private function runtimeConfigInsert($back): void
     {
         if (isset($this->runtime['insert'])) {
 
@@ -416,6 +414,7 @@ class DataManager
      * Insert the dependency data necessary for the current object
      *
      * @return void
+     * @throws SyntaxException
      */
     private function depend(): void
     {
@@ -473,11 +472,11 @@ class DataManager
                     if ($object !== null) {
 
                         if (!isset($tmp[1])) {
-                            throw new WorkException('Erreur de syntaxe: la dépendence "' . $tmp[0] . '" ne contient pas de methode');
+                            throw new SyntaxException('Erreur de syntaxe: la dépendence "' . $tmp[0] . '" ne contient pas de methode');
                         }
 
                         if (strpos($tmp[1], '()')) {
-                            throw new WorkException('Erreur de syntaxe: la dépendence "' . $tmp[0] . '" contient une methode invalide.<br>Unxcepted "()"');
+                            throw new SyntaxException('Erreur de syntaxe: la dépendence "' . $tmp[0] . '" contient une methode invalide.<br>Unxcepted "()"');
                         }
 
                         $get = $tmp[1];
@@ -525,9 +524,12 @@ class DataManager
     /**
      * Effectue une transaction avec la base de donnée
      *
-     * @param string $key
      * @param array $param
      * @return void
+     * @throws InvalidParamException
+     * @throws NomessException
+     * @throws NotFoundException
+     * @throws SyntaxException
      */
     private function doTransaction(array $param): void
     {
@@ -536,8 +538,7 @@ class DataManager
         $type = $this->getClassName($param);
 
         if ($type === null) {
-            throw new WorkException('Aucune class valide trouvé pour la requête ' . $this->key);
-            die();
+            throw new NotFoundException('Aucune class valide trouvé pour la requête ' . $this->key);
         }
 
         //Get the definitions in xml file to apply
@@ -561,7 +562,7 @@ class DataManager
             }else{
 
                 if(count($param) > 1){
-                    throw new WorkException('DataManager encountered an error: when you use a persists manager, pass only object parameter inside database function, the persists manager parameter must be passed to PMBuilder ');
+                    throw new InvalidParamException('DataManager encountered an error: when you use a persists manager, pass only object parameter inside database function, the persists manager parameter must be passed to PMBuilder ');
                 }
 
                 $method = $this->method;
@@ -592,9 +593,7 @@ class DataManager
             $this->iterate++;
 
         } else if ($this->iterate === 1) {
-
-            throw new WorkException('Aucune définition trouvé pour ' . $type);
-            die();
+            throw new NotFoundException('Aucune définition trouvé pour ' . $type);
         }
     }
 
@@ -677,6 +676,7 @@ class DataManager
      * Stock les données mise a jour ou nouvelle
      *
      * @return void
+     * @throws NomessException
      */
     private function sessionStack(): void
     {
@@ -709,7 +709,7 @@ class DataManager
                             $this->unregister[$sessionKey][$this->object->$keyArray()] = '&delete&';
                         }
                     } catch (Throwable $e) {
-                        throw new WorkException($e->getMessage() . '<br><br>Controllez:<br>- La syntaxe des annotations<br>- Le retour de la methode de persistance<br>- Le typage de la fonction et son existance');
+                        throw new NomessException($e->getMessage() . '<br><br>Controllez:<br>- La syntaxe des annotations<br>- Le retour de la methode de persistance<br>- Le typage de la fonction et son existance');
                     }
                 } else {//Si public
                     if ($delete === false) {

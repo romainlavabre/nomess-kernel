@@ -1,19 +1,20 @@
 <?php
 
 
-namespace NoMess\Components\PersistsManager;
+namespace Nomess\Components\PersistsManager;
 
 
 use NoMess\Database\IPDOFactory;
-use NoMess\Exception\WorkException;
+use Nomess\Exception\NomessException;
+use Nomess\Exception\NotFoundException;
 
 
 abstract class Resolver
 {
 
-    protected const STORAGE_CACHE         = ROOT . 'App/var/cache/pm/';
+    protected const STORAGE_CACHE         = ROOT . 'var/cache/pm/';
 
-    protected static $typeConstPDO = array(
+    protected static array $typeConstPDO = array(
         'float' => '\PDO::PARAM_STR',
         'double' => '\PDO::PARAM_STR',
         'string' => '\PDO::PARAM_STR',
@@ -108,12 +109,16 @@ abstract class Resolver
     protected array $bindValue;
 
 
-
     /**
      * Bring closer column and method
      *
      * @param string $column
-     * @param string $method
+     * @param string $accessor
+     * @param string $mutator
+     * @param string $typedProperty
+     * @param string $scope
+     * @param string $table
+     * @param string $keyArray
      */
     public function mapping(string $column, string $accessor, string $mutator, string $typedProperty, string $scope, string $table, string $keyArray): void
     {
@@ -129,12 +134,10 @@ abstract class Resolver
     }
 
 
-
     /**
      * Parse request for build parameters
      *
-     * @param string $parseRequest
-     * @throws WorkException
+     * @throws NotFoundException
      */
     protected function buildParameter(): void
     {
@@ -200,13 +203,12 @@ abstract class Resolver
     }
 
 
-
     /**
      * If column not found in original object, launch recovery process and suggest an alternative in case of failure
      *
      * @param string $column
      * @return string
-     * @throws WorkException
+     * @throws NotFoundException
      */
     protected function recovery_columnNotFound(string $column): string
     {
@@ -242,10 +244,10 @@ abstract class Resolver
         }
 
         if ($find > 1) {
-            throw new WorkException('Resolver encountered an error: the column ' . $column . ' associated with ' . $this->className . ' was not found and she\'s present in ' . $find . ' dependency, therefore,<br><br>
+            throw new NotFoundException('Resolver encountered an error: the column ' . $column . ' associated with ' . $this->className . ' was not found and she\'s present in ' . $find . ' dependency, therefore,<br><br>
                 you can create a patch with this id: "' . $column . '" and map to the image of this example:<br> $ObjectName->accessorName(), else, you can correct the issue');
         } else if ($find === 0) {
-            throw new WorkException('Resolver encountered an error: the column ' . $column . ' associated with ' . $this->className . ' was not found and in its dependency also, therefore,<br><br>
+            throw new NotFoundException('Resolver encountered an error: the column ' . $column . ' associated with ' . $this->className . ' was not found and in its dependency also, therefore,<br><br>
                 you can create a patch with this id: "' . $column . '" and map to the image of this example:<br> $ObjectName->accessorName(), else, you can correct the issue');
         }
 
@@ -303,7 +305,7 @@ abstract class Resolver
         if($this->cache[$className]['keyArray']) {
             return $this->cache[$className]['keyArray'];
         }else{
-            throw new \Exception('Resolver encountered an error: not found keyArray for class "' . $className . '", please, specify this');
+            throw new NotFoundException('Resolver encountered an error: not found keyArray for class "' . $className . '", please, specify this');
         }
     }
 
@@ -358,12 +360,12 @@ abstract class Resolver
      *
      * @param string $data
      * @param string $filename
-     * @throws WorkException
+     * @throws NomessException
      */
     protected function registerCache(string $data, string $filename): void
     {
         if(!@file_put_contents(self::STORAGE_CACHE . $filename . '.php', $data)){
-            throw new WorkException('Resolver encountered an error: Impossible to register the cache file in ' . self::STORAGE_CACHE);
+            throw new NomessException('Resolver encountered an error: Impossible to register the cache file in ' . self::STORAGE_CACHE);
         }
     }
 

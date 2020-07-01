@@ -1,8 +1,8 @@
 <?php
 
-namespace NoMess\Http;
+namespace Nomess\Http;
 
-use NoMess\Exception\WorkException;
+use Nomess\Exception\NullPointerException;
 
 class HttpRequest
 {
@@ -91,7 +91,6 @@ class HttpRequest
      */
     public function getParameter(string $index, bool $escape = true)
     {
-
         if (isset($_POST[$index]) && !empty($_POST[$index])) {
 
             if ($escape === true) {
@@ -158,6 +157,7 @@ class HttpRequest
      *
      * @param string $serviceStamp
      * @return mixed
+     * @throws NullPointerException
      */
     public function getRender(string $serviceStamp)
     {
@@ -165,7 +165,7 @@ class HttpRequest
             return $this->render[$serviceStamp];
         }
 
-        throw new WorkException($serviceStamp . ' n\'a rien retourné');
+        throw new NullPointerException($serviceStamp . ' doesn\'t returned value');
     }
 
 
@@ -247,6 +247,30 @@ class HttpRequest
     public function getServer(): array
     {
         return $_SERVER;
+    }
+
+    public function isValidToken(): bool
+    {
+        if(isset($_POST['_token'])){
+            if(isset($_SESSION['app']['_token'])) {
+                if($_POST['_token'] === $_SESSION['app']['_token']) {
+                    return TRUE;
+                }
+            }
+        }elseif(isset($_GET['_token'])){
+            if(isset($_SESSION['app']['_token'])) {
+                if($_GET['_token'] === $_SESSION['app']['_token']) {
+                    return TRUE;
+                }
+            }
+        }
+
+        return FALSE;
+    }
+
+    public function isRequestMethod(string $methodName): bool
+    {
+        return $_SERVER['REQUEST_METHOD'] === mb_strtoupper($methodName);
     }
 
 

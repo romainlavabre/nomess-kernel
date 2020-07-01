@@ -1,9 +1,9 @@
 <?php
 
-namespace NoMess\Http;
+namespace Nomess\Http;
 
-use Exception;
-use NoMess\Exception\WorkException;
+use Nomess\Exception\InvalidParamException;
+use Nomess\Exception\NomessException;
 
 class HttpSession
 {
@@ -21,7 +21,7 @@ class HttpSession
     /**
      * Initialize an session
      *
-     * @return void
+     * @throws NomessException
      */
     public function initSession(): void
     {
@@ -30,6 +30,7 @@ class HttpSession
 
             ini_set('session.gc_maxlifetime', getenv('NM_SESSION_LIFETIME'));
             session_start();
+
 
             if (!isset($_SESSION[self::ID_MODULE_SECURITY])) {
                 $_SESSION[self::ID_MODULE_SECURITY] = array();
@@ -43,16 +44,17 @@ class HttpSession
 
 
         } else if (session_status() === 0) {
-            throw new WorkException('Please active the session');
+            throw new NomessException('Please active the session');
         }
     }
 
 
     /**
-     * Return reference of the entry accociate to index
+     * Return reference of the entry associate to index
      * Null if doesn't exists
      *
      * @param mixed $index
+     * @return mixed|void
      */
     public function &getReference($index)
     {
@@ -104,6 +106,8 @@ class HttpSession
 
         if (\is_array($value)) {
 
+            $_SESSION[$key] = array();
+
             foreach ($value as $keyArray => $valArray) {
 
                 $_SESSION[$key][$keyArray] = $valArray;
@@ -154,9 +158,8 @@ class HttpSession
      * @param bool $ipSystem If TRUE, the IP ADRESS will be controlled
      * @param bool $bindTicketIp If TRUE, add an felexibility for IP modules, if IP doesn't match but the ticket is valid, the connexion will be accepted
      * @param array[bool $userAgentSystem, bool $ipSystem]|null $recoveryConfig Array of secondary configuration in case of error from ticket modules (Client doesn't accept the cookie)
-     * @return int
-     * @throws Exception
-     *
+     * @return void
+     * @throws InvalidParamException
      */
     public function installSecurityModules(bool $userAgentSystem, bool $ticketSystem, bool $ipSystem, bool $bindTicketIp = false, ?array $recoveryConfig = null): void
     {
@@ -173,7 +176,7 @@ class HttpSession
         $_SESSION[self::ID_MODULE_SECURITY][self::RECOVERY_CONFIG] = $recoveryConfig;
 
         if ($recoveryConfig !== null && count($recoveryConfig) !== 2) {
-            throw new Exception('RecoveryConfig doit contenir exactement 2 paramêtres: $userAgentSystem et $ipSystem| $ticketSystem et $bindTicketIp seront initialisé à false');
+            throw new InvalidParamException('RecoveryConfig must contain exactly 2 parameters: $userAgentSystem and $ipSystem| $ticketSystem and $bindTicketIp will be initialized to false');
         }
     }
 
@@ -233,11 +236,12 @@ class HttpSession
     {
         if (!isset($_SESSION[self::ID_MODULE_SECURITY][self::MODULE_INITIALIZE])) {
             session_regenerate_id(true);
+            $_SESSION[self::ID_MODULE_SECURITY] = array();
             $_SESSION[self::ID_MODULE_SECURITY][self::MODULE_INITIALIZE] = 1;
         }
 
-        if(!isset($_SESSION[getenv('NM_TOKEN_NAME_CSRF')])){
-            $_SESSION[getenv('NM_TOKEN_NAME_CSRF')] = md5(uniqid('_token::') . str_shuffle('ABCDEFGHIJ'));
+        if(!isset($_SESSION['app']['_token'])){
+            $_SESSION['app']['_token'] = md5(uniqid('_token::') . str_shuffle('ABCDEFGHIJ'));
         }
     }
 
@@ -263,6 +267,7 @@ class HttpSession
      * Module ticket
      *
      * @return void
+     * @throws InvalidParamException
      */
     private function securityTicket(): bool
     {
@@ -327,7 +332,5 @@ class HttpSession
         } else {
             return false;
         }
-
-        return true;
     }
 }

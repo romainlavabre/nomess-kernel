@@ -1,13 +1,14 @@
 <?php
 
 
-namespace NoMess\Components\Config;
+namespace Nomess\Components\Config;
 
 
-use NoMess\Components\Component;
-use NoMess\Exception\WorkException;
 
-class InteractConfig extends Component
+
+use Nomess\Exception\NotFoundException;
+
+class InteractConfig
 {
 
     private const BASE              = ROOT . 'App/config/';
@@ -21,13 +22,13 @@ class InteractConfig extends Component
      *
      * @param string $filename
      * @return array
-     * @throws WorkException
+     * @throws NotFoundException
      */
     public function get(string $filename): array
     {
 
         if(!file_exists(self::BASE . $filename . '.php')){
-            throw new WorkException('InteractConfig encountered an error: file ' . self::BASE . $filename . ' not found');
+            throw new NotFoundException('InteractConfig encountered an error: file ' . self::BASE . $filename . ' not found');
         }
 
         $fileConfig = require(self::BASE . $filename . '.php');

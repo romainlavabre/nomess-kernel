@@ -1,14 +1,14 @@
 <?php
 
 
-namespace NoMess\Manager;
+namespace Nomess\Manager;
 
 
 
-use NoMess\Http\HttpRequest;
-use NoMess\Http\HttpResponse;
+use Nomess\Http\HttpRequest;
+use Nomess\Http\HttpResponse;
 
-interface FiltersInterface extends Distributor
+interface FiltersInterface
 {
     public function filtrate(HttpRequest $request, HttpResponse $response): void;
 }

@@ -1,11 +1,11 @@
 <?php
 
 
-namespace NoMess\Components\PersistsManager\ResolverRequest;
+namespace Nomess\Components\PersistsManager\ResolverRequest;
 
 
-use NoMess\Components\PersistsManager\Resolver;
-use NoMess\Exception\WorkException;
+use InvalidArgumentException;
+use Nomess\Components\PersistsManager\Resolver;
 
 
 class ResolverSelect extends Resolver
@@ -53,7 +53,7 @@ class ResolverSelect extends Resolver
         preg_match('/[.]\.*/', $list, $output);
 
         if($output === 1 || $output === true){
-            throw new WorkException('Resolver encountered an error: nomess doesn\'t accept a "alias.*" format');
+            throw new InvalidArgumentException('Resolver encountered an error: nomess doesn\'t accept a "alias.*" format');
         }
 
         //Search the * sign
@@ -68,7 +68,7 @@ class ResolverSelect extends Resolver
 
             //Search an bad convention
         }elseif (strpos($list, 'as') !== false){
-            throw new WorkException('Resolver Encountered an error: nomess have found "as" but not "AS", please, capitalize');
+            throw new InvalidArgumentException('Resolver Encountered an error: nomess have found "as" but not "AS", please, capitalize');
         }else {
             $tabColumn = explode(',', $list);
 

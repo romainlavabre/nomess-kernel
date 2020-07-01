@@ -48,7 +48,6 @@ class Controller
 
         do{
             $this->controller = rdl("Precise name of controller: ");
-            $this->route = rdl("Precise route: ");
 
             file_put_contents('App/src/Controllers/' . $this->dir . ucfirst($this->controller) . '.php', $this->getContent());
 
@@ -71,7 +70,7 @@ class Controller
 
         foreach($tabDir as $value){
             if(!empty($value)){
-                $namespace = $namespace . '\\' . ucfirst($value);
+                $namespace .= '\\' . ucfirst($value);
             }
         }
 
@@ -85,47 +84,77 @@ class Controller
 
 namespace " . $this->getNamespace() . ";
 
-use NoMess\Http\HttpResponse;
-use NoMess\Http\HttpRequest;
-use NoMess\Manager\Distributor;
+use Nomess\Http\HttpResponse;
+use Nomess\Http\HttpRequest;
+use Nomess\Manager\Distributor;
+use Nomess\Annotations\Route
+use Nomess\Components\EntityManagerInterface
 
 
 /**
- * @Route{\"" . $this->route . "\"} 
- * @autowire
+ * @Route(\"/" . mb_strtolower($this->controller) . "\") 
  */
 class " . ucfirst($this->controller) . " extends Distributor
 {
-
-    private const WEB_TEMPLATE              = 'Web_template';
-
-
+    
     /**
      * @Inject
      */
-    private TypeOfInstance \$yourInstance;
+    private EntityManagerInterface \$entityManager;
 
     /**
-     * 
+     * @Route(\"/\", name=\"" . mb_strtolower($this->controller) . ".index\", methods=\"GET\")
      * @param HttpRequest \$request
      * @param HttpResponse \$response
      */
-    public function doGet(HttpResponse \$response, HttpRequest \$request): void
+    public function index(HttpResponse \$response, HttpRequest \$request)
     {
-        \$this->forward(\$request, \$response)->bindTwig(self::WEB_TEMPLATE)->stopProcess();
+        return \$this->forward(\$request, \$response)->bindTwig(\this->getTemplate('index'));
     }
 
     /**
-     *
+     * @Route(\"/{id}\", name=\"" . mb_strtolower($this->controller) . ".show\", methods=\"GET\")
      * @param HttpRequest \$request
      * @param HttpResponse \$response
      */
-    public function doPost(HttpResponse \$response, HttpRequest \$request): void
+    public function show(HttpResponse \$response, HttpRequest \$request)
     {
-
-        \$tracker = \$this->yourInstance->service(\$request);
-
-        \$this->forward(\$request, \$response)->bindTwig(self::WEB_TEMPLATE)->stopProcess();
+        return \$this->forward(\$request, \$response)->bindTwig(\this->getTemplate('show'));
+    }
+    
+    /**
+     * @Route(\"/create\", name=\"" . mb_strtolower($this->controller) . ".create\", methods=\"GET,POST\")
+     * @param HttpRequest \$request
+     * @param HttpResponse \$response
+     */
+    public function create(HttpResponse \$response, HttpRequest \$request)
+    {
+        return \$this->forward(\$request, \$response)->bindTwig(\this->getTemplate('create'));
+    }
+    
+    /**
+     * @Route(\"/edit/{id}\", name=\"" . mb_strtolower($this->controller) . ".edit\", methods=\"GET,POST\")
+     * @param HttpRequest \$request
+     * @param HttpResponse \$response
+     */
+    public function edit(HttpResponse \$response, HttpRequest \$request)
+    {
+        return \$this->forward(\$request, \$response)->bindTwig(\this->getTemplate('edit'));
+    }
+    
+    /**
+     * @Route(\"/delete\", name=\"" . mb_strtolower($this->controller) . ".create\", methods=\"GET,POST\")
+     * @param HttpRequest \$request
+     * @param HttpResponse \$response
+     */
+    public function create(HttpResponse \$response, HttpRequest \$request)
+    {
+        return \$this->redirectLocal('" . mb_strtolower($this->controller) . ".index');
+    }
+    
+    private function getTemplate(string \$templateName): string
+    {
+        return \"" . mb_strtolower($this->controller) . "/\$templateName.html.twig\";
     }
 }
         ";

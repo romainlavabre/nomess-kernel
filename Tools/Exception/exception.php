@@ -157,7 +157,7 @@ foreach(file($e->getFile()) as $line){
 
                         </div>
                         <div class="card-footer text-left">
-                            <a class="color-link" href="https://google.com/search?q=<?php echo urlencode('php ' . phpversion() . ' ' . $e->getMessage()) ?>" target="_blank">Google</a>
+                            <a class="color-link" href="https://google.com/search?q=<?php echo urlencode('php ' . $e->getMessage()) ?>" target="_blank">Google</a>
                         </div>
                     </div>
                 </div>

@@ -1,9 +1,11 @@
 <?php
 
 
-namespace NoMess\Components\PersistsManager\ResolverRequest;
+namespace Nomess\Components\PersistsManager\ResolverRequest;
 
 
+
+use Nomess\Exception\NotFoundException;
 
 class ResolverCreate extends ResolverImpactData
 {
@@ -11,7 +13,7 @@ class ResolverCreate extends ResolverImpactData
     /**
      * Launch build cache file
      *
-     * @throws \NoMess\Exception\WorkException
+     * @throws NotFoundException
      */
     public function execute()
     {

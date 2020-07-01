@@ -1,11 +1,14 @@
 <?php
 
 
-namespace NoMess\Components\PersistsManager\Builder;
+namespace Nomess\Components\PersistsManager\Builder;
 
 
 use NoMess\Container\Container;
-use NoMess\Exception\WorkException;
+use Nomess\Exception\NotFoundException;
+use ReflectionClass;
+use ReflectionException;
+use ReflectionProperty;
 
 
 class BuilderPersistsManager
@@ -77,12 +80,13 @@ class BuilderPersistsManager
     /**
      * Builder
      *
-     * @return void
+     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function build(string $classname) : void
     {
         $this->className = $classname;
-        $reflectionClass = new \ReflectionClass($classname);
+        $reflectionClass = new ReflectionClass($classname);
 
         $this->getCommentClass($reflectionClass);
         $this->getKeyArray($reflectionClass->getProperties(), $reflectionClass);
@@ -94,14 +98,13 @@ class BuilderPersistsManager
     }
 
 
-
     /**
      * Get comment of the class if exists
      *
-     * @param \ReflectionClass $reflectionClass
-     * @throws WorkException
+     * @param ReflectionClass $reflectionClass
+     * @throws NotFoundException
      */
-    private function getCommentClass(\ReflectionClass $reflectionClass): void
+    private function getCommentClass(ReflectionClass $reflectionClass): void
     {
         $commentClass = $reflectionClass->getDocComment();
 
@@ -111,7 +114,7 @@ class BuilderPersistsManager
             if(!empty($outputTable[0])){
                 $this->table = str_replace(['@PM\\Table(', ')'], '', $outputTable[0]);
             }else{
-                throw new WorkException('BuilderPersistsManager encountered an error: table name could not be resolved for ' . $reflectionClass->getName() . ', but exists, please, verify your syntax');
+                throw new NotFoundException('BuilderPersistsManager encountered an error: table name could not be resolved for ' . $reflectionClass->getName() . ', but exists, please, verify your syntax');
             }
 
             if(strpos($commentClass, self::$comment['extends']) !== false){
@@ -131,7 +134,7 @@ class BuilderPersistsManager
             }
         }else {
 
-            throw new WorkException('BuilderPersistsManager encountered an error: table name could not be resolved for ' . $reflectionClass->getName());
+            throw new NotFoundException('BuilderPersistsManager encountered an error: table name could not be resolved for ' . $reflectionClass->getName());
         }
     }
 
@@ -140,14 +143,14 @@ class BuilderPersistsManager
      * Create properties configuration
      *
      * @param array $properties
-     * @param \ReflectionClass $reflectionClass
-     * @throws WorkException
-     * @throws \ReflectionException
+     * @param ReflectionClass $reflectionClass
+     * @throws ReflectionException
+     * @throws NotFoundException
      */
-    private function getCommentProperty(array $properties, \ReflectionClass $reflectionClass): void
+    private function getCommentProperty(array $properties, ReflectionClass $reflectionClass): void
     {
         foreach ($properties as $value){
-            $reflectionProperty = new \ReflectionProperty($reflectionClass->getName(), $value->getName());
+            $reflectionProperty = new ReflectionProperty($reflectionClass->getName(), $value->getName());
 
 
             $column = $this->getColumnProperty($reflectionProperty, $reflectionClass);
@@ -179,11 +182,11 @@ class BuilderPersistsManager
      * Take the dependency of this class
      *
      * @param array $properties
-     * @param \ReflectionClass $reflectionClass
-     * @throws WorkException
-     * @throws \ReflectionException
+     * @param ReflectionClass $reflectionClass
+     * @throws ReflectionException
+     * @throws NotFoundException
      */
-    private function getDependency(array $properties, \ReflectionClass $reflectionClass): void
+    private function getDependency(array $properties, ReflectionClass $reflectionClass): void
     {
         foreach ($properties as $value){
             $reflectionProperty = $value;
@@ -199,12 +202,12 @@ class BuilderPersistsManager
                 }else{
                     try {
                         $this->dependency[$type]['mutator'] = $reflectionClass->getMethod('set' . ucfirst($reflectionProperty->getName()))->getName();
-                    } catch (\ReflectionException $rf) {
+                    } catch (ReflectionException $rf) {
 
                         $accessor = $this->searchPatch($reflectionProperty->getName(), $reflectionClass, 'Mutator');
 
                         if ($accessor === null) {
-                            throw new WorkException('BuilderPersistsManager encountered an error: accessor for property ' .
+                            throw new NotFoundException('BuilderPersistsManager encountered an error: accessor for property ' .
                                 $reflectionProperty->getName() . ' not found, please, respect convention or add patch 
                                 "@PM\Patch\Accessor(propertyName). Our searching: get' . ucfirst($reflectionProperty->getName()));
                         }else{
@@ -220,12 +223,12 @@ class BuilderPersistsManager
     /**
      * Return type of dependency
      *
-     * @param \ReflectionProperty $reflectionProperty
-     * @param \ReflectionClass $reflectionClass
+     * @param ReflectionProperty $reflectionProperty
+     * @param ReflectionClass $reflectionClass
      * @return string|null
-     * @throws WorkException
+     * @throws NotFoundException
      */
-    private function getTypeDependency(\ReflectionProperty $reflectionProperty, \ReflectionClass $reflectionClass): ?string
+    private function getTypeDependency(ReflectionProperty $reflectionProperty, ReflectionClass $reflectionClass): ?string
     {
 
         $comment = $reflectionProperty->getDocComment();
@@ -236,7 +239,7 @@ class BuilderPersistsManager
             $type = trim(explode(')', $floorOne[1])[0]);
 
             if(!class_exists($type)){
-                throw new WorkException('BuilderPersistsManager encountered an error: property "' . $reflectionProperty->getName() . ' with type: "' . $type . '" is not class in ' . $reflectionClass->getName());
+                throw new NotFoundException('BuilderPersistsManager encountered an error: property "' . $reflectionProperty->getName() . ' with type: "' . $type . '" is not class in ' . $reflectionClass->getName());
             }else{
                 return $type;
             }
@@ -245,7 +248,7 @@ class BuilderPersistsManager
                 return $reflectionProperty->getType()->getName();
             }
 
-            throw new WorkException('BuilderPersistsManager encountered an error: property "' . $reflectionProperty->getName() . ' with type: "' . $reflectionProperty->getType()->getName() . '" is not class in ' . $reflectionClass->getName());
+            throw new NotFoundException('BuilderPersistsManager encountered an error: property "' . $reflectionProperty->getName() . ' with type: "' . $reflectionProperty->getType()->getName() . '" is not class in ' . $reflectionClass->getName());
         }
     }
 
@@ -253,14 +256,15 @@ class BuilderPersistsManager
     /**
      * Return type of this property
      *
-     * @param \ReflectionProperty $reflectionProperty
+     * @param ReflectionProperty $reflectionProperty
      * @return string
+     * @throws NotFoundException
      */
-    private function getTypeProperty(\ReflectionProperty $reflectionProperty, \ReflectionClass $reflectionClass): string
+    private function getTypeProperty(ReflectionProperty $reflectionProperty, ReflectionClass $reflectionClass): string
     {
 
         if($reflectionProperty->getType() === null){
-            throw new WorkException('BuilderPeristsManager encountered an error: the type of property "' . $reflectionProperty->getName() . '" of the class ' . $reflectionClass->getName() . ' is unresolved');
+            throw new NotFoundException('BuilderPeristsManager encountered an error: the type of property "' . $reflectionProperty->getName() . '" of the class ' . $reflectionClass->getName() . ' is unresolved');
         }
 
         $type = $reflectionProperty->getType()->getName();
@@ -277,11 +281,12 @@ class BuilderPersistsManager
     /**
      * Return column if she's defined
      *
-     * @param \ReflectionProperty $reflectionProperty
+     * @param ReflectionProperty $reflectionProperty
+     * @param ReflectionClass $reflectionClass
      * @return string|null
-     * @throws WorkException
+     * @throws NotFoundException
      */
-    private function getColumnProperty(\ReflectionProperty $reflectionProperty, \ReflectionClass $reflectionClass): ?string
+    private function getColumnProperty(ReflectionProperty $reflectionProperty, ReflectionClass $reflectionClass): ?string
     {
         $comment = $reflectionProperty->getDocComment();
 
@@ -291,7 +296,7 @@ class BuilderPersistsManager
             if (!empty($output[0])) {
                 return str_replace(['@PM\\Column(', ')'], '', $output[0]);
             } else {
-                throw new WorkException('BuilderPersistsManager encountered an error: column name could not be resolved for ' . $reflectionClass->getName() . '::'. $reflectionProperty->getName() . ', but exists, please, verify your syntax');
+                throw new NotFoundException('BuilderPersistsManager encountered an error: column name could not be resolved for ' . $reflectionClass->getName() . '::'. $reflectionProperty->getName() . ', but exists, please, verify your syntax');
             }
         }elseif(isset($this->extends[$reflectionProperty->getName()])){
             return $this->extends[$reflectionProperty->getName()];
@@ -305,13 +310,14 @@ class BuilderPersistsManager
     /**
      * Return a method for access the property
      *
-     * @param \ReflectionClass $reflectionClass
-     * @param \ReflectionProperty $reflectionProperty
+     * @param ReflectionClass $reflectionClass
+     * @param ReflectionProperty $reflectionProperty
      * @param string $scope
      * @return string
-     * @throws WorkException
+     * @throws NotFoundException
+     * @throws ReflectionException
      */
-    private function getAccessorProperty(\ReflectionClass $reflectionClass, \ReflectionProperty $reflectionProperty, string $scope): string
+    private function getAccessorProperty(ReflectionClass $reflectionClass, ReflectionProperty $reflectionProperty, string $scope): string
     {
 
 
@@ -321,12 +327,12 @@ class BuilderPersistsManager
         }else {
             try {
                 return $reflectionClass->getMethod('get' . ucfirst($reflectionProperty->getName()))->getName();
-            } catch (\ReflectionException $rf) {
+            } catch (ReflectionException $rf) {
 
                 $accessor = $this->searchPatch($reflectionProperty->getName(), $reflectionClass, 'Accessor');
 
                 if ($accessor === null) {
-                    throw new WorkException('BuilderPersistsManager encountered an error: accessor for property ' . $reflectionProperty->getName() . ' not found, please, respect convention or add patch "@PM\Patch\Accessor(propertyName). Our searching: get' . ucfirst($reflectionProperty->getName()));
+                    throw new NotFoundException('BuilderPersistsManager encountered an error: accessor for property ' . $reflectionProperty->getName() . ' not found, please, respect convention or add patch "@PM\Patch\Accessor(propertyName). Our searching: get' . ucfirst($reflectionProperty->getName()));
                 }
 
                 return $accessor;
@@ -338,13 +344,14 @@ class BuilderPersistsManager
     /**
      * Return method for mutate the property
      *
-     * @param \ReflectionClass $reflectionClass
-     * @param \ReflectionProperty $reflectionProperty
+     * @param ReflectionClass $reflectionClass
+     * @param ReflectionProperty $reflectionProperty
      * @param string $scope
      * @return string
-     * @throws WorkException
+     * @throws NotFoundException
+     * @throws ReflectionException
      */
-    private function getMutatorProperty(\ReflectionClass $reflectionClass, \ReflectionProperty $reflectionProperty, string $scope): string
+    private function getMutatorProperty(ReflectionClass $reflectionClass, ReflectionProperty $reflectionProperty, string $scope): string
     {
 
         //If scope is public, mutator is the variable name, else, search a mutator method with recovery process if an error occured
@@ -353,12 +360,12 @@ class BuilderPersistsManager
         }else{
             try {
                 return $reflectionClass->getMethod('set' . ucfirst($reflectionProperty->getName()))->getName();
-            } catch (\ReflectionException $rf) {
+            } catch (ReflectionException $rf) {
 
                 $accessor = $this->searchPatch($reflectionProperty->getName(), $reflectionClass, 'Mutator');
 
                 if ($accessor === null) {
-                    throw new WorkException('BuilderPersistsManager encountered an error: mutator for property ' .
+                    throw new NotFoundException('BuilderPersistsManager encountered an error: mutator for property ' .
                         $reflectionProperty->getName() . ' not found, please, respect convention or add patch 
                         "@PM\Patch\Mutator(propertyName). Our searching: set' . ucfirst($reflectionProperty->getName()));
                 }
@@ -372,10 +379,10 @@ class BuilderPersistsManager
     /**
      * Return scope of the property
      *
-     * @param \ReflectionProperty $reflectionProperty
+     * @param ReflectionProperty $reflectionProperty
      * @return string
      */
-    private function getScopeProperty(\ReflectionProperty $reflectionProperty): string
+    private function getScopeProperty(ReflectionProperty $reflectionProperty): string
     {
         if($reflectionProperty->isPublic()){
             return 'public';
@@ -388,16 +395,16 @@ class BuilderPersistsManager
 
 
     /**
-     * @param \ReflectionProperty[] $properties
-     * @param \ReflectionClass $reflectionClass
-     * @throws WorkException
-     * @throws \ReflectionException
+     * @param ReflectionProperty[] $properties
+     * @param ReflectionClass $reflectionClass
+     * @throws ReflectionException
+     * @throws NotFoundException
      */
-    private function getKeyArray(array $properties, \ReflectionClass $reflectionClass): void
+    private function getKeyArray(array $properties, ReflectionClass $reflectionClass): void
     {
 
         foreach ($properties as $value){
-            $reflectionProperty = new \ReflectionProperty($reflectionClass->getName(), $value->getName());
+            $reflectionProperty = new ReflectionProperty($reflectionClass->getName(), $value->getName());
 
             $comment = $reflectionProperty->getDocComment();
 
@@ -407,7 +414,7 @@ class BuilderPersistsManager
         }
 
         if(!isset($this->keyArray)){
-            throw new WorkException('BuilderPersistsManager encountered an error: keyArray property is not found in ' .
+            throw new NotFoundException('BuilderPersistsManager encountered an error: keyArray property is not found in ' .
                 $this->className . ', please, verify your syntaxe or add that');
         }
     }
@@ -417,12 +424,13 @@ class BuilderPersistsManager
      * Search patch for error not found
      *
      * @param string $name
-     * @param \ReflectionClass $reflectionClass
+     * @param ReflectionClass $reflectionClass
      * @param string $type
      * @return string
-     * @throws \ReflectionException
+     * @throws ReflectionException
+     * @throws NotFoundException
      */
-    private function searchPatch(string $name, \ReflectionClass $reflectionClass, string $type): string
+    private function searchPatch(string $name, ReflectionClass $reflectionClass, string $type): string
     {
 
         foreach ($reflectionClass->getMethods() as $value){
@@ -433,7 +441,7 @@ class BuilderPersistsManager
             }
         }
 
-        throw new WorkException('BuilderPersistsManager encountered an error: accessor of ' . $name . ' property not found, please, create an patch with this format: @PM\Patch\Accessor(' . $name . ') or respect the convention.<br> Our search: get' . ucfirst($name) . ' or set' . ucfirst($name) . ' and '. self::$comment["patch"] . '\\' . $type . '(' . $name . ')');
+        throw new NotFoundException('BuilderPersistsManager encountered an error: accessor of ' . $name . ' property not found, please, create an patch with this format: @PM\Patch\Accessor(' . $name . ') or respect the convention.<br> Our search: get' . ucfirst($name) . ' or set' . ucfirst($name) . ' and '. self::$comment["patch"] . '\\' . $type . '(' . $name . ')');
     }
 
 

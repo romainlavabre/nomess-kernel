@@ -1,81 +1,61 @@
 <?php
-namespace NoMess\Components\DataManager\Builder;
+namespace Nomess\Components\DataManager\Builder;
 
-use NoMess\Exception\WorkException;
 
 class DocComment
 {
 
     /**
      * Nom de la class
-     *
-     * @var string
      */
-    private $className; 
+    private ?string $className;
 
     /**
      * Clé en session (unique)
-     *
-     * @var string
      */
-    private $key;
+    private ?string  $key;
 
 
     /**
      * Clé du tableau en session
-     *
-     * @var string
      */
-    private $keyArray;
+    private ?string $keyArray;
 
 
     /**
      * dependence de session
-     *
-     * @var array
      */
-    private $sesDepend = array();
+    private array $sesDepend = array();
 
     /**
      * table de l'objet
-     *
-     * @var string
      */
-    private $base;
+    private ?string $base;
 
     /**
-     * Insertion avec le retrour de la  mise en base
-     *
-     * @var string
+     * Insertion avec le retour de la  mise en base
      */
-    private $insert;
+    private ?string $insert;
 
     /**
      * Dépendance de la base de donnée
-     *
-     * @var array
      */
-    private $dbDepend = array();
+    private array $dbDepend = array();
 
     /**
      * Contient les noInsert, noUpdate, noDelete
-     *
-     * @var array
      */
-    private $noTransaction = array();
+    private array $noTransaction = array();
 
 
     /**
      * Contient les alias de method
-     *
-     * @var array
      */
-    private $alias;
+    private ?array $alias;
 
 
 
     /**
-     *
      * @param string $className
      */
     public function __construct(string $className)
@@ -85,7 +65,6 @@ class DocComment
 
 
     /**
-     *
      * @return string
      */
     public function getClassName() : string
@@ -94,7 +73,6 @@ class DocComment
     }
 
     /**
-     *
      * @param string $setter
      * @return void
      */
@@ -104,7 +82,6 @@ class DocComment
     }
 
     /** 
-     *
      * @return string|null
      */
     public function getKey() : ?string
@@ -113,7 +90,6 @@ class DocComment
     }
     
     /**
-     *
      * @param string $setter
      * @return void
      */
@@ -154,7 +130,6 @@ class DocComment
     }
 
     /**
-     *
      * @param string $setter
      * @return void
      */
@@ -163,12 +138,11 @@ class DocComment
         if($this->base === null){
             $this->base = $setter;
         }else{
-            throw new WorkException('Pour la class ' . $this->className . ', une seul table est attendu');
+            throw new \InvalidArgumentException('For class ' . $this->className . ', only once table excepted');
         }
     }
 
     /**
-     *
      * @return string|null
      */
     public function getBase() : ?string
@@ -177,8 +151,6 @@ class DocComment
     }
 
     /**
-     *
-     * @param string $getter
      * @param string $setter
      * @return void
      */
@@ -190,7 +162,6 @@ class DocComment
     }
 
     /**
-     *
      * @return string|null
      */
     public function getInsert() : ?string
@@ -199,7 +170,6 @@ class DocComment
     }
 
     /**
-     *
      * @param string $getter
      * @param string $setter
      * @return void

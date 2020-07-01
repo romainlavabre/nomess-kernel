@@ -1,19 +1,20 @@
 <?php
 
 
-namespace NoMess\Components\ApplicationScope;
+namespace Nomess\Components\ApplicationScope;
 
 
-use NoMess\Components\Component;
-use NoMess\ObserverInterface;
-
-class ApplicationScope extends Component implements ObserverInterface
+class ApplicationScope
 {
-    private const PATH_CACHE            = ROOT . 'App/var/cache/as/as.php';
+    private const PATH_CACHE            = ROOT . 'var/cache/as/as.php';
 
     private ?array $data;
     private bool $update = false;
 
+    public function __construct()
+    {
+        $this->loadData();
+    }
 
     /**
      * Get data
@@ -23,11 +24,7 @@ class ApplicationScope extends Component implements ObserverInterface
      */
     public function get(string $index)
     {
-        if(isset($this->data[$index])){
-            return $this->data[$index];
-        }
-
-        return null;
+        return (isset($this->data[$index])) ? $this->data[$index] : NULL;
     }
 
 
@@ -62,7 +59,7 @@ class ApplicationScope extends Component implements ObserverInterface
     {
         if(file_exists(self::PATH_CACHE)){
             $tmp = require self::PATH_CACHE;
-            $this->data = $tmp;
+            $this->data = unserialize($tmp);
         }else{
             $this->data = array();
         }
@@ -71,16 +68,11 @@ class ApplicationScope extends Component implements ObserverInterface
     private function persistsData(): void
     {
         if($this->update === true){
-            file_put_contents(self::PATH_CACHE, '<?php return \'' . serialize($this->data) . '\';');
+            file_put_contents(self::PATH_CACHE, '<?php return \'' . str_replace('\'', '\\\'', serialize($this->data)) . '\';');
         }
     }
 
-    public function notifiedInput(): void
-    {
-        $this->loadData();
-    }
-
-    public function notifiedOutput(): void
+    public function __destruct()
     {
         $this->persistsData();
     }

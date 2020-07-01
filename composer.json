@@ -2,7 +2,6 @@
     "name": "nomess/kernel",
     "description": "Noyau de nomess",
     "keywords": ["framework"],
-    "type": "project",
     "authors": [
         {
             "name": "Romain Lavabre",
@@ -13,19 +12,14 @@
         "php": "^7.4",
         "digitalnature/php-ref": "^1.3",
         "phpunit/phpunit": "^9.1",
-        "twig/twig": "^3.0"
+        "twig/twig": "^3.0",
+        "ext-xdebug": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*"
     },
     "autoload" : {
 		"psr-4" : {
-            "NoMess\\HttpSession\\": "HttpSession/",
-            "NoMess\\HttpRequest\\" : "HttpRequest/",
-            "NoMess\\HttpResponse\\": "HttpResponse/",
-            "NoMess\\Database\\": "Database/",
-            "NoMess\\Router\\": "Router/",
-            "NoMess\\Manager\\": "Manager/",
-            "NoMess\\service\\": "Service/",
-            "NoMess\\Components\\": "Components/",
-            "NoMess\\": "/"
+            "Nomess\\": "/"
 		}
     },
     "minimum-stability": "stable"

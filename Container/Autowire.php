@@ -1,226 +1,262 @@
 <?php
 
 
-namespace NoMess\Container;
+namespace Nomess\Container;
 
 
-use NoMess\Exception\WorkException;
+use Nomess\Exception\MissingConfigurationException;
+use Nomess\Exception\NotFoundException;
+use ReflectionMethod;
 
 class Autowire
 {
+    private const CONFIGURATION         = ROOT . 'config/container.php';
 
-    public array $instance = array();
-    public array $definitions;
-    public array $cache = array();
-    public Container $container;
+    private array $instance = array();
+    private array $configuration;
+    public ?string $force = NULL;
 
-
-    /**
-     * Resolve class and her dependency
-     *
-     * @param string $className
-     * @param bool $make
-     * @return array
-     * @throws WorkException
-     * @throws \ReflectionException
-     */
-    public function autowire(string $className, bool $make = false): array
+    public function __construct(Container $container)
     {
-        $key = $this->searchForKey($className);
+        $this->instance[Container::class] = $container;
+        $this->configuration = require self::CONFIGURATION;
+    }
 
-        $reflectionClass = new \ReflectionClass($className);
-
-        if($reflectionClass->isInstantiable() && !array_key_exists($reflectionClass->getName(), $this->definitions)) {
-
-            $reflectionMethod = $reflectionClass->getConstructor();
-
-            if($reflectionMethod !== null && $this->validAnnotation($reflectionMethod)){
-
-                $tabReflectionParameters = $reflectionMethod->getParameters();
-
-                if ($tabReflectionParameters !== null) {
-
-                    $tabParameters = $this->parametersResolver($tabReflectionParameters, $make, $reflectionClass);
-
-                    $this->instance[$key] = $reflectionClass->newInstanceArgs($tabParameters);
-                    $this->setValueProperty($this->instance[$key]);
-                    $this->methodResolver($this->instance[$key], $reflectionClass, $make);
-                } else {
-                    $this->instance[$key] = new $className();
-                    $this->setValueProperty($this->instance[$key]);
-                    $this->methodResolver($this->instance[$key], $reflectionClass, $make);
-                }
-
-            }else{
-                $this->instance[$key] = new $className();
-                $this->setValueProperty($this->instance[$key]);
-                $this->methodResolver($this->instance[$key], $reflectionClass, $make);
-            }
-        }elseif(array_key_exists($reflectionClass->getName(), $this->definitions)) {
-            $this->classResolver($className);
+    public function get(string $classname)
+    {
+        if(array_key_exists($classname, $this->instance)){
+            return $this->instance[$classname];
         }else{
-            throw new WorkException('Autowire encountered an error: the class ' . $reflectionClass->getName() . ' is not instanciable and any definition is defined');
+            return $this->make($classname);
         }
-
-        return $this->instance;
     }
 
-
     /**
-     * Resolve method
-     *
-     * @param object $object
-     * @param \ReflectionClass $reflectionClass
-     * @param bool $make
-     * @throws WorkException
+     * @param string $classname
+     * @return mixed
+     * @throws MissingConfigurationException
      * @throws \ReflectionException
      */
-    private function methodResolver(object $object, \ReflectionClass $reflectionClass, bool $make): void
+    public function make(string $classname)
     {
-        $tabMethod = $reflectionClass->getMethods();
+        $reflectionClass = new \ReflectionClass($classname);
 
-        foreach($tabMethod as $reflectionMethod){
-            if(strpos($reflectionMethod->getDocComment(), '@Inject') && !$reflectionMethod->isConstructor()){
-                $tabParameters = $this->parametersResolver($reflectionMethod->getParameters(), $make, $reflectionClass);
-
-                $reflectionMethod->invokeArgs($object, $tabParameters);
-            }
-        }
-    }
-
-
-    /**
-     * Resolve class definitions
-     *
-     * @param string $className
-     * @return string|null
-     * @throws WorkException
-     */
-    private function classResolver(string $className): ?object
-    {
-        $returned = $this->definitions[$className];
-
-        if(!empty($returned) && is_array($returned)){
-
-            if(key($returned) === 'get') {
-                return $this->container->get(current($returned));
-            }else{
-                return $this->container->make(current($returned));
-            }
-
-
+        if($reflectionClass->getConstructor() !== NULL) {
+            $this->constructorResolver($reflectionClass->getConstructor()->getParameters(), $reflectionClass);
         }else{
-            throw new WorkException('Autowire encountered an error: you have error in your definition for class ' . $className . '.<br>Must be a array');
+            $this->constructorResolver(NULL, $reflectionClass);
         }
+
+        $this->methodsResolver($reflectionClass->getMethods(), $this->instance[$classname]);
+        $this->propertyResolver($reflectionClass->getProperties(), $this->instance[$classname]);
+
+        return $this->instance[$classname];
+
     }
 
 
     /**
-     * Revolve parameters of method
-     *
-     * @param array $tabReflectionParameters
-     * @param bool $make
+     * @param \ReflectionParameter[]|null $reflectionParameters
      * @param \ReflectionClass $reflectionClass
-     * @return \ReflectionParameter[]
-     * @throws WorkException
-     * @throws \ReflectionException
+     * @return void
      */
-    private function parametersResolver(array $tabReflectionParameters, bool $make, \ReflectionClass $reflectionClass): array
+    private function constructorResolver(?array $reflectionParameters, \ReflectionClass $reflectionClass): void
     {
+        $parameters = array();
 
-        $tabParameters = array();
-
-        foreach ($tabReflectionParameters as $reflectionParameter) {
-            if ((!array_key_exists($reflectionParameter->getType()->getName(), $this->instance) || $make === true ) && $reflectionParameter->getType() !== null) {
-
-                $this->autowire($reflectionParameter->getType()->getName());
-
-                $keySearch = $this->searchForKey($reflectionParameter->getType()->getName());
-
-                $tabParameters[] = $this->instance[$keySearch];
-
-            } elseif(array_key_exists($reflectionParameter->getType()->getName(), $this->instance) && $make === false){
-
-                $keySearch = $this->searchForKey($reflectionParameter->getType()->getName());
-                $tabParameters[] = $this->instance[$keySearch];
-
-
-            } elseif ($reflectionParameter->getType() === null) {
-                throw new WorkException('Autowire encountered an error: the constructor of class ' . $reflectionClass->getName() . ' contains a non typed parameter');
+        if(!empty($reflectionParameters)){
+            foreach($reflectionParameters as $reflectionParameter){
+                $parameters[] = $this->getGroup($reflectionParameter->getType()->getName(), $reflectionParameter->getName(), $reflectionClass->getConstructor());
             }
         }
 
-        return $tabParameters;
+        $this->instance[$reflectionClass->getName()] = $reflectionClass->newInstanceArgs($parameters);
     }
 
-
     /**
-     * Add value to property
-     *
+     * @param ReflectionMethod[]|null $reflectionMethods
      * @param object $object
-     * @throws WorkException
-     * @throws \ReflectionException
      */
-    private function setValueProperty(object $object): void
+    private function methodsResolver(?array $reflectionMethods, object $object): void
     {
-        $reflectionClass = new \ReflectionClass($object);
+        foreach($reflectionMethods as $reflectionMethod){
+            if($this->hasAnnotation($reflectionMethod) || $reflectionMethod->getName() === $this->force){
+                $this->purgeForce();
+                $parameters = array();
 
-        $tabReflectionProperty = $reflectionClass->getProperties();
+                $reflectionParameters = $reflectionMethod->getParameters();
 
-        foreach ($tabReflectionProperty as $reflectionProperty){
-            $comment = $reflectionProperty->getDocComment();
-
-            if(strpos($comment, '@Inject')){
-                if($reflectionProperty->getType() !== null){
-                    if(class_exists($reflectionProperty->getType()->getName())){
-                        if(!$reflectionProperty->isPublic()){
-                            $reflectionProperty->setAccessible(true);
-                        }
-
-                        $reflectionProperty->setValue($object, $this->container->get($reflectionProperty->getType()->getName()));
-
-                        $reflectionProperty->setAccessible(false);
+                if(!empty($reflectionParameters)){
+                    foreach($reflectionParameters as $reflectionParameter){
+                        $parameters[] = $this->getGroup($reflectionParameter->getType()->getName(), $reflectionParameter->getName(), $reflectionMethod);
                     }
                 }
+
+                $reflectionMethod->invokeArgs($object, $parameters);
             }
         }
     }
 
-
     /**
-     * Valid presence of inject annotation
-     *
-     * @param \ReflectionMethod $reflectionMethod
-     * @return bool
+     * @param \ReflectionProperty[]|null $reflectionProperties
+     * @param object $object
+     * @throws MissingConfigurationException
      */
-    private function validAnnotation(\ReflectionMethod $reflectionMethod): bool
+    private function propertyResolver(?array $reflectionProperties, object $object): void
     {
-        $comment = $reflectionMethod->getDocComment();
+        if(!empty($reflectionProperties)){
+            foreach($reflectionProperties as $reflectionProperty){
+                if($this->hasAnnotation($reflectionProperty)){
 
-        if(strpos($comment, '@Inject')){
-            return true;
+                    if(!$reflectionProperty->isPublic()) {
+                        $reflectionProperty->setAccessible(TRUE);
+                    }
+
+                    $reflectionProperty->setValue(
+                        $object,
+                        $this->getGroup($reflectionProperty->getType()->getName(), $reflectionProperty->getName(), $reflectionProperty)
+                    );
+                }
+            }
         }
-
-        return false;
     }
 
-
-
-    /**
-     * Return key to search, permitted to manage definitions
-     *
-     * @param string $className
-     * @return string
-     */
-    private function searchForKey(string $className): string
+    private function getGroup(string $type, string $paramName, $reflection)
     {
-        if(array_key_exists($className, $this->definitions)){
+        $list = array();
 
-            return current($this->definitions[$className]);
+        if($type === 'array'){
+
+            if($reflection instanceof ReflectionMethod) {
+                $type = $this->getTypeAnnotationParameter($paramName, $reflection);
+            }else{
+                $type = $this->getTypeAnnotationProperty($paramName, $reflection);
+            }
+
+        }
+
+        if(isset($this->configuration[$type])){
+
+            if(is_array($this->configuration[$type])){
+                if(array_key_exists($paramName, $this->configuration[$type])){
+                    return $this->getInstance($this->configuration[$type][$paramName]);
+                }else{ // If is not array, send and array of parameter
+                    foreach($this->configuration[$type] as $class){
+                        $list[] = $this->getInstance($class);
+                    }
+                }
+            }else{
+                return $this->getInstance($this->configuration[$type]);
+            }
         }else{
-            return $className;
+            return $this->getInstance($type);
+        }
+
+        return $list;
+    }
+
+    private function getInstance(string $type)
+    {
+        $reflectionClass = new \ReflectionClass($type);
+
+        if(array_key_exists($type, $this->instance)){
+            return $this->instance[$type];
+        }
+
+        if($reflectionClass->isInstantiable()){
+
+            return $this->make($type);
+
+        }else{
+            throw new MissingConfigurationException("Impossible of autowire the class $type, she's not instanciable");
         }
     }
 
+    private function hasAnnotation(\Reflector $reflector): bool
+    {
+        if(strpos($reflector->getDocComment(), '@Inject') !== FALSE){
+            return TRUE;
+        }else{
+            return FALSE;
+        }
+    }
 
+    private function getTypeAnnotationParameter(string $paramName, ReflectionMethod $reflectionMethod): string
+    {
+        preg_match('/@param ([A-Za-z0-1_\\\]+)\[?\]?[|null]* \$' . $paramName . '/', $reflectionMethod->getDocComment(), $output);
+
+        if(isset($output[1])){
+            if(class_exists($output[1])){
+                return $output[1];
+            }else{
+                return $this->criticalClassResolver($output[1], $reflectionMethod->getDeclaringClass());
+            }
+        }else{
+            throw new \InvalidArgumentException("The argument $$paramName in " . $reflectionMethod->getDeclaringClass() . ' for method ' . $reflectionMethod->getName() . ' has unresolved');
+        }
+    }
+
+    private function getTypeAnnotationProperty(string $paramName, \ReflectionProperty $reflectionProperty): string
+    {
+        preg_match('/@var ([A-Za-z0-1_\\\]+)\[?\]?[|null]*/', $reflectionProperty->getDocComment(), $output);
+
+        if(isset($output[1])){
+            if(class_exists($output[1])){
+                return $output[1];
+            }else{
+                return $this->criticalClassResolver($output[1], $reflectionProperty->getDeclaringClass());
+            }
+        }else{
+            throw new \InvalidArgumentException("The argument $$paramName in " . $reflectionProperty->getDeclaringClass()->getName() . ' has unresolved');
+        }
+    }
+
+    private function criticalClassResolver(string $classname, \ReflectionClass $reflectionClass): ?string
+    {
+        //Search for class in used namespace
+        $file = file($reflectionClass->getFileName());
+        $found = array();
+
+
+        foreach($file as $line) {
+            if(strpos($line, $classname) !== FALSE && strpos($line, 'use') !== FALSE){
+
+                preg_match('/ +[A-Za-z0-9_\\\]*/', $line, $output);
+                $found[] = trim($output[0]);
+            }
+        }
+
+        // If not found, trying with namespace of original class or if she's declared in configuration
+        if(empty($found)){
+            if(class_exists($reflectionClass->getNamespaceName() . '\\' . $classname)) {
+                return $reflectionClass->getNamespaceName() . '\\' . $classname;
+            }elseif(isset($this->configuration[$classname])){
+                return $classname;
+            }else {
+                throw new NotFoundException('Autowiring encountered an error: class ' . $classname . ' cannot be resolved, mentioned in ' . $reflectionClass->getName());
+            }
+        }elseif(count($found) === 1){
+            return $found[0];
+        }else{
+            // If it has been found several times, search in configuration, if all definition match, class is unresolved
+            $defined = array();
+
+            foreach($found as $fullname){
+                if(isset($this->configuration[$fullname])){
+                    $defined[] = $fullname;
+                }
+            }
+
+            if(empty($defined) || count($defined) > 1){
+                throw new NotFoundException('Autowiring encountered an error: impossible of resolved the class ' . $classname . ' mentionned in ' . $reflectionClass->getName());
+            }else{
+                return $defined[0];
+            }
+        }
+    }
+
+    private function purgeForce(): void
+    {
+        $this->force = NULL;
+    }
 }

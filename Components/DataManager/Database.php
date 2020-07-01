@@ -1,14 +1,13 @@
 <?php
 
-namespace NoMess\Components\DataManager;
+namespace Nomess\Components\DataManager;
 
-use NoMess\Components\Component;
-use NoMess\Components\DataManager\Builder\BuilderDataManager;
-use NoMess\Container\Container;
-use NoMess\Exception\WorkException;
+use Nomess\Annotations\Inject;
+use Nomess\Components\DataManager\Builder\BuilderDataManager;
+use Nomess\Container\Container;
+use Nomess\Exception\NomessException;
 
-
-class Database extends Component
+class Database
 {
 
     private const CACHE_DATA_MANAGER        = ROOT . 'App/var/cache/dm/datamanager.xml';
@@ -33,10 +32,8 @@ class Database extends Component
     /**
      * @Inject
      *
-     * Database constructor.
      * @param DataManager $dataManager
      * @param Container $container
-     * @throws WorkException
      */
     public function __construct(DataManager $dataManager,
                                 Container $container)
@@ -44,7 +41,6 @@ class Database extends Component
 
         $this->datamanager = $dataManager;
         $this->container = $container;
-        parent::__construct();
         $this->controlCache();
     }
 
@@ -59,10 +55,9 @@ class Database extends Component
      * <br><br>
      * @param string $type if you can't fulfill a condition of $param, specify an object type that DataManager should search.
      *
-     * @return Database
-     *
+     * @return self
      */
-    public function create(array $param, string $type = null): Database
+    public function create(array $param, string $type = null): self
     {
         $this->instanceData([self::CREATE . $type => $param]);
         return $this;
@@ -74,9 +69,9 @@ class Database extends Component
      *
      * @param array $param
      * @param string|null $type
-     * @return $this
+     * @return self
      */
-    public function update(array $param, string $type = null): Database
+    public function update(array $param, string $type = null): self
     {
 
         $this->instanceData([self::UPDATE . $type => $param]);
@@ -90,9 +85,9 @@ class Database extends Component
      *
      * @param array $param
      * @param string|null $type
-     * @return $this
+     * @return self
      */
-    public function delete(array $param, string $type = null): Database
+    public function delete(array $param, string $type = null): self
     {
 
         $this->instanceData([self::DELETE . $type => $param]);
@@ -115,9 +110,9 @@ class Database extends Component
      *
      * @param array $param
      * @param string|null $type
-     * @return Database
+     * @return self
      */
-    public function aliasMethod(string $method, array $param, string $type = null): Database
+    public function aliasMethod(string $method, array $param, string $type = null): self
     {
 
         $this->instanceData([$method . ':' . $type => $param]);
@@ -160,9 +155,9 @@ class Database extends Component
      * Format: [ setterMethod => value ]
      *
      * @param array $configuration
-     * @return $this
+     * @return self
      */
-    public function setDependConfiguration(array $configuration): Database
+    public function setDependConfiguration(array $configuration): self
     {
         $this->data[$this->cursor]['runtimeConfig']['depend'] = $configuration;
 
@@ -178,9 +173,9 @@ class Database extends Component
      * Format: [ className => true|false ]
      *
      * @param array $configuration
-     * @return $this
+     * @return self
      */
-    public function setTransactionConfiguration(array $configuration): Database
+    public function setTransactionConfiguration(array $configuration): self
     {
         $this->data[$this->cursor]['runtimeConfig']['transaction'] = $configuration;
 
@@ -194,12 +189,13 @@ class Database extends Component
      * If a object of identical type exists in group, only first will be keep.<br>
      * For modified this behaviour, you should pass by reference the dependency of target object.
      *
-     * @return Database
+     * @return self
      */
-    public function setDependency(array $dependency): Database
+    public function setDependency(array $dependency): self
     {
 
         $this->data[$this->cursor]['depend'] = $dependency;
+        return $this;
     }
 
 
@@ -210,9 +206,9 @@ class Database extends Component
      * @param string|null $className
      * @param array|null $parameter
      * @param string|null $idMethod
-     * @return $this
+     * @return self
      */
-    public function buildPM(?string $className = null, ?array $parameter = null, ?string $idMethod = null): Database
+    public function buildPM(?string $className = null, ?array $parameter = null, ?string $idMethod = null): self
     {
 
 
@@ -246,6 +242,7 @@ class Database extends Component
      * Launch transaction process, by running request in pile, if an error occured, return false, else return true
      *
      * @return bool
+     * @throws NomessException
      */
     public function manage(): bool
     {

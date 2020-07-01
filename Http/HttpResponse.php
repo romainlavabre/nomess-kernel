@@ -1,6 +1,6 @@
 <?php
 
-namespace NoMess\Http;
+namespace Nomess\Http;
 
 
 

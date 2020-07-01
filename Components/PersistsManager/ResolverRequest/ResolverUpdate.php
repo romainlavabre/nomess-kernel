@@ -1,7 +1,7 @@
 <?php
 
 
-namespace NoMess\Components\PersistsManager\ResolverRequest;
+namespace Nomess\Components\PersistsManager\ResolverRequest;
 
 
 class ResolverUpdate extends ResolverImpactData
@@ -9,7 +9,7 @@ class ResolverUpdate extends ResolverImpactData
     /**
      * Launch build cache file
      *
-     * @throws \NoMess\Exception\WorkException
+     * @throws \Nomess\Exception\NotFoundException
      */
     public function execute()
     {

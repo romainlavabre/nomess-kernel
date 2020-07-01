@@ -1,8 +1,7 @@
 <?php
 
-$version = '2.17';
+$version = '2.20';
 
-global $vController, $action, $method, $_GET, $_POST, $time, $tree;
 
 $tabOpcache = null;
 $tabStatus = null;
@@ -24,7 +23,7 @@ $function = function()
 
 $fileIndex = $function();
 ?>
-<link rel="stylesheet" href="<?php echo str_replace('public/', '',WEBROOT) . 'system/bootstrap-toolbar.css'; ?>">
+<link rel="stylesheet" href="/system/bootstrap-toolbar.css">
 <style type="text/css">
 
 
@@ -34,7 +33,7 @@ $fileIndex = $function();
         <button class="nm_btn nm_noir nm_no-radius nm_no-cursor">Dev</button>
         <div class="nm_btn-group nm_dropup">
             <button type="button" class="nm_btn nm_rouge nm_no-radius" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <?php echo (string) $vController.' - '.(string) $action.' - '.$method; ?>
+                <?php echo (string) basename($controller).' - '.(string) $method.' - '.$action; ?>
             </button>
         </div>
         <?php if ($tabOpcache !== null && isset($tabOpcache['directives']['opcache.enable']) && $tabOpcache['directives']['opcache.enable']) {
@@ -45,7 +44,7 @@ $fileIndex = $function();
                 </button>
                 <div class="nm_dropdown-menu">
                     <button class="nm_btn nm_dropdown-item nm_vert" style="cursor: pointer;" data-toggle="nm_modal" data-target="#cache">Dashboard</button>
-                    <form method="post" action="<?php echo WEBROOT.$_GET['p']; ?>">
+                    <form method="post" action="<?php echo $_GET['p']; ?>">
                         <input name="resetCache" type="hidden">
                         <input type="submit" value="Vider le cache" class="nm_btn nm_dropdown-item nm_rouge">
                     </form>
@@ -85,22 +84,7 @@ $fileIndex = $function();
             <?php
         }?>
 
-        <button class="nm_btn nm_rouge nm_no-radius">Time: <?php echo $time->getXdebug() ?> sec</button>
-        <div class="nm_btn-group nm_dropup">
-            <button type="button" class="nm_btn nm_rouge nm_dropdown-toggle nm_no-radius" data-toggle="nm_dropdown" aria-haspopup="true" aria-expanded="false">
-                Caches
-            </button>
-            <div class="nm_dropdown-menu">
-                <form method="post" action="<?php echo WEBROOT . $_GET['p']; ?>" >
-                    <input name="resetCacheRoute" type="hidden">
-                    <input type="submit" value="Vider: Routing" class="nm_btn nm_dropdown-item nm_bleu" style="width: 100%;">
-                </form>
-                <form method="post" action="<?php echo WEBROOT . $_GET['p']; ?>" >
-                    <input name="resetCacheMon" type="hidden">
-                    <input type="submit" value="Vider: Monitoring Data" class="nm_btn nm_dropdown-item nm_bleu" style="width: 100%;">
-                </form>
-            </div>
-        </div>
+        <button class="nm_btn nm_rouge nm_no-radius">Time: <?php echo number_format($time, 3, '.', '') ?> sec</button>
         <div class="nm_btn-group nm_dropup">
             <button type="button" class="nm_btn nm_bleu nm_dropdown-toggle nm_no-radius" data-toggle="nm_dropdown" aria-haspopup="true" aria-expanded="false">
                 PHPUnit
@@ -150,7 +134,6 @@ $fileIndex = $function();
                     <button class="nm_btn nm_dropdown-item nm_bleu nm_no-cursor">PHP-REF</button>
                 </div>
             </div>
-            <button class="nm_btn nm_rouge" data-toggle="nm_modal" data-target="#phpinfo">phpinfo</button>
             <button class="nm_btn nm_bleu nm_no-radius">NoMess.<?php echo $version ?></button>
         </div>
     </div>
@@ -230,7 +213,7 @@ $fileIndex = $function();
 											<tr>
 												<th>'.$key.'</th>
 												<td>
-													<form method="post" action="' . WEBROOT . $_GET['p'] . '">
+													<form method="post" action="' . $_GET['p'] . '">
 														<input type="hidden" name="invalide" value="'.$key.'">
 														<input type="submit" class="nm_btn nm_btn-sm nm_no-radius nm_rouge" value="Invalider">
 													</form>
@@ -365,29 +348,7 @@ $fileIndex = $function();
                 </div>
                 <div class="nm_modal-body">
                     <div class="nm_container">
-                        <iframe src="<?php echo WEBROOT . $fileIndex ?>" style="width: 100%;" height="500"></iframe>
-                    </div>
-                </div>
-                <div class="nm_modal-footer">
-                    <button type="button" class="nm_btn nm_btn-secondary nm_no-radius" data-dismiss="nm_modal">Fermer</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <div class="nm_modal fade" id="phpinfo" tabindex="-1" role="dialog" aria-labelledby="examplenm_modalLabel" aria-hidden="true">
-        <div class="nm_modal-dialog nm_modal-lg" role="nm_document">
-            <div class="nm_modal-content nm_no-radius">
-                <div class="nm_modal-header nm_rouge nm_no-radius">
-                    <h5 class="h5 nm_h5 nm_modal-title" id="examplenm_modalLabel">Php-Info</h5>
-                    <button type="button" class="nm_close" data-dismiss="nm_modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="nm_modal-body">
-                    <div class="nm_container">
-                        <iframe src="<?php echo ROOT . 'vendor/nomess/kernel/Tools/tools/phpinfo.php'?>" style="width: 100%;" height="500"></iframe>
+                        <iframe src="<?php echo '/' . $fileIndex ?>" style="width: 100%;" height="500"></iframe>
                     </div>
                 </div>
                 <div class="nm_modal-footer">
@@ -397,6 +358,6 @@ $fileIndex = $function();
         </div>
     </div>
 </div>
-<!--<script type="text/javascript" src="<?php echo str_replace('public/', 'system/', WEBROOT) . 'jquery.js' ?>"></script>-->
-<script type="text/javascript" src="<?php echo str_replace('public/', 'system/', WEBROOT) . 'popper.js' ?>"></script>
-<script type="text/javascript" src="<?php echo str_replace('public/', 'system/', WEBROOT) . 'bootstrap-toolbar.js' ?>"></script>
+<!--<script type="text/javascript" src="/system/jquery.js"></script>-->
+<script type="text/javascript" src="/system/popper.js"></script>
+<script type="text/javascript" src="/system/bootstrap-toolbar.js"></script>

@@ -1,7 +1,7 @@
 <?php
 
 
-namespace NoMess\Components\PersistsManager\ResolverRequest;
+namespace Nomess\Components\PersistsManager\ResolverRequest;
 
 
 class ResolverDelete extends ResolverImpactData
@@ -11,7 +11,6 @@ class ResolverDelete extends ResolverImpactData
     /**
      * Launch build cache file
      *
-     * @throws \NoMess\Exception\WorkException
      */
     public function execute()
     {

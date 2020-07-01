@@ -1,20 +1,21 @@
 <?php
 
-namespace NoMess\Components\PersistsManager;
+namespace Nomess\Components\PersistsManager;
 
 
-use NoMess\Components\Component;
-use NoMess\Components\PersistsManager\Builder\BuilderPersistsManager;
-use NoMess\Components\PersistsManager\ResolverRequest\ResolverCreate;
-use NoMess\Components\PersistsManager\ResolverRequest\ResolverDelete;
-use NoMess\Components\PersistsManager\ResolverRequest\ResolverSelect;
-use NoMess\Components\PersistsManager\ResolverRequest\ResolverUpdate;
-use NoMess\Container\Container;
-use NoMess\Database\IPDOFactory;
-use NoMess\Exception\WorkException;
+use Nomess\Annotations\Inject;
+use Nomess\Components\PersistsManager\Builder\BuilderPersistsManager;
+use Nomess\Components\PersistsManager\ResolverRequest\ResolverCreate;
+use Nomess\Components\PersistsManager\ResolverRequest\ResolverDelete;
+use Nomess\Components\PersistsManager\ResolverRequest\ResolverSelect;
+use Nomess\Components\PersistsManager\ResolverRequest\ResolverUpdate;
+use Nomess\Container\Container;
+use Nomess\Database\IPDOFactory;
+use Nomess\Exception\MissingConfigurationException;
+use Nomess\Exception\NomessException;
 
 
-class PersistsManager extends Component
+class PersistsManager
 {
 
     private const STORAGE_CONFIGURATION = ROOT . 'App/config/components/PersistsManager.php';
@@ -95,13 +96,11 @@ class PersistsManager extends Component
      * PersistsManager constructor.
      * @param IPDOFactory $IPDOFactory
      * @param Container $container
-     * @throws \NoMess\Exception\WorkException
      */
     public function __construct(IPDOFactory $IPDOFactory,
                                 Container $container)
     {
 
-        parent::__construct();
         $this->IPDOFactory = $IPDOFactory;
         $this->container = $container;
         $this->file = require self::STORAGE_CONFIGURATION;
@@ -218,6 +217,8 @@ class PersistsManager extends Component
      * Launch transaction
      *
      * @return mixed
+     * @throws MissingConfigurationException
+     * @throws NomessException
      */
     public function execute()
     {
@@ -254,6 +255,7 @@ class PersistsManager extends Component
      * Take file cache to this class::request
      *
      * @return bool
+     * @throws NomessException
      */
     private function getCache(): ?bool
     {
@@ -271,8 +273,9 @@ class PersistsManager extends Component
         } catch (\Throwable $th) {
 
             if(strpos($th->getMessage(), 'No such file or directory') === false){
-                throw new WorkException('PersistsManager encountered an error: when we try to take file ' . $filename . '.php , we have received this message: "' . $th->getMessage() . ' in line ' . $th->getLine() . '"');
+                throw new NomessException('PersistsManager encountered an error: when we try to take file ' . $filename . '.php , we have received this message: "' . $th->getMessage() . ' in line ' . $th->getLine() . '"');
             }
+
             return false;
         }
     }
@@ -282,6 +285,7 @@ class PersistsManager extends Component
      * Control that configuration hasn't change
      *
      * @return bool
+     * @throws NomessException
      */
     private function revalideCache(): bool
     {
@@ -293,7 +297,7 @@ class PersistsManager extends Component
             $lastConfig = unserialize($lastConfig);
         }catch (\Throwable $th){
             if(strpos($th->getMessage(), 'No such file or directory') === false){
-                throw new WorkException('PersistsManager encountered an error: when we try to take file ' . self::STORAGE_CACHE . $this->generateClassName('Config-' . $this->className . '::' . $this->method) . '.php , we have received this message: "' . $th->getMessage() . ' in line ' . $th->getLine() . '"');
+                throw new NomessException('PersistsManager encountered an error: when we try to take file ' . self::STORAGE_CACHE . $this->generateClassName('Config-' . $this->className . '::' . $this->method) . '.php , we have received this message: "' . $th->getMessage() . ' in line ' . $th->getLine() . '"');
             }
 
             return false;
@@ -309,6 +313,11 @@ class PersistsManager extends Component
     }
 
 
+    /**
+     * @return mixed
+     * @throws MissingConfigurationException
+     * @throws NomessException
+     */
     private function loadResolver()
     {
 
@@ -374,7 +383,7 @@ class PersistsManager extends Component
         if(isset($this->config)) {
             $resolver->config = $this->config;
         }else{
-            throw new WorkException('PersistsManager encountered an error: configuration not found for ' . $this->className . ' in persists manager configuration (' . str_replace(ROOT, '', self::STORAGE_CONFIGURATION) . '), <br> please, make an configuration or verify your syntax');
+            throw new MissingConfigurationException('PersistsManager encountered an error: configuration not found for ' . $this->className . ' in persists manager configuration (' . str_replace(ROOT, '', self::STORAGE_CONFIGURATION) . '), <br> please, make an configuration or verify your syntax');
         }
         $resolver->request = $this->config[$this->method]['request'];
 
@@ -398,7 +407,7 @@ class PersistsManager extends Component
         $this->loop++;
 
         if($this->loop > 2){
-            throw new WorkException('PersistsManager encountered an error: Unknow error');
+            throw new NomessException('PersistsManager encountered an error: Unknow error');
         }
 
         return $this->execute();
@@ -409,8 +418,8 @@ class PersistsManager extends Component
     /**
      * Build or rebuild cache and return new cache
      *
+     * @param $className
      * @return \SimpleXMLElement
-     * @throws \NoMess\Exception\WorkException
      */
     private function loadCache($className) : string
     {
