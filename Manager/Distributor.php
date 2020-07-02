@@ -90,6 +90,10 @@ abstract class Distributor
      */
     protected final function redirectLocal(string $routeName, ?array $parameters = NULL): self
     {
+        if(isset($this->data)){
+            $_SESSION[self::SESSION_DATA] = $this->data;
+        }
+
         $this->redirectToLocalResource($routeName, $parameters);
 
         return $this;

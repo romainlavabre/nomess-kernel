@@ -13,12 +13,14 @@ abstract class AbstractBuilder
     protected function columnResolver(string $propertyName, string $classname, ?array $relation = NULL): string
     {
 
-        // If shorte name is empty, the value is type of php class
+        // If short name is empty, the value is type of php class
         if(!empty($relation)){
             if($relation['relation'] === 'many'){
                 return 'own' . ucfirst($this->tableResolver($this->getShortenName($relation['type']))) . 'List';
+            }elseif($relation['relation'] === 'ManyToMany'){
+                return 'shared' . ucfirst($this->tableResolver($this->getShortenName($relation['type']))) . 'List';
             }elseif($relation['relation'] === 'one'){
-                    return $this->tableResolver($this->getShortenName($relation['type']));
+                return $this->tableResolver($this->getShortenName($relation['type']));
             }
         }
 
@@ -83,7 +85,7 @@ abstract class AbstractBuilder
         }elseif(count($found) === 1){
             return $found[0];
         }
-            throw new ORMException('ORM encountered an error: impossible to resolving the type ' . $classname . ' in @var annotation in ' . $reflectionClass->getName());
+        throw new ORMException('ORM encountered an error: impossible to resolving the type ' . $classname . ' in @var annotation in ' . $reflectionClass->getName());
 
     }
 
@@ -132,6 +134,13 @@ abstract class AbstractBuilder
         if(class_exists($type)){
 
             if($reflectionProperty->getType()->getName() === 'array'){
+                if(strpos($reflectionProperty->getDocComment(), '@ManyToMany') !== FALSE){
+                    return [
+                        'relation' => 'ManyToMany',
+                        'type' => $type
+                    ];
+                }
+
                 return [
                     'relation' => 'many',
                     'type' => $type

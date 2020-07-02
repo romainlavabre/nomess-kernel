@@ -31,8 +31,11 @@ class PathExtension extends AbstractExtension
                     foreach($sections as &$section){
 
                         if(strpos($section, '{') !== FALSE){
-                            if(!empty($param) && array_key_exists(str_replace(['{', '}'], '', $section), $param)){
-                                $section = $param[str_replace(['{', '}'], '', $section)];
+                            $purgedSection = str_replace(['{', '}'], '', $section);
+
+                            if(!empty($param) && array_key_exists($purgedSection, $param)){
+                                $section = $param[$purgedSection];
+                                unset($param[$purgedSection]);
                             }else{
                                 throw new InvalidArgumentException('Missing an dynamic data in your url');
                             }
@@ -44,6 +47,20 @@ class PathExtension extends AbstractExtension
 
                 if(strpos($key, '{')){
                     throw new InvalidArgumentException('Missing an dynamic data in your url');
+                }
+
+                if(!empty($param)){
+                    $i = 0;
+
+                    foreach($param as $index => $value) {
+
+                        if($i === 0){
+                            $key .= "?$index=$value";
+                            $i++;
+                        }else{
+                            $key .= "&$index=$value";
+                        }
+                    }
                 }
 
                 return '/' . $key;

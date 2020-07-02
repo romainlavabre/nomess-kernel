@@ -99,15 +99,15 @@ class SelectResolver extends AbstractResolver
 
     private function setProperty(\ReflectionProperty $reflectionProperty, object $target, $data): void
     {
+        $data = (empty($data)) ? NULL : $data;
 
-        if(!empty($data)) {
-            if($reflectionProperty->isPublic()) {
-                $reflectionProperty->setValue($target, $data);
-            } else {
-                $reflectionProperty->setAccessible(TRUE);
-                $reflectionProperty->setValue($target, $data);
-            }
+        if($reflectionProperty->isPublic()) {
+            $reflectionProperty->setValue($target, $data);
+        } else {
+            $reflectionProperty->setAccessible(TRUE);
+            $reflectionProperty->setValue($target, $data);
         }
+
     }
 
     private function resolverLauncher(string $type, object $object): object
