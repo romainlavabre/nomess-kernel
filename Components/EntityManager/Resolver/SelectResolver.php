@@ -4,11 +4,18 @@
 namespace Nomess\Components\EntityManager\Resolver;
 
 
+use NoMess\Components\EntityManager\Container\Container;
 use RedBeanPHP\OODBBean;
 use RedBeanPHP\R;
 
 class SelectResolver extends AbstractResolver
 {
+    private Container $entityContainer;
+
+    public function __construct(Container $entityContainer)
+    {
+        $this->entityContainer = $entityContainer;
+    }
 
     private bool $returnObject = FALSE;
 
@@ -50,8 +57,16 @@ class SelectResolver extends AbstractResolver
                             $tmpList = array();
 
                             foreach($value as $object){
-                                $result = $this->resolverLauncher($mapping['type'], $object);
-                                $tmpList[$result->getId()] = $result;
+                                $resolved = $this->resolverLauncher($mapping['type'], $object);
+
+                                // Call container to avoid the duplication of object
+                                $containerProvide = $this->entityContainer->get($mapping['type'], $bean->id);
+                                if($containerProvide !== NULL) {
+                                    $tmpList[] = $containerProvide;
+                                }else{
+                                    $this->entityContainer->set($mapping['type'], $resolved);
+                                    $tmpList[] = $resolved;
+                                }
                             }
 
                             $this->setProperty($reflectionProperty, $target, $tmpList);
@@ -59,10 +74,24 @@ class SelectResolver extends AbstractResolver
                     }elseif($mapping['action'] === 'bean'){
 
                         if(!empty($bean->$columnName)){
-                            $this->setProperty(
-                                $reflectionProperty,
-                                $target,
-                                $this->resolverLauncher($mapping['type'], $bean->$columnName));
+
+                            $resolved = $this->resolverLauncher($mapping['type'], $bean->$columnName);
+
+                            // Call container to avoid the duplication of object
+                            $containerProvide = $this->entityContainer->get($mapping['type'], $bean->id);
+
+                            if($containerProvide !== NULL) {
+                                $this->setProperty(
+                                    $reflectionProperty,
+                                    $target,
+                                    $containerProvide);
+                            }else{
+                                $this->entityContainer->set($mapping['type'], $resolved);
+                                $this->setProperty(
+                                    $reflectionProperty,
+                                    $target,
+                                    $resolved);
+                            }
                         }
                     }else{
                         $this->setProperty($reflectionProperty, $target, $bean->$columnName);
