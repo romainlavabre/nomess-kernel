@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../nomess/.idea/nomess.iml" filepath="$PROJECT_DIR$/../nomess/.idea/nomess.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/nomess-kernel.iml" filepath="$PROJECT_DIR$/.idea/nomess-kernel.iml" />
     </modules>
   </component>

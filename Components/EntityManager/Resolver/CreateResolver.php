@@ -6,10 +6,12 @@ namespace Nomess\Components\EntityManager\Resolver;
 
 use Nomess\Annotations\Inject;
 use Nomess\Components\EntityManager\Cache\Cache;
+use Nomess\Components\EntityManager\EntityManagerInterface;
 use RedBeanPHP\OODBBean;
 
-class UpdateResolver extends AbstractResolver
+class CreateResolver extends AbstractResolver
 {
+
     /**
      * @Inject()
      */
@@ -27,8 +29,6 @@ class UpdateResolver extends AbstractResolver
     {
         $bean = $this->getBean($cache);
 
-        $this->mapper[get_class($object)][$object->getId()] = $bean;
-
         foreach($cache as $property){
             $propertyColumn     = $property[self::COLUMN];
             $propertyType       = $property[self::TYPE];
@@ -36,14 +36,19 @@ class UpdateResolver extends AbstractResolver
             $propertyName       = $property[self::NAME];
             $propertyValue      = $this->getPropertyValue($object, $propertyName);
 
+
             if($property[self::ACTION] === 'serialize'){
                 $bean->$propertyColumn = (!empty($propertyValue)) ? serialize($propertyValue) : NULL;
             }elseif($property[self::ACTION] === NULL){
-                $bean->$propertyColumn = (!empty($propertyValue)) ? $propertyValue : NULL;
+                if($propertyName !== 'id') {
+                    $bean->$propertyColumn = (!empty($propertyValue)) ? $propertyValue : NULL;
+                }
             }elseif(!empty($propertyRelation)){
 
+                $columnValue = NULL;
+
                 if($propertyRelation['relation'] === 'OneToOne' || $propertyRelation['relation'] === 'OneToMany'){
-                    $bean->$propertyColumn = $this->getRelation($object, $propertyRelation, $propertyValue);
+                    $columnValue = $this->getRelation($object, $propertyRelation, $propertyValue);
                 }elseif(!empty($propertyValue)){
                     $tmp = array();
 
@@ -51,11 +56,12 @@ class UpdateResolver extends AbstractResolver
                         $tmp[] = $this->getRelation($object, $propertyRelation, $value);
                     }
 
-                    $bean->$propertyColumn = $tmp;
-                }else{
-                    $bean->$propertyColumn = NULL;
+                    $columnValue = $tmp;
                 }
 
+                if(!empty($columnValue)){
+                    $bean->$propertyColumn = $columnValue;
+                }
             }
         }
 
@@ -66,11 +72,25 @@ class UpdateResolver extends AbstractResolver
     private function getRelation(object $object, array $relation, $propertyValue): ?OODBBean
     {
         if(!empty($propertyValue)) {
-            if(!isset($this->mapper[$relation['type']][$propertyValue->getId()])) {
-                return $this->resolve($propertyValue);
+
+            if(!empty($this->mapper)){
+                foreach($this->mapper as $tmp){
+                    foreach($tmp as $value){
+                        if($value['object'] === $propertyValue){
+                            return $value['bean'];
+                        }
+                    }
+                }
             }
 
-            return $this->mapper[$relation['type']][$propertyValue->getId()];
+            $bean = $this->resolve($propertyValue);
+
+            $this->mapper[$relation['type']][] = [
+                'object' => $propertyValue,
+                'bean' => $bean
+            ];
+
+            return $bean;
         }
 
         return NULL;

@@ -18,34 +18,6 @@ class SelectBuilder extends AbstractBuilder
         return $properties;
     }
 
-    /**
-     * Build the cache of property
-     *
-     * @param \ReflectionProperty[] $reflectionProperties
-     * @return array
-     * @throws ORMException
-     */
-    private function propertiesResolver(array $reflectionProperties): array
-    {
-        $list = array();
-
-        foreach($reflectionProperties as $reflectionProperty){
-
-            $propertyName = $reflectionProperty->getName();
-
-            $list[$propertyName] = [
-                'action' => $this->getAction($reflectionProperty),
-                'column' => $this->columnResolver(
-                                $propertyName,
-                                $reflectionProperty->getDeclaringClass()->getName(),
-                                $this->relationResolver($reflectionProperty)
-                            ),
-                'type' => $this->getType($reflectionProperty)
-            ];
-        }
-
-        return $list;
-    }
 
     /**
      * Precise the action to executed
@@ -54,7 +26,7 @@ class SelectBuilder extends AbstractBuilder
      * @return string|null
      * @throws ORMException
      */
-    private function getAction(\ReflectionProperty $reflectionProperty): ?string
+    protected function getAction(\ReflectionProperty $reflectionProperty): ?string
     {
         $type = $this->getType($reflectionProperty);
 

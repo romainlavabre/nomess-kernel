@@ -58,7 +58,7 @@ function customException($e) {
             unset($_SESSION['app']['toolbar']);
         }
 
-        require ROOT . 'vendor/nomess//Tools/tools/toolbar.php';
+        require ROOT . 'vendor/nomess/kernel/Tools/tools/toolbar.php';
     }else{
 
         http_response_code(500);

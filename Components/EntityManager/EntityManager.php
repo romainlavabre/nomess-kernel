@@ -3,6 +3,7 @@
 namespace Nomess\Components\EntityManager;
 
 use Nomess\Annotations\Inject;
+use Nomess\Components\EntityManager\Resolver\CreateResolver;
 use Nomess\Components\EntityManager\Resolver\DeleteResolver;
 use Nomess\Components\EntityManager\Resolver\SelectResolver;
 use Nomess\Components\EntityManager\Resolver\UpdateResolver;
@@ -44,6 +45,11 @@ class EntityManager implements EntityManagerInterface
     /**
      * @Inject()
      */
+    private CreateResolver $createResolver;
+
+    /**
+     * @Inject()
+     */
     private DeleteResolver $deleteResolver;
 
     /**
@@ -62,10 +68,7 @@ class EntityManager implements EntityManagerInterface
     {
         $this->entity[] = [
             'context' => self::CREATE,
-            'classname' => $this->getShortenName($object),
-            'fullClassname' => get_class($object),
             'data' => $object,
-            'configuration' => array()
         ];
 
         return $this;
@@ -75,10 +78,7 @@ class EntityManager implements EntityManagerInterface
     {
         $this->entity[] = [
             'context' => self::UPDATE,
-            'classname' => $this->getShortenName($object),
-            'fullClassname' => get_class($object),
             'data' => $object,
-            'configuration' => array()
         ];
 
         return $this;
@@ -89,21 +89,9 @@ class EntityManager implements EntityManagerInterface
         if($object !== NULL) {
             $this->entity[] = [
                 'context' => self::DELETE,
-                'classname' => $this->getShortenName($object),
-                'fullClassname' => get_class($object),
                 'data' => $object,
-                'configuration' => array()
             ];
         }
-
-        return $this;
-    }
-
-    public function setCascade(string $classname, bool $apply): self
-    {
-        $position = count($this->entity) - 1;
-
-        $this->entity[$position]['configuration'][$classname] = $apply;
 
         return $this;
     }
@@ -118,16 +106,21 @@ class EntityManager implements EntityManagerInterface
             try {
                 foreach($this->entity as $data) {
 
-                    if($data['context'] === self::CREATE || $data['context'] === self::UPDATE) {
-                        $beans = $this->updateResolver->resolve($data);
+                    if($data['context'] === self::CREATE){
 
-                        if(!empty($beans)) {
+                        $bean = $this->createResolver->resolve($data['data']);
 
-                            R::storeAll($beans);
+                        R::store($bean);
+                    }elseif($data['context'] === self::UPDATE) {
+                        $bean = $this->updateResolver->resolve($data['data']);
+
+                        if(!empty($bean)) {
+
+                            R::store($bean);
                         }
                     }else{
-                        $beans = $this->deleteResolver->resolve($data);
-                        R::trashAll($beans);
+                        $bean = $this->deleteResolver->resolve($data['data']);
+                        R::trash($bean);
                     }
                 }
             }catch(\Throwable $e){

@@ -13,8 +13,6 @@ interface EntityManagerInterface
     public function update(object $object): self;
 
     public function delete(object $object): self;
-
-    public function setCascade(string $classname, bool $apply): self;
-
+    
     public function register(): bool;
 }

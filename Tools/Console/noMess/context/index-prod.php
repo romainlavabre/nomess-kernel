@@ -4,7 +4,7 @@ declare(strict_types=1);
 ini_set('display_errors', 'off');
 
 define('ROOT', str_replace('public/index.php', '', $_SERVER['SCRIPT_FILENAME']));
-define('NOMESS_CONTEXT', 'DEV');
+define('NOMESS_CONTEXT', 'PROD');
 ini_set('error_log', ROOT .'var/log/error.log');
 
 

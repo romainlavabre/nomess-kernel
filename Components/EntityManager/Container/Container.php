@@ -1,7 +1,7 @@
 <?php
 
 
-namespace NoMess\Components\EntityManager\Container;
+namespace Nomess\Components\EntityManager\Container;
 
 
 class Container

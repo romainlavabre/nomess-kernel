@@ -15,11 +15,11 @@ abstract class AbstractBuilder
 
         // If short name is empty, the value is type of php class
         if(!empty($relation)){
-            if($relation['relation'] === 'many'){
+            if($relation['relation'] === 'ManyToOne'){
                 return 'own' . ucfirst($this->tableResolver($this->getShortenName($relation['type']))) . 'List';
             }elseif($relation['relation'] === 'ManyToMany'){
                 return 'shared' . ucfirst($this->tableResolver($this->getShortenName($relation['type']))) . 'List';
-            }elseif($relation['relation'] === 'one'){
+            }elseif($relation['relation'] === 'OneToOne' || $relation['relation'] === 'OneToMany'){
                 return $this->tableResolver($this->getShortenName($relation['type']));
             }
         }
@@ -132,27 +132,76 @@ abstract class AbstractBuilder
         $type = $this->getType($reflectionProperty);
 
         if(class_exists($type)){
+            $comment = $reflectionProperty->getDocComment();
 
-            if($reflectionProperty->getType()->getName() === 'array'){
-                if(strpos($reflectionProperty->getDocComment(), '@ManyToMany') !== FALSE){
-                    return [
-                        'relation' => 'ManyToMany',
-                        'type' => $type
-                    ];
-                }
-
+            if(strpos($comment, '@ManyToMany') !== FALSE){
                 return [
-                    'relation' => 'many',
+                    'relation' => 'ManyToMany',
+                    'type' => $type
+                ];
+            }elseif(strpos($comment, '@ManyToOne') !== FALSE){
+                return [
+                    'relation' => 'ManyToOne',
+                    'type' => $type
+                ];
+            }elseif(strpos($comment, '@OneToOne') !== FALSE){
+                return [
+                    'relation' => 'OneToOne',
+                    'type' => $type
+                ];
+            }elseif(strpos($comment, '@OneToMany') !== FALSE){
+                return [
+                    'relation' => 'OneToMany',
                     'type' => $type
                 ];
             }
 
-            return [
-                'relation' => 'one',
-                'type' => $type
-            ];
+            throw new ORMException('ORM encountered an error: the relation for property ' . $reflectionProperty->getName() .
+                ' in ' . $reflectionProperty->getDeclaringClass()->getName() . ' is undefined');
         }
 
         return NULL;
+    }
+
+    /**
+     * Build property for cache
+     *
+     * @param \ReflectionProperty[]|null $reflectionProperties
+     * @return array
+     * @throws ORMException
+     */
+    protected function propertiesResolver(?array $reflectionProperties): array
+    {
+        $list = array();
+
+        if(!empty($reflectionProperties)){
+
+            $declaringClass = $reflectionProperties[0]->getDeclaringClass()->getName();
+
+            foreach($reflectionProperties as $reflectionProperty){
+
+                if(strpos($reflectionProperty->getDocComment(), '@Stateless') === FALSE) {
+                    $propertyType = $this->getType($reflectionProperty);
+                    $propertyName = $reflectionProperty->getName();
+                    $relation = $this->relationResolver($reflectionProperty);
+                    $columnName = $this->columnResolver(
+                        $propertyName,
+                        $declaringClass,
+                        $relation
+                    );
+
+                    $list[$columnName] = [
+                        'action' => $this->getAction($reflectionProperty),
+                        'column' => $columnName,
+                        'name' => $propertyName,
+                        'relation' => $relation,
+                        'type' => $propertyType,
+                        'classname' => $reflectionProperty->getDeclaringClass()->getName()
+                    ];
+                }
+            }
+        }
+
+        return $list;
     }
 }

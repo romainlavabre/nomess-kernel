@@ -4,117 +4,151 @@
 namespace Nomess\Components\EntityManager\Resolver;
 
 
-use NoMess\Components\EntityManager\Container\Container;
+use Nomess\Annotations\Inject;
+use Nomess\Components\EntityManager\Cache\Cache;
+use Nomess\Components\EntityManager\Container\Container;
 use RedBeanPHP\OODBBean;
 use RedBeanPHP\R;
 
-class SelectResolver extends AbstractResolver
+
+class SelectResolver
 {
-    private Container $entityContainer;
 
-    public function __construct(Container $entityContainer)
-    {
-        $this->entityContainer = $entityContainer;
-    }
+    private const ACTION      = 'action';
+    private const COLUMN      = 'column';
+    private const RELATION    = 'relation';
+    private const TYPE        = 'type';
+    private const NAME        = 'name';
+    private const CLASSNAME     = 'classname';
 
-    private bool $returnObject = FALSE;
+    /**
+     * @Inject()
+     */
+    private Cache $cache;
+
+    /**
+     * @Inject()
+     */
+    private Container $container;
+
+    private array $mapper = array();
 
     public function resolve(string $classname, $idOrSql, ?array $parameters)
     {
-        $cache = $this->getCache($this->getShortenName($classname), $classname);
-        $data = $this->requestResolver($this->getTable($cache), $idOrSql, $parameters);
+        $cache = $this->cache->getCache($this->getShortName($classname), $classname, '__SELECT__');
 
-        return $this->setObject($classname, $data, $cache);
+        $data = $this->getData($this->request($this->getTable($cache), $idOrSql, $parameters), $cache);
+
+        if(!empty($data)) {
+            if(preg_match('/^[0-9]+$/', $idOrSql)) {
+                return $data[0];
+            }
+
+            return $data;
+        }
+    }
+
+    protected function getData($beans, array $cache)
+    {
+        unset($cache['nomess_table']);
+
+        if(empty($beans) || empty($cache) || $beans[0]->isEmpty()){
+            return NULL;
+        }
+
+        $list = array();
+
+        foreach($beans as $bean){
+
+            $target = NULL;
+
+            foreach($cache as $columnName => $propertyData){
+                $classname          = $propertyData[self::CLASSNAME];
+                $propertyName       = $propertyData[self::NAME];
+
+                if($target === NULL) {
+                    if($this->container->get($classname, $bean->id)) {
+                        $list[] = $this->container->get($classname, $bean->id);
+                        break 1;
+                    }
+
+                    $target = new $classname();
+                    $this->subscribeToMapper($target, $bean);
+
+                    $reflectionProperty = new \ReflectionProperty($classname, $propertyName);
+                    $reflectionProperty->setAccessible(TRUE);
+                    $reflectionProperty->setValue($target, $bean->id);
+                    $this->container->set($classname, $target);
+                }
+
+                if($propertyName !== 'id') {
+
+                    $propertyColumn = $propertyData[self::COLUMN];
+                    $purgeLazyLoad = $bean->$propertyColumn;
+
+                    $propertyAction = $propertyData[self::ACTION];
+                    $propertyRelation = $propertyData[self::RELATION];
+                    $propertyValue = (!empty($bean->$propertyColumn)) ? $bean->$propertyColumn : NULL;
+
+                    $reflectionProperty = new \ReflectionProperty($classname, $propertyName);
+
+                    if(!$reflectionProperty->isPublic()) {
+                        $reflectionProperty->setAccessible(TRUE);
+                    }
+
+                    if($propertyAction === 'unserialize') {
+                        $reflectionProperty->setValue($target, (is_array($propertyValue)) ? unserialize($propertyValue) : NULL);
+                    } elseif($propertyAction === NULL) {
+                        $reflectionProperty->setValue($target, $propertyValue);
+                    } elseif(!empty($propertyRelation)) {
+                        if($propertyValue !== NULL) {
+                            if($propertyRelation['relation'] === 'ManyToOne' || $propertyRelation['relation'] === 'ManyToMany') {
+                                $tmp = array();
+
+                                foreach($propertyValue as $value){
+                                    $tmp[] = $this->getRelation($propertyRelation, $value);
+                                }
+
+                                $reflectionProperty->setValue($target, $tmp);
+                            } elseif($propertyRelation['relation'] === 'OneToOne' || $propertyRelation['relation'] === 'OneToMany') {
+                                $reflectionProperty->setValue($target, $this->getRelation($propertyRelation, $propertyValue));
+                            }
+                        }
+                    }
+                }
+            }
+
+            $list[] = $target;
+        }
+
+        return $list;
 
     }
 
-    private function setObject(string $classname, ?array $data, array $cache)
+
+    private function getRelation(array $relation, $propertyValue): ?object
     {
-        if(!empty($data) && !$data[0]->isEmpty()){
+        if($propertyValue !== NULL) {
 
-            $list = array();
+            $classname = $relation['type'];
 
-            /** @var OODBBean $bean */
-            foreach($data as $bean){
-
-                $target = new $classname();
-
-                foreach($cache as $propertyName => $mapping){
-
-                    $reflectionProperty = new \ReflectionProperty($target, $propertyName);
-                    $columnName = $mapping['column'];
-
-                    if($mapping['action'] === 'unserialize'){
-                        if($bean->$columnName !== NULL) {
-                            $value = unserialize($bean->$columnName);
-
-                            $this->setProperty($reflectionProperty, $target, $value);
-                        }
-                    }elseif($mapping['action'] === 'iteration'){
-                        $value = $bean->$columnName;
-
-                        if(!empty($value)){
-                            $tmpList = array();
-
-                            foreach($value as $object){
-                                $resolved = $this->resolverLauncher($mapping['type'], $object);
-
-                                // Call container to avoid the duplication of object
-                                $containerProvide = $this->entityContainer->get($mapping['type'], $bean->id);
-                                if($containerProvide !== NULL) {
-                                    $tmpList[] = $containerProvide;
-                                }else{
-                                    $this->entityContainer->set($mapping['type'], $resolved);
-                                    $tmpList[] = $resolved;
-                                }
-                            }
-
-                            $this->setProperty($reflectionProperty, $target, $tmpList);
-                        }
-                    }elseif($mapping['action'] === 'bean'){
-
-                        if(!empty($bean->$columnName)){
-
-                            $resolved = $this->resolverLauncher($mapping['type'], $bean->$columnName);
-
-                            // Call container to avoid the duplication of object
-                            $containerProvide = $this->entityContainer->get($mapping['type'], $bean->id);
-
-                            if($containerProvide !== NULL) {
-                                $this->setProperty(
-                                    $reflectionProperty,
-                                    $target,
-                                    $containerProvide);
-                            }else{
-                                $this->entityContainer->set($mapping['type'], $resolved);
-                                $this->setProperty(
-                                    $reflectionProperty,
-                                    $target,
-                                    $resolved);
-                            }
-                        }
-                    }else{
-                        $this->setProperty($reflectionProperty, $target, $bean->$columnName);
+            if(!empty($this->mapper) && isset($this->mapper[$classname])) {
+                foreach($this->mapper[$classname] as $value) {
+                    if($value['bean']->id === $propertyValue->id) {
+                        return $value['object'];
                     }
                 }
-
-                $list[$target->getId()] = $target;
             }
 
-            if(!$this->returnObject) {
-                return $list;
-            }else{
-                return current($list);
-            }
+            return$this->getData([$propertyValue], $this->cache->getCache($this->getShortName($classname), $classname, '__SELECT__'))[0];
         }
 
         return NULL;
     }
 
-    private function requestResolver(string $tableName, $idOrSql, ?array $parameters)
+    private function request(string $tableName, $idOrSql, ?array $parameters)
     {
         if(preg_match('/^[0-9]+$/', $idOrSql)){
-            $this->returnObject = TRUE;
 
             return [R::load($tableName, $idOrSql)];
         }elseif(is_string($idOrSql)){
@@ -126,33 +160,25 @@ class SelectResolver extends AbstractResolver
         }
     }
 
-    private function setProperty(\ReflectionProperty $reflectionProperty, object $target, $data): void
+    private function subscribeToMapper(object $target, object $bean): void
     {
-        $data = (empty($data)) ? NULL : $data;
-
-        if($reflectionProperty->isPublic()) {
-            $reflectionProperty->setValue($target, $data);
-        } else {
-            $reflectionProperty->setAccessible(TRUE);
-            $reflectionProperty->setValue($target, $data);
-        }
-
+        $this->mapper[get_class($target)][] = [
+            'object' => $target,
+            'bean' => $bean
+        ];
     }
 
-    private function resolverLauncher(string $type, object $object): object
+    private function getShortName(string $classname): string
     {
-        $objectCache = $this->getCache(
-            $this->getShortenName($type),
-            $type
-        );
-
-        unset($objectCache['nomess_table']);
-
-        return $this->setObject(
-            $type,
-            [$object],
-            $objectCache
-        );
+        return substr(strrchr($classname, '\\'), 1);
     }
+
+    private function getTable(array &$data): string
+    {
+        $table = $data['nomess_table'];
+        unset($data['nomess_table']);
+        return $table;
+    }
+
 
 }
