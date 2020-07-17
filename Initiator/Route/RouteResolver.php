@@ -57,12 +57,15 @@ class RouteResolver
                     }
 
                     $sectionPurged = $this->getIdSection($section);
+
                     if(isset($route['requirements'][$sectionPurged])){
                         if(!preg_match('/' . $route['requirements'][$sectionPurged] . '/', $arrayUrl[$i])){
                             $success = FALSE;
                             break 1;
                         }
                     }
+
+                    $_GET[$sectionPurged] = $arrayUrl[$i];
                 }
 
                 $i++;

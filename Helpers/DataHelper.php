@@ -7,16 +7,6 @@ trait DataHelper
 
     private array $data;
 
-
-    public function __construct()
-    {
-        if(!isset($this->data)) {
-            $this->data = require ROOT . 'config/datacenter.php';
-        }
-    }
-
-    
-
     /**
      * Return value associate to the index variable (if not exists, return null)
      *
@@ -25,6 +15,14 @@ trait DataHelper
      */
     public function get(?string $index)
     {
+        $this->getDataCenter();
         return (isset($this->data[$index])) ? $this->data[$index] : NULL;
+    }
+
+    private function getDataCenter()
+    {
+        if(!isset($this->data)) {
+            $this->data = require ROOT . 'config/datacenter.php';
+        }
     }
 }

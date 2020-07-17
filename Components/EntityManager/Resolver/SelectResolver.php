@@ -6,179 +6,243 @@ namespace Nomess\Components\EntityManager\Resolver;
 
 use Nomess\Annotations\Inject;
 use Nomess\Components\EntityManager\Cache\Cache;
-use Nomess\Components\EntityManager\Container\Container;
+use Nomess\Components\EntityManager\EntityCache\CacheManager;
 use RedBeanPHP\OODBBean;
 use RedBeanPHP\R;
 
 
 class SelectResolver
 {
-
-    private const ACTION      = 'action';
-    private const COLUMN      = 'column';
-    private const RELATION    = 'relation';
-    private const TYPE        = 'type';
-    private const NAME        = 'name';
-    private const CLASSNAME     = 'classname';
-
+    
+    private const ACTION    = 'action';
+    
+    private const COLUMN    = 'column';
+    
+    private const RELATION  = 'relation';
+    
+    private const TYPE      = 'type';
+    
+    private const NAME      = 'name';
+    
+    private const CLASSNAME = 'classname';
+    
     /**
      * @Inject()
      */
     private Cache $cache;
-
     /**
      * @Inject()
      */
-    private Container $container;
-
-    private array $mapper = array();
-
-    public function resolve(string $classname, $idOrSql, ?array $parameters)
+    private CacheManager $cacheManager;
+    
+    
+    public function resolve( string $classname, $idOrSql, ?array $parameters, bool $lock )
     {
-        $cache = $this->cache->getCache($this->getShortName($classname), $classname, '__SELECT__');
-
-        $data = $this->getData($this->request($this->getTable($cache), $idOrSql, $parameters), $cache);
-
-        if(!empty($data)) {
-            if(preg_match('/^[0-9]+$/', $idOrSql)) {
-                return $data[0];
+        $cache = $this->cache->getCache( $this->getShortName( $classname ), $classname, '__SELECT__' );
+        
+        $pregResult = preg_match( '/^[0-9]+$/', $idOrSql );
+        
+        if($pregResult){
+            $object = $this->cacheManager->get($classname, $idOrSql, FALSE, $lock);
+            
+            if(!empty($object)){
+                return $object;
             }
+        }elseif(empty($idOrSql)){
+            $array = $this->cacheManager->getAll($classname, $lock);
 
-            return $data;
+            if(is_array($array)){
+                return $array;
+            }
         }
+        
+        $data  = $this->getData( $this->request( $this->getTable( $cache ), $idOrSql, $parameters, $lock ), $cache, $lock );
+    
+        if( $pregResult ) {
+            return is_array( $data ) ? $data[0] : NULL;
+        }elseif(empty($idOrSql)){
+            $this->cacheManager->addAll($classname);
+        }
+        
+        
+        return $data;
     }
-
-    protected function getData($beans, array $cache)
+    
+    
+    protected function getData( array $beans, array $cache)
     {
-        unset($cache['nomess_table']);
-
-        if(empty($beans) || empty($cache) || $beans[0]->isEmpty()){
+        unset( $cache['nomess_table'] );
+        
+        if( empty( $beans ) || empty( $cache ) || !is_object( current( $beans ) ) || current( $beans )->isEmpty() ) {
             return NULL;
         }
-
+        
         $list = array();
-
-        foreach($beans as $bean){
-
+        
+        /** @var OODBBean $bean */
+        foreach( $beans as $bean ) {
+            
             $target = NULL;
-
-            foreach($cache as $columnName => $propertyData){
-                $classname          = $propertyData[self::CLASSNAME];
-                $propertyName       = $propertyData[self::NAME];
-
-                if($target === NULL) {
-                    if($this->container->get($classname, $bean->id)) {
-                        $list[] = $this->container->get($classname, $bean->id);
-                        break 1;
+            $insert = TRUE;
+            
+            if( array_key_exists( $cache['id'][self::CLASSNAME], Instance::$mapper ) ) {
+                foreach( Instance::$mapper[$cache['id'][self::CLASSNAME]] as $array ) {
+                    
+                    if( $array['bean']->id === $bean->id ) {
+                        $list[] = $array['object'];
+                        $insert = FALSE;
                     }
-
-                    $target = new $classname();
-                    $this->subscribeToMapper($target, $bean);
-
-                    $reflectionProperty = new \ReflectionProperty($classname, $propertyName);
-                    $reflectionProperty->setAccessible(TRUE);
-                    $reflectionProperty->setValue($target, $bean->id);
-                    $this->container->set($classname, $target);
                 }
-
-                if($propertyName !== 'id') {
-
-                    $propertyColumn = $propertyData[self::COLUMN];
-                    $purgeLazyLoad = $bean->$propertyColumn;
-
-                    $propertyAction = $propertyData[self::ACTION];
-                    $propertyRelation = $propertyData[self::RELATION];
-                    $propertyValue = (!empty($bean->$propertyColumn)) ? $bean->$propertyColumn : NULL;
-
-                    $reflectionProperty = new \ReflectionProperty($classname, $propertyName);
-
-                    if(!$reflectionProperty->isPublic()) {
-                        $reflectionProperty->setAccessible(TRUE);
+            }
+            
+            foreach( $cache as $columnName => $propertyData ) {
+                $classname    = $propertyData[self::CLASSNAME];
+                $propertyName = $propertyData[self::NAME];
+                
+                if( $target === NULL && $insert && $bean->id !== 0 ) {
+                    
+                    $cacheProvide = $this->cacheManager->get($classname, $bean->id, FALSE);
+                    
+                    if($cacheProvide !== NULL){
+                        $list[] = $cacheProvide;
+                        $insert = FALSE;
+                    }else {
+                        $target = new $classname();
+                        $this->subscribeToMapper( $target, $bean );
+    
+                        $reflectionProperty = new \ReflectionProperty( $classname, $propertyName );
+                        $reflectionProperty->setAccessible( TRUE );
+                        $reflectionProperty->setValue( $target, $bean->id );
+                        $this->cacheManager->add($target);
                     }
-
-                    if($propertyAction === 'unserialize') {
-                        $reflectionProperty->setValue($target, (is_array($propertyValue)) ? unserialize($propertyValue) : NULL);
-                    } elseif($propertyAction === NULL) {
-                        $reflectionProperty->setValue($target, $propertyValue);
-                    } elseif(!empty($propertyRelation)) {
-                        if($propertyValue !== NULL) {
-                            if($propertyRelation['relation'] === 'ManyToOne' || $propertyRelation['relation'] === 'ManyToMany') {
-                                $tmp = array();
-
-                                foreach($propertyValue as $value){
-                                    $tmp[] = $this->getRelation($propertyRelation, $value);
+                }
+                
+                if( $propertyName !== 'id' && $insert ) {
+                    
+                    $propertyColumn = $propertyData[self::COLUMN];
+                    $purgeLazyLoad  = $bean->$propertyColumn;
+                    
+                    $propertyAction   = $propertyData[self::ACTION];
+                    $propertyRelation = $propertyData[self::RELATION];
+                    $propertyValue    = $bean->$propertyColumn;
+                    
+                    $reflectionProperty = new \ReflectionProperty( $classname, $propertyName );
+                    
+                    if( !$reflectionProperty->isPublic() ) {
+                        $reflectionProperty->setAccessible( TRUE );
+                    }
+                    
+                    if( $propertyAction === 'unserialize' ) {
+                        $reflectionProperty->setValue( $target, ( is_array( $propertyValue ) ) ? unserialize( $propertyValue ) : NULL );
+                    } elseif( $propertyAction === NULL ) {
+                        $reflectionProperty->setValue( $target, $propertyValue );
+                    } else {
+                        if( !empty( $propertyRelation ) ) {
+                            if( $propertyValue !== NULL ) {
+                                if( $propertyRelation['relation'] === 'ManyToOne' || $propertyRelation['relation'] === 'ManyToMany' ) {
+                                    $tmp = array();
+                                    
+                                    foreach( $propertyValue as $value ) {
+                                        $tmp[] = $this->getRelation( $propertyRelation, $value );
+                                    }
+                                    
+                                    $reflectionProperty->setValue( $target, $tmp );
+                                } elseif( $propertyRelation['relation'] === 'OneToMany' || $propertyRelation['relation'] === 'OneToOneOwner' ) {
+                                    $reflectionProperty->setValue( $target, $this->getRelation( $propertyRelation, $propertyValue ) );
                                 }
-
-                                $reflectionProperty->setValue($target, $tmp);
-                            } elseif($propertyRelation['relation'] === 'OneToOne' || $propertyRelation['relation'] === 'OneToMany') {
-                                $reflectionProperty->setValue($target, $this->getRelation($propertyRelation, $propertyValue));
+                            }
+                        }
+                        
+                        if( $propertyRelation['relation'] === 'OneToOne' ) {
+                            $owner = $this->resolve( $propertyRelation['type'], $bean->getMeta( 'type' ) . '_id = :param', [ 'param' => $bean->id ], FALSE );
+                            
+                            if( !empty( $owner ) && is_array( $owner ) ) {
+                                $reflectionProperty->setValue( $target, $owner[0] );
                             }
                         }
                     }
                 }
             }
-
-            $list[] = $target;
+            
+            if( $insert === TRUE ) {
+                $this->cacheManager->clonable($target);
+                $list[] = $target;
+            }
         }
-
+        
         return $list;
-
     }
-
-
-    private function getRelation(array $relation, $propertyValue): ?object
+    
+    
+    private function getRelation( array $relation, $propertyValue ): ?object
     {
-        if($propertyValue !== NULL) {
-
+        if( !empty( $propertyValue ) ) {
+            
             $classname = $relation['type'];
-
-            if(!empty($this->mapper) && isset($this->mapper[$classname])) {
-                foreach($this->mapper[$classname] as $value) {
-                    if($value['bean']->id === $propertyValue->id) {
+            
+            if( !empty( Instance::$mapper ) && isset( Instance::$mapper[$classname] ) ) {
+                foreach( Instance::$mapper[$classname] as $value ) {
+                    if( $value['bean']->id === $propertyValue->id ) {
                         return $value['object'];
                     }
                 }
             }
-
-            return$this->getData([$propertyValue], $this->cache->getCache($this->getShortName($classname), $classname, '__SELECT__'))[0];
+            
+            return $this->getData( [ $propertyValue ], $this->cache->getCache( $this->getShortName( $classname ), $classname, '__SELECT__' ) )[0];
         }
-
+        
         return NULL;
     }
-
-    private function request(string $tableName, $idOrSql, ?array $parameters)
+    
+    
+    private function request( string $tableName, $idOrSql, ?array $parameters, bool $lock )
     {
-        if(preg_match('/^[0-9]+$/', $idOrSql)){
-
-            return [R::load($tableName, $idOrSql)];
-        }elseif(is_string($idOrSql)){
-            $data = R::find($tableName, $idOrSql, (!empty($parameters)) ? $parameters : []);
-
-            return (is_array($data)) ? $data : [$data];
-        }else{
-            return R::findAll($tableName);
+        if( preg_match( '/^[0-9]+$/', $idOrSql ) ) {
+            if( $lock === FALSE ) {
+                return [ R::load( $tableName, $idOrSql ) ];
+            }
+            return [ R::loadForUpdate( $tableName, $idOrSql ) ];
+        } elseif( is_string( $idOrSql ) ) {
+            $data = NULL;
+            
+            if( $lock === FALSE ) {
+                $data = R::find( $tableName, $idOrSql, ( !empty( $parameters ) ) ? $parameters : [] );
+            } else {
+                $data = R::findForUpdate( $tableName, $idOrSql, ( !empty( $parameters ) ) ? $parameters : [] );
+            }
+            
+            return ( is_array( $data ) ) ? $data : [ $data ];
+        } else {
+            
+            if( $lock === FALSE ) {
+                return R::findAll( $tableName );
+            }
+            
+            return R::findForUpdate( $tableName );
         }
     }
-
-    private function subscribeToMapper(object $target, object $bean): void
+    
+    
+    private function subscribeToMapper( object $target, object $bean ): void
     {
-        $this->mapper[get_class($target)][] = [
+        Instance::$mapper[get_class( $target )][] = [
             'object' => $target,
-            'bean' => $bean
+            'bean'   => $bean
         ];
     }
-
-    private function getShortName(string $classname): string
+    
+    
+    private function getShortName( string $classname ): string
     {
-        return substr(strrchr($classname, '\\'), 1);
+        return substr( strrchr( $classname, '\\' ), 1 );
     }
-
-    private function getTable(array &$data): string
+    
+    
+    private function getTable( array &$data ): string
     {
         $table = $data['nomess_table'];
-        unset($data['nomess_table']);
+        unset( $data['nomess_table'] );
+        
         return $table;
     }
-
-
 }

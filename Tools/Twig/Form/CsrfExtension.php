@@ -17,12 +17,12 @@ class CsrfExtension extends AbstractExtension
         ];
     }
 
-    public function csrf(string $method): void
+    public function csrf(string $method)
     {
-        if(strtolower($method) === 'POST') {
-            echo '<input type="hidden" name="_token" value="' . $_SESSION['app']['_token'] . '">';
+        if(strtoupper($method) === 'POST') {
+            echo  '<input type="hidden" name="_token" value="' . $_SESSION['app']['_token'] . '">';
         }else{
-            echo $_SESSION['app']['_token'];
+            return $_SESSION['app']['_token'];
         }
     }
 

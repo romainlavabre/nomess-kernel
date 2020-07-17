@@ -36,13 +36,15 @@ $array .= '</table>';
 $i = 0;
 $source = array();
 
-foreach(file($e->getFile()) as $line){
+if(file_exists($e->getFile())) {
+    foreach(file($e->getFile()) as $line) {
 
-    if($i >= (int)$e->getLine() - 15 && $i <= (int)$e->getLine() + 15){
-        $source[$i + 1] = $line;
+        if($i >= (int)$e->getLine() - 15 && $i <= (int)$e->getLine() + 15) {
+            $source[$i + 1] = $line;
+        }
+
+        $i++;
     }
-
-    $i++;
 }
 
 ?>

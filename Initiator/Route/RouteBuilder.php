@@ -61,7 +61,7 @@ class RouteBuilder
                 if(!empty($annotation)){
                     preg_match('/"([a-z\/0-9-_{}]+)"/', $annotation[0], $route);
                     preg_match('/name="([A-Za-z._-]+)"/', $annotation[0], $name);
-                    preg_match('/methods="([GETPOS,]+)"/', $annotation[0], $requestMethod);
+                    preg_match('/methods="([GETPOSUDL,]+)"/', $annotation[0], $requestMethod);
                     preg_match('/requirements=\[(".+" *=> *".+",? ?)\]/', $annotation[0], $requirements);
 
                     if(isset($route[1])) {

@@ -27,10 +27,7 @@ class NomessException extends \ErrorException
                 break;
         }
 
-
         return '<strong>' . $type . '</strong> : [' . $this->code . '] ' . $this->message . '<br /><strong>' . $this->file . '</strong> à la ligne <strong>' . $this->line . '</strong><br>';
-
-
     }
 }
 
@@ -40,6 +37,8 @@ function error2exception($code, $message, $fichier, $ligne) {
 }
 
 function customException($e) {
+
+    file_put_contents(ROOT . 'var/log/error.log', "[" . date('d/m/Y H:i:s') . "] Line " . $e->getLine() . ": " . $e->getFile() . "\nException: " . $e->getMessage() . "\n---------------------------------------------------------\n", FILE_APPEND);
 
     if(NOMESS_CONTEXT === 'DEV') {
         require ROOT . 'vendor/nomess/kernel/Tools/Exception/exception.php';
@@ -76,9 +75,6 @@ function customException($e) {
         }
         die;
     }
-
-
-    file_put_contents(ROOT . 'var/log/error.log', "[" . date('d/m/Y H:i:s') . "]Line " . $e->getLine() . ": " . $e->getFile() . "\nException: " . $e->getMessage() . "\n---------------------------------------------------------\n", FILE_APPEND);
 }
 
 set_error_handler('NoMess\Exception\error2exception');

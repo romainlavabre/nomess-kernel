@@ -7,6 +7,7 @@ use InvalidArgumentException;
 use Nomess\Exception\NotFoundException;
 use Nomess\Http\HttpRequest;
 use Nomess\Tools\Twig\Form\CsrfExtension;
+use Nomess\Tools\Twig\Form\ValueExtension;
 use Nomess\Tools\Twig\PathExtension;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
@@ -56,6 +57,7 @@ trait ResponseHelper
         $engine->addExtension(new \Twig\Extension\DebugExtension());
         $engine->addExtension(new PathExtension());
         $engine->addExtension(new CsrfExtension());
+        $engine->addExtension(new ValueExtension($data['POST']));
 
         echo $engine->render($template, $data);
 
@@ -125,7 +127,7 @@ trait ResponseHelper
                     throw new InvalidArgumentException('Missing an dynamic data in your url');
                 }
 
-                header("Location: /$key");
+                header("Location: $key");
                 die;
             }
         }
@@ -144,6 +146,16 @@ trait ResponseHelper
     protected final function redirectToOutsideResource(string $url): void
     {
         header("Location: $url");
+    }
+
+    /**
+     * Return data
+     *
+     * @return array|null
+     */
+    protected final function sendData(): ?array
+    {
+        return $this->data;
     }
 
     private function getDevToolbar($time): void

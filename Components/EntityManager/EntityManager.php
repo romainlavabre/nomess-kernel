@@ -3,157 +3,172 @@
 namespace Nomess\Components\EntityManager;
 
 use Nomess\Annotations\Inject;
-use Nomess\Components\EntityManager\Resolver\CreateResolver;
+use Nomess\Components\EntityManager\Event\CreateEventInterface;
 use Nomess\Components\EntityManager\Resolver\DeleteResolver;
+use Nomess\Components\EntityManager\Resolver\Instance;
+use Nomess\Components\EntityManager\Resolver\PersistsResolver;
 use Nomess\Components\EntityManager\Resolver\SelectResolver;
-use Nomess\Components\EntityManager\Resolver\UpdateResolver;
 use Nomess\Container\Container;
 use Nomess\Exception\ORMException;
 use Nomess\Helpers\DataHelper;
 use Nomess\Http\HttpRequest;
 use RedBeanPHP\R;
 
-class EntityManager implements EntityManagerInterface
+class EntityManager implements EntityManagerInterface, TransactionSubjectInterface
 {
-
+    
     use DataHelper;
-
-    private const STORAGE_CACHE         = ROOT . 'var/cache/em/';
-
-    private const CREATE                = 'create';
-    private const UPDATE                = 'update';
-    private const DELETE                = 'delete';
-
-    private array $entity = array();
-    private bool $hasConfigured = FALSE;
-
+    
+    private const STORAGE_CACHE = ROOT . 'var/cache/em/';
+    
+    private const PERSISTS      = 'persists';
+    
+    private const DELETE        = 'delete';
+    
+    private array $entity        = array();
+    private bool  $hasConfigured = FALSE;
     /**
      * @Inject()
      */
     private Container $container;
-
     /**
      * @Inject()
      */
     private HttpRequest $request;
-
     /**
      * @Inject()
      */
-    private UpdateResolver $updateResolver;
-
+    private SelectResolver $selectResolver;
     /**
      * @Inject()
      */
-    private CreateResolver $createResolver;
-
+    private PersistsResolver $persistsResolver;
     /**
      * @Inject()
      */
     private DeleteResolver $deleteResolver;
-
+    /**
+     * @Inject()
+     */
+    private CreateEventInterface $createEvent;
     /**
      * @Inject()
      */
     private Config $config;
-
-
-    public function find(string $classname, ?string $idOrSql = NULL, ?array $parameters = NULL )
+    /**
+     * @var TransactionObserverInterface[]
+     */
+    private array $transactionSubscriber;
+    
+    
+    public function find( string $classname, ?string $idOrSql = NULL, ?array $parameters = NULL, bool $lock = FALSE )
     {
         $this->initConfig();
-        return $this->container->get(SelectResolver::class)->resolve($classname, $idOrSql, $parameters);
+        return $this->selectResolver->resolve( $classname, $idOrSql, $parameters, $lock );
     }
-
-    public function create(object $object): self
+    
+    
+    public function persists( object $object ): self
     {
         $this->entity[] = [
-            'context' => self::CREATE,
-            'data' => $object,
+            'context' => self::PERSISTS,
+            'data'    => $object,
         ];
-
+        
         return $this;
     }
-
-    public function update(object $object): self
+    
+    
+    public function delete( ?object $object ): self
     {
-        $this->entity[] = [
-            'context' => self::UPDATE,
-            'data' => $object,
-        ];
-
-        return $this;
-    }
-
-    public function delete(?object $object): self
-    {
-        if($object !== NULL) {
+        if( $object !== NULL ) {
             $this->entity[] = [
                 'context' => self::DELETE,
-                'data' => $object,
+                'data'    => $object,
             ];
         }
-
+        
         return $this;
     }
-
+    
+    
+    public function has( object $object ): bool
+    {
+        return in_array( $object, $this->entity );
+    }
+    
+    
     public function register(): bool
     {
         $this->initConfig();
-
-        if(!empty($this->entity)){
+        
+        if( !empty( $this->entity ) ) {
             R::begin();
-
+            
             try {
-                foreach($this->entity as $data) {
-
-                    if($data['context'] === self::CREATE){
-
-                        $bean = $this->createResolver->resolve($data['data']);
-
-                        R::store($bean);
-                    }elseif($data['context'] === self::UPDATE) {
-                        $bean = $this->updateResolver->resolve($data['data']);
-
-                        if(!empty($bean)) {
-
-                            R::store($bean);
+                foreach( $this->entity as &$data ) {
+                    
+                    if( $data['context'] === self::PERSISTS ) {
+                        $bean = $this->persistsResolver->resolve( $data['data'] );
+                        
+                        if( !empty( $bean ) ) {
+                            R::store( $bean );
                         }
-                    }else{
-                        $bean = $this->deleteResolver->resolve($data['data']);
-                        R::trash($bean);
+    
+                        $this->createEvent->execute();
+                    } else {
+                        $bean = $this->deleteResolver->resolve( $data['data'] );
+                        R::trash( $bean );
                     }
                 }
-            }catch(\Throwable $e){
+                
+                $this->notifySubscriber( TRUE );
+                R::commit();
+            } catch( \Throwable $e ) {
                 R::rollback();
-
-                if(NOMESS_CONTEXT === 'DEV'){
-                    throw new ORMException($e->getMessage() . ' in ' . $e->getFile() . ' line ' . $e->getLine());
-                }else{
+                $this->notifySubscriber( FALSE );
+                
+                if( NOMESS_CONTEXT === 'DEV' ) {
+                    throw new ORMException( $e->getMessage() . ' in ' . $e->getFile() . ' line ' . $e->getLine() );
+                } else {
                     $this->request->resetSuccess();
-                    $this->request->setError($this->get('orm_error'));
+                    $this->request->setError( $this->get( 'orm_error' ) );
                 }
-
+                
                 return FALSE;
             }
-
-            R::commit();
+            
             R::close();
         }
-
+        
         return TRUE;
     }
-
+    
+    
+    public function addSubscriber( object $subscriber ): void
+    {
+        $this->transactionSubscriber[] = $subscriber;
+    }
+    
+    
+    public function notifySubscriber( bool $status ): void
+    {
+        
+        if( !empty( $this->transactionSubscriber ) ) {
+            /** @var TransactionObserverInterface $subscriber */
+            foreach( $this->transactionSubscriber as $subscriber ) {
+                $subscriber->statusTransactionNotified( $status );
+            }
+        }
+        
+    }
+    
+    
     private function initConfig(): void
     {
-        if(!$this->hasConfigured) {
+        if( !$this->hasConfigured ) {
             $this->hasConfigured = TRUE;
             $this->config->init();
         }
     }
-
-    private function getShortenName(object $object): string
-    {
-        return substr(strrchr(get_class($object), '\\'), 1);
-    }
-
 }

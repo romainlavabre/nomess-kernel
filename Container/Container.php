@@ -28,7 +28,8 @@ class Container implements ContainerInterface
 
     public function callController(string $classname, string $methodName)
     {
-        $this->autowire->force = $methodName;
+        $this->autowire->force['method'] = $methodName;
+        $this->autowire->force['class'] = $classname;
         return $this->autowire->make($classname);
     }
 

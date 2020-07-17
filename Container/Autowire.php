@@ -14,7 +14,7 @@ class Autowire
 
     private array $instance = array();
     private array $configuration;
-    public ?string $force = NULL;
+    public ?array $force = array();
 
     public function __construct(Container $container)
     {
@@ -49,7 +49,7 @@ class Autowire
 
         $this->methodsResolver($reflectionClass->getMethods(), $this->instance[$classname]);
         $this->propertyResolver($reflectionClass->getProperties(), $this->instance[$classname]);
-
+    
         return $this->instance[$classname];
 
     }
@@ -80,8 +80,12 @@ class Autowire
     private function methodsResolver(?array $reflectionMethods, object $object): void
     {
         foreach($reflectionMethods as $reflectionMethod){
-            if($this->hasAnnotation($reflectionMethod) || $reflectionMethod->getName() === $this->force){
-                $this->purgeForce();
+            
+            if($this->hasAnnotation($reflectionMethod)
+                || (!empty($this->force)
+                    && ($reflectionMethod->getName() === $this->force['method']
+                    && $reflectionMethod->getDeclaringClass()->getName() === $this->force['class']))){
+                $this->purgeForce($reflectionMethod->getName(), $reflectionMethod->getDeclaringClass()->getName());
                 $parameters = array();
 
                 $reflectionParameters = $reflectionMethod->getParameters();
@@ -255,8 +259,11 @@ class Autowire
         }
     }
 
-    private function purgeForce(): void
+    private function purgeForce(string $methodName, string $classname): void
     {
-        $this->force = NULL;
+        if($this->force['method'] === $methodName && $this->force['class'] === $classname) {
+            $this->force['method'] = NULL;
+            $this->force['class'] = NULL;
+        }
     }
 }

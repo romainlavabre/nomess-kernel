@@ -63,7 +63,7 @@ class PathExtension extends AbstractExtension
                     }
                 }
 
-                return '/' . $key;
+                return $key;
             }
         }
 

@@ -3,6 +3,8 @@
 
 namespace Nomess\Components\EntityManager\Resolver;
 
+use Nomess\Annotations\Inject;
+use Nomess\Components\EntityManager\EntityCache\CacheManager;
 use RedBeanPHP\R;
 use RedBeanPHP\OODBBean;
 
@@ -13,6 +15,11 @@ abstract class AbstractResolver
     protected const RELATION    = 'relation';
     protected const TYPE        = 'type';
     protected const NAME        = 'name';
+    
+    /**
+     * @Inject()
+     */
+    protected CacheManager $cacheManager;
 
 
     protected function getShortName(string $classname): string
@@ -20,10 +27,38 @@ abstract class AbstractResolver
         return substr(strrchr($classname, '\\'), 1);
     }
 
-    protected function getBean(array &$data): OODBBean
+    protected function getBean(array &$data, ?object $object = NULL): OODBBean
     {
         $table = $data['nomess_table'];
         unset($data['nomess_table']);
+
+        if($object !== NULL){
+            try {
+                foreach( Instance::$mapper[get_class( $object )] as $key => $array ) {
+                    if( in_array( $object, $array ) ) {
+                        return $array['bean'];
+                    }
+                }
+            }catch(\Throwable $throwable){}
+    
+            try {
+                $cacheProvide = $this->cacheManager->get(get_class($object), $object->getId(), TRUE);
+    
+                if(is_object($cacheProvide)){
+                    return $cacheProvide;
+                }
+            }catch(\Throwable $throwable){}
+            
+            $bean = R::dispense($table);
+            
+            Instance::$mapper[get_class($object)][] = [
+                'object' => $object,
+                'bean' => $bean
+            ];
+            
+            return $bean;
+        }
+    
         return R::dispense($table);
     }
 

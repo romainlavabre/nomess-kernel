@@ -19,7 +19,7 @@ abstract class AbstractBuilder
                 return 'own' . ucfirst($this->tableResolver($this->getShortenName($relation['type']))) . 'List';
             }elseif($relation['relation'] === 'ManyToMany'){
                 return 'shared' . ucfirst($this->tableResolver($this->getShortenName($relation['type']))) . 'List';
-            }elseif($relation['relation'] === 'OneToOne' || $relation['relation'] === 'OneToMany'){
+            }elseif($relation['relation'] === 'OneToMany' || $relation['relation'] === 'OneToOneOwner' || $relation['relation'] === 'OneToOne'){
                 return $this->tableResolver($this->getShortenName($relation['type']));
             }
         }
@@ -145,10 +145,19 @@ abstract class AbstractBuilder
                     'type' => $type
                 ];
             }elseif(strpos($comment, '@OneToOne') !== FALSE){
-                return [
-                    'relation' => 'OneToOne',
-                    'type' => $type
-                ];
+
+                if(strpos($comment, '@Owner') !== FALSE){
+                    return [
+                        'relation' => 'OneToOneOwner',
+                        'type' => $type
+                    ];
+                }else {
+                    return [
+                        'relation' => 'OneToOne',
+                        'type' => $type,
+                        'propertyName' => $this->mappedBy($reflectionProperty)
+                    ];
+                }
             }elseif(strpos($comment, '@OneToMany') !== FALSE){
                 return [
                     'relation' => 'OneToMany',
@@ -203,5 +212,19 @@ abstract class AbstractBuilder
         }
 
         return $list;
+    }
+
+    private function mappedBy(\ReflectionProperty $reflectionProperty): string
+    {
+        $comment = $reflectionProperty->getDocComment();
+
+        preg_match('/@MappedBy\("(.+)"\)/', $comment, $output);
+
+        if(!empty($output[1])){
+            return $output[1];
+        }else{
+            throw new ORMException('Your property ' . $reflectionProperty->getName() . ' of class ' .
+            $reflectionProperty->getDeclaringClass()->getName() . ' must specified an @MappedBy annotation');
+        }
     }
 }

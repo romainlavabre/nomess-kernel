@@ -68,7 +68,7 @@ class ApplicationScope implements ApplicationScopeInterface
     private function persistsData(): void
     {
         if($this->update === true){
-            file_put_contents(self::PATH_CACHE, '<?php return \'' . str_replace('\'', '\\\'', serialize($this->data)) . '\';');
+            file_put_contents(self::PATH_CACHE, '<?php return \'' . str_replace('\'', '\\\'', serialize($this->data)) . '\';', LOCK_EX);
         }
     }
 
