@@ -25,7 +25,9 @@ class DeleteResolver extends AbstractResolver
     protected function getData(object $object, array $cache): OODBBean
     {
         $this->cacheManager->remove($object);
-        return $this->getBean($cache, $object);
+        $bean = $this->getBean($cache, $object);
+        $bean->id = $object->getId();
+        return $bean;
     }
     
 }

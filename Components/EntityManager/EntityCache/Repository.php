@@ -4,8 +4,6 @@
 namespace Nomess\Components\EntityManager\EntityCache;
 
 
-use Nomess\Annotations\Inject;
-
 class Repository
 {
     
@@ -13,18 +11,8 @@ class Repository
     
     public const  PATH_CACHE  = ROOT . 'var/cache/ce/';
     
-    private const PATH_CONFIG = ROOT . 'config/components/EntityManager.php';
+    public const PATH_CONFIG = ROOT . 'config/components/EntityManager.php';
     
-    public const  BEAN        = 'bean';
-    
-    public const  ENTITY      = 'object';
-    
-    public const  ALL         = NULL;
-    
-    /**
-     * @Inject()
-     */
-    private Dependency                   $dependency;
     private array                        $status        = array();
     private array                        $store         = array();
     private array                        $cloned        = array();
@@ -40,22 +28,15 @@ class Repository
     }
     
     
-    public function addInStore( array $data ): void
+    public function addInStore( object $object ): void
     {
-        $this->store[get_class( $data[self::ENTITY] )][$data[self::ENTITY]->getId()] = $data;
-        $this->dependency->pushDependency( $data[self::ENTITY] );
+        $this->store[get_class( $object )][$object->getId()] = $object;
     }
     
     
-    public function getToStore( string $classname, int $id, ?string $type )
+    public function getToStore( string $classname, int $id )
     {
-        $data = $this->store[$classname][$id];
-        
-        if( is_null( $type ) ) {
-            return $data;
-        }
-        
-        return $data[$type];
+        return $this->store[$classname][$id];
     }
     
     
@@ -71,12 +52,9 @@ class Repository
     }
     
     
-    public function addClone( array $data ): void
+    public function addClone( object $object ): void
     {
-        $this->cloned[get_class( $data[self::ENTITY] )][$data[self::ENTITY]->getId()] = [
-            'object' => unserialize( serialize( $data[self::ENTITY] ) ),
-            'bean'   => unserialize( serialize( $data[self::BEAN] ) )
-        ];
+        $this->cloned[get_class( $object )][$object->getId()] = $object;
     }
     
     

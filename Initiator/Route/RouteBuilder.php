@@ -1,5 +1,6 @@
 <?php
 namespace Nomess\Initiator\Route;
+use Nomess\Exception\ConflictException;
 use Nomess\Internal\Scanner;
 
 class RouteBuilder
@@ -21,6 +22,7 @@ class RouteBuilder
             $content = scandir($directory);
 
             foreach($content as $file) {
+                $this->header = NULL;
                 if($file !== '.' && $file !== '..' && strpos($file, '.php') !== FALSE) {
 
                     $reflectionClass = new \ReflectionClass($this->getNamespace($directory . $file));
@@ -63,9 +65,12 @@ class RouteBuilder
                     preg_match('/name="([A-Za-z._-]+)"/', $annotation[0], $name);
                     preg_match('/methods="([GETPOSUDL,]+)"/', $annotation[0], $requestMethod);
                     preg_match('/requirements=\[(".+" *=> *".+",? ?)\]/', $annotation[0], $requirements);
-
+                    
                     if(isset($route[1])) {
-                        $this->routes[$this->header . $route[1]] = [
+                        $route = $this->header . $route[1];
+                        $this->isUniqueRoute($route);
+                        
+                        $this->routes[$route] = [
                             'name' => (isset($name[1])) ? $name[1] : NULL,
                             'request_method' => (isset($requestMethod[1])) ? $requestMethod[1] : NULL,
                             'method' => $reflectionMethod->getName(),
@@ -108,5 +113,13 @@ class RouteBuilder
         $filename = str_replace('/', '\\', $filename);
 
         return "App\\Controllers\\$filename";
+    }
+    
+    private function isUniqueRoute(string $route): void
+    {
+        if(array_key_exists($route, $this->routes)){
+            throw new ConflictException('Router encountered an error: Your route "' . $route . '" is already used by ' .
+            $this->routes[$route]['controller'] . ' for method ' . $this->routes[$route]['method']);
+        }
     }
 }

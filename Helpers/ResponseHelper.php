@@ -171,7 +171,7 @@ trait ResponseHelper
 
             unset($_SESSION['app']['toolbar']);
         }
-
+        
         require ROOT . 'vendor/nomess/kernel/Tools/tools/toolbar.php';
     }
 

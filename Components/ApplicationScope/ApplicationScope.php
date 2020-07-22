@@ -15,14 +15,24 @@ class ApplicationScope implements ApplicationScopeInterface
     {
         $this->loadData();
     }
+    
+    
+    /**
+     * @param $index
+     * @return bool
+     */
+    public function has($index): bool
+    {
+        return isset($this->data[$index]);
+    }
 
     /**
      * Get data
      *
-     * @param string $index
+     * @param mixed $index
      * @return mixed|null
      */
-    public function get(string $index)
+    public function get($index)
     {
         return (isset($this->data[$index])) ? $this->data[$index] : NULL;
     }

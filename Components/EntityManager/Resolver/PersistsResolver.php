@@ -93,11 +93,7 @@ class PersistsResolver extends AbstractResolver
                     $columnRelation = $tmp;
                 }
 
-                //If the old relation is not empty, pass the new relation to null or new value
-                if(!empty($columnRelation) || !empty($bean->$propertyColumn)){
-                    $bean->$propertyColumn = NULL;
-                    $bean->$propertyColumn = $columnRelation;
-                }
+                $bean->$propertyColumn = $columnRelation;
             }
         }
 

@@ -15,7 +15,7 @@ class Filter
             $filtername = rdl("Precise the name of filter: ");
         }while($filtername === NULL);
 
-        file_put_contents(self::PATH . ucfirst($filtername) . '.php', $this->getContent($filtername));
+        file_put_contents(self::PATH . ucfirst($filtername) . 'Filter.php', $this->getContent($filtername));
 
         echo 'Filter generate';
     }
@@ -27,12 +27,12 @@ class Filter
 namespace App\Filters;
 
 use Nomess\Annotations\Filter;
-use Nomess\Manager\FilterInterface;
+use Nomess\Manager\FiltersInterface;
 
 /**
  * @Filter(\"your_regex_here\")
  */
-class " . ucfirst($name) . " implements FilterInterface
+class " . ucfirst($name) . "Filter implements FiltersInterface
 {
     
     public function filtrate(): void

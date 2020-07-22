@@ -35,17 +35,9 @@ abstract class AbstractResolver
         if($object !== NULL){
             try {
                 foreach( Instance::$mapper[get_class( $object )] as $key => $array ) {
-                    if( in_array( $object, $array ) ) {
+                    if( in_array( $object, $array, TRUE ) ) {
                         return $array['bean'];
                     }
-                }
-            }catch(\Throwable $throwable){}
-    
-            try {
-                $cacheProvide = $this->cacheManager->get(get_class($object), $object->getId(), TRUE);
-    
-                if(is_object($cacheProvide)){
-                    return $cacheProvide;
                 }
             }catch(\Throwable $throwable){}
             

@@ -9,6 +9,8 @@ use Nomess\Exception\NomessException;
 interface LightPersistsInterface
 {
 
+    public function has($index): bool;
+    
     public function &getReference($index);
 
     /**

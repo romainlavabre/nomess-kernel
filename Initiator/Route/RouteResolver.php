@@ -19,56 +19,68 @@ class RouteResolver
             $this->setCache($routes);
         }
 
+        
         foreach($routes as $key => $route){
+            
+            
+            if($key === '/' . $_GET['p']){
+                return $route;
+            }
+            
             $arrayRoute = explode('/', $key);
             $arrayUrl = explode('/', $_GET['p']);
-
+            
             unset($arrayRoute[0]);
 
             $success = TRUE;
             $i = 0;
 
             foreach($arrayRoute as $section){
-                if(strpos($section, '{') === FALSE){
-
-                    if(isset($arrayUrl[$i])) {
-                        if(strpos($arrayUrl[$i], '?') !== FALSE) {
-                            $arrayUrl[$i] = explode('?', $arrayUrl[$i])[0];
-                        }
-
-                        if(strpos($arrayUrl[$i], '&') !== FALSE) {
-                            $arrayUrl[$i] = explode('&', $arrayUrl[$i])[0];
-                        }
-
-                        if((isset($arrayUrl[$i]) && $section !== $arrayUrl[$i])
-                            || !isset($arrayUrl[$i])) {
-
+                if(!empty($section)) {
+                    if( strpos( $section, '{' ) === FALSE ) {
+                        
+                        if( isset( $arrayUrl[$i] ) ) {
+                            if( strpos( $arrayUrl[$i], '?' ) !== FALSE ) {
+                                $arrayUrl[$i] = explode( '?', $arrayUrl[$i] )[0];
+                            }
+            
+                            if( strpos( $arrayUrl[$i], '&' ) !== FALSE ) {
+                                $arrayUrl[$i] = explode( '&', $arrayUrl[$i] )[0];
+                            }
+            
+                            if( ( isset( $arrayUrl[$i] ) && $section !== $arrayUrl[$i] )
+                                || !isset( $arrayUrl[$i] ) ) {
+                
+                                $success = FALSE;
+                                break 1;
+                            }
+                        } else {
                             $success = FALSE;
                             break 1;
                         }
-                    }else{
-                        $success = FALSE;
-                        break 1;
+                    } else {
+                        if( empty( $arrayUrl[$i] ) ) {
+                            $success = FALSE;
+                            break 1;
+                        }
+        
+                        $sectionPurged = $this->getIdSection( $section );
+        
+                        if( isset( $route['requirements'][$sectionPurged] ) ) {
+                            if( !preg_match( '/' . $route['requirements'][$sectionPurged] . '/', $arrayUrl[$i] ) ) {
+                                $success = FALSE;
+                                break 1;
+                            }
+                        }
+        
+                        $_GET[$sectionPurged] = $arrayUrl[$i];
                     }
+    
+                    $i++;
                 }else{
-                    if(empty($arrayUrl[$i])){
-                        $success = FALSE;
-                        break 1;
-                    }
-
-                    $sectionPurged = $this->getIdSection($section);
-
-                    if(isset($route['requirements'][$sectionPurged])){
-                        if(!preg_match('/' . $route['requirements'][$sectionPurged] . '/', $arrayUrl[$i])){
-                            $success = FALSE;
-                            break 1;
-                        }
-                    }
-
-                    $_GET[$sectionPurged] = $arrayUrl[$i];
+                    $success = FALSE;
+                    break 1;
                 }
-
-                $i++;
             }
 
             if($success === TRUE){

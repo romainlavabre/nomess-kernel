@@ -346,11 +346,7 @@ $fileIndex = $function();
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="nm_modal-body">
-                    <div class="nm_container">
-                        <iframe src="<?php echo '/' . $fileIndex ?>" style="width: 100%;" height="500"></iframe>
-                    </div>
-                </div>
+                
                 <div class="nm_modal-footer">
                     <button type="button" class="nm_btn nm_btn-secondary nm_no-radius" data-dismiss="nm_modal">Fermer</button>
                 </div>

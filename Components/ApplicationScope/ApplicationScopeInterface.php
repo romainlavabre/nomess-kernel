@@ -6,7 +6,9 @@ namespace NoMess\Components\ApplicationScope;
 
 interface ApplicationScopeInterface
 {
-
+    
+    public function has($index): bool;
+    
     /**
      * Get data
      *

@@ -13,8 +13,7 @@ class CreateEvent implements CreateEventInterface
     /**
      * @Inject()
      */
-    private CacheManager $cache;
-    
+    private CacheManager $cacheManager;
     private array $pile = array();
     
     public function add(object $target, OODBBean $bean): void
@@ -40,8 +39,7 @@ class CreateEvent implements CreateEventInterface
                     }
 
                     $reflectionProperty->setValue($value['object'], $value['bean']->id);
-
-                    $this->cache->add($value['object']);
+                    $this->cacheManager->add($value['object']);
                     unset($this->pile[$i]);
                 }
 

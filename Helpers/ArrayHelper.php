@@ -16,9 +16,9 @@ trait ArrayHelper
         return !is_null($array) ? count($array) : 0;
     }
     
-    public function arrayContainsValue($value, ?array $array): bool
+    public function arrayContainsValue($value, ?array $array, bool $strict = FALSE): bool
     {
-        return !is_null($array) ? in_array($value, $array) : FALSE;
+        return !is_null($array) ? in_array($value, $array, $strict) : FALSE;
     }
     
     public function arrayContainsKey($key, ?array $array): bool

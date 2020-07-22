@@ -37,31 +37,37 @@ class ValueExtension extends AbstractExtension
         }
     }
 
-    public function value(string $name, ?string $propertyName = NULL): void
+    public function value(string $name, ?string $propertyName = NULL, string $default = NULL): void
     {
         if(isset($this->data[$name])){
             echo $this->data[$name];
-        }else{
-            if($this->reflectionClass !== NULL){
+            return;
+        }
+        
+        if($this->reflectionClass !== NULL){
 
-                $reflectionProperty = NULL;
+            $reflectionProperty = NULL;
 
-                try{
-                    if($propertyName != NULL){
-                        $reflectionProperty = $this->reflectionClass->getProperty($propertyName);
-                    }else {
-                        $reflectionProperty = $this->reflectionClass->getProperty($name);
-                    }
-                }catch(\Throwable $e){}
-
-                if($reflectionProperty !== NULL){
-                    if(!$reflectionProperty->isPublic()){
-                        $reflectionProperty->setAccessible(TRUE);
-                    }
-
-                    echo $reflectionProperty->getValue($this->instance);
+            try{
+                if($propertyName != NULL){
+                    $reflectionProperty = $this->reflectionClass->getProperty($propertyName);
+                }else {
+                    $reflectionProperty = $this->reflectionClass->getProperty($name);
                 }
+            }catch(\Throwable $e){}
+
+            if($reflectionProperty !== NULL){
+                if(!$reflectionProperty->isPublic()){
+                    $reflectionProperty->setAccessible(TRUE);
+                }
+
+                echo $reflectionProperty->getValue($this->instance);
+                return;
             }
+        }
+        
+        if(!empty($default)){
+            echo $default;
         }
     }
 
@@ -75,7 +81,7 @@ class ValueExtension extends AbstractExtension
                         break;
                     }
                 }
-            }elseif($this->data[$name] === $value) {
+            }elseif((string)$this->data[$name] === (string)$value) {
                 echo 'selected';
             }
         }elseif($searchData === NULL){
@@ -90,7 +96,7 @@ class ValueExtension extends AbstractExtension
                         $reflectionProperty = $this->reflectionClass->getProperty($name);
                     }
                 }catch(\Throwable $e){}
-
+    
                 if($reflectionProperty !== NULL){
                     if(!$reflectionProperty->isPublic()){
                         $reflectionProperty->setAccessible(TRUE);
@@ -100,22 +106,21 @@ class ValueExtension extends AbstractExtension
 
                     if(is_array($valueProperty)){
                         foreach($valueProperty as $data){
-                            if(is_object($data) && (string)$data->getId() === $value){
+                            if(is_object($data) && (string)$data->getId() === (string)$value){
                                 echo 'selected';
                                 break;
                             }
 
-                            if($data === $value){
+                            if((string)$data === (string)$value){
                                 echo 'selected';
                                 break;
                             }
                         }
                     }else{
-
                         try {
-                            if((is_object($valueProperty) && (string)$valueProperty->getId() === $value)
-                                || ($valueProperty === $value)) {
-
+                            if((is_object($valueProperty) && (string)$valueProperty->getId() === (string)$value)
+                                || (string)$valueProperty === (string)$value) {
+    
                                 echo 'selected';
                             }
                         }catch(\Throwable $e){}

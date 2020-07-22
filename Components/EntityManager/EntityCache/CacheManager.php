@@ -15,21 +15,28 @@ class CacheManager implements TransactionObserverInterface
     private TransactionSubjectInterface $transactionSubject;
     private Repository                  $repository;
     private Writer                      $writer;
+    private Reader                      $reader;
+    private array                       $config;
     
     
     /**
-     * * @param EntityManager $entityManager
+     * *
      * @param TransactionSubjectInterface $transactionSubject
+     * @param Repository $repository
+     * @param Writer $writer
+     * @param Reader $reader
      */
     public function __construct(
-        EntityManager $entityManager,
         TransactionSubjectInterface $transactionSubject,
         Repository $repository,
-        Writer $writer )
+        Writer $writer,
+        Reader $reader )
     {
         $this->transactionSubject = $transactionSubject;
         $this->repository         = $repository;
         $this->writer             = $writer;
+        $this->reader             = $reader;
+        $this->config             = require Repository::PATH_CONFIG;
         
         $this->revalide();
         $this->subscribeToTransactionStatus();
@@ -45,8 +52,11 @@ class CacheManager implements TransactionObserverInterface
      */
     public function getAll( string $classname, bool $lock = FALSE ): ?array
     {
+        if( !$this->isAccepted( $classname ) ) {
+            return NULL;
+        }
+        
         if( $this->repository->isAllSelected( $classname ) ) {
-            
             $list = array();
             
             $content = scandir( Repository::PATH_CACHE );
@@ -57,7 +67,6 @@ class CacheManager implements TransactionObserverInterface
                         $list[] = $this->get(
                             $classname,
                             $this->repository->getIdByFilename( $file ),
-                            FALSE,
                             $lock );
                     }
                 }
@@ -70,8 +79,12 @@ class CacheManager implements TransactionObserverInterface
     }
     
     
-    public function get( string $classname, int $id, bool $bean = FALSE, bool $lock = FALSE ): ?object
+    public function get( string $classname, int $id, bool $lock = FALSE ): ?object
     {
+        if( !$this->isAccepted( $classname ) ) {
+            return NULL;
+        }
+        
         if( $lock ) {
             $this->repository->removeFile( $this->repository->getFilename( $classname, $id ) );
             
@@ -79,37 +92,25 @@ class CacheManager implements TransactionObserverInterface
         }
         
         if( $this->repository->storeHas( $classname, $id ) ) {
-            return $bean ? $this->repository->getToStore( $classname, $id, Repository::BEAN )
-                : $this->repository->getToStore( $classname, $id, Repository::ENTITY );
-        }
-    
-        if( file_exists( $filename = $this->repository->getFilename( $classname, $id ) ) ) {
-            $this->repository->addInStore( unserialize( file_get_contents( $filename ) ) );
-           
-            if( $bean ) {
-                return $this->repository->getToStore( $classname, $id, Repository::BEAN );
-            } else {
-                return $this->repository->getToStore( $classname, $id, Repository::ENTITY );
-            }
+            return $this->repository->getToStore( $classname, $id);
         }
         
-        return NULL;
+        return $this->reader->read($classname, $id);
     }
     
     
     public function addAll( string $classname ): void
     {
-        $this->repository->addSelectAll( $classname );
+        if( $this->isAccepted( $classname ) ) {
+            $this->repository->addSelectAll( $classname );
+        }
     }
     
     
     public function add( object $object ): void
     {
-        foreach( Instance::$mapper[get_class( $object )] as $data ) {
-            
-            if( $data['object'] === $object ) {
-                $this->repository->addInStore( $data );
-            }
+        if( $this->isAccepted( get_class( $object ) ) ) {
+            $this->repository->addInStore($object);
         }
     }
     
@@ -135,13 +136,7 @@ class CacheManager implements TransactionObserverInterface
      */
     public function clonable( object $object ): void
     {
-        foreach( Instance::$mapper[get_class( $object )] as $data ) {
-            
-            if( $data['object'] === $object ) {
-                
-                $this->repository->addClone( $data );
-            }
-        }
+        $this->repository->addClone( $object );
     }
     
     
@@ -155,6 +150,12 @@ class CacheManager implements TransactionObserverInterface
             
             $this->repository->resetStatus();
         }
+    }
+    
+    
+    private function isAccepted( string $classname ): bool
+    {
+        return $this->config['enable'] && array_key_exists( $classname, $this->config );
     }
     
     

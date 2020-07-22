@@ -30,8 +30,6 @@ class HttpSession
 
             ini_set('session.gc_maxlifetime', getenv('NM_SESSION_LIFETIME'));
             session_start();
-
-
             if (!isset($_SESSION[self::ID_MODULE_SECURITY])) {
                 $_SESSION[self::ID_MODULE_SECURITY] = array();
             }
@@ -47,7 +45,16 @@ class HttpSession
             throw new NomessException('Please active the session');
         }
     }
-
+    
+    
+    /**
+     * @param $index
+     * @return bool
+     */
+    public function has($index): bool
+    {
+        return isset($_SESSION[$index]);
+    }
 
     /**
      * Return reference of the entry associate to index
@@ -83,12 +90,15 @@ class HttpSession
      * Delete the entry associate to index variable
      *
      * @param string $index
+     * @return $this
      */
-    public function delete(string $index): void
+    public function delete(string $index): self
     {
         if (array_key_exists($index, $_SESSION)) {
             unset($_SESSION[$index]);
         }
+        
+        return $this;
     }
 
     /**
@@ -97,37 +107,42 @@ class HttpSession
      * @param mixed $key
      * @param mixed $value
      * @param bool $reset Delete value associate to the key before insertion
+     * @return $this
      */
-    public function set($key, $value, $reset = false): void
+    public function set($key, $value, $reset = false): self
     {
-        if ($reset === true) {
+        if ($reset) {
             unset($_SESSION[$key]);
         }
 
         if (\is_array($value)) {
 
-            $_SESSION[$key] = array();
-
+            if(!array_key_exists($key, $_SESSION) || !is_array($_SESSION[$key])){
+                $_SESSION[$key] = array();
+            }
+            
             foreach ($value as $keyArray => $valArray) {
-
+                
                 $_SESSION[$key][$keyArray] = $valArray;
             }
-
         } else {
             $_SESSION[$key] = $value;
         }
+    
+        return $this;
     }
-
-
+    
+    
     /**
      * Modify the lifetime of cookie session
      *
      * @param int $time Time in second
      * @param bool $force Update the cookie even id the value of lifetime is equals to time variable
+     * @return $this
      */
-    public function setLifeTime(int $time, bool $force = false): void
+    public function setLifeTime(int $time, bool $force = false): self
     {
-
+        
         if (!array_key_exists(self::SESSION_SET_LIFE_TIME, $_SESSION[self::ID_MODULE_SECURITY]) || $force === true) {
             $content = $_SESSION;
 
@@ -141,6 +156,22 @@ class HttpSession
             $_SESSION[self::ID_MODULE_SECURITY][self::SESSION_SET_LIFE_TIME] = true;
 
         }
+        
+        return $this;
+    }
+    
+    
+    /**
+     * @return $this
+     */
+    public function kill(): self
+    {
+        $toolbar = $_SESSION['app']['toolbar'];
+        
+        $_SESSION = array();
+        $_SESSION['app']['toolbar'] = $toolbar;
+        
+        return $this;
     }
 
 
@@ -158,12 +189,12 @@ class HttpSession
      * @param bool $ipSystem If TRUE, the IP ADRESS will be controlled
      * @param bool $bindTicketIp If TRUE, add an felexibility for IP modules, if IP doesn't match but the ticket is valid, the connexion will be accepted
      * @param array[bool $userAgentSystem, bool $ipSystem]|null $recoveryConfig Array of secondary configuration in case of error from ticket modules (Client doesn't accept the cookie)
-     * @return void
+     * @return $this
      * @throws InvalidParamException
      */
-    public function installSecurityModules(bool $userAgentSystem, bool $ticketSystem, bool $ipSystem, bool $bindTicketIp = false, ?array $recoveryConfig = null): void
+    public function installSecurityModules(bool $userAgentSystem, bool $ticketSystem, bool $ipSystem, bool $bindTicketIp = false, ?array $recoveryConfig = null): self
     {
-
+        
         if ($ticketSystem === true) {
             setcookie('dpr__', 'sdf846dsf68fs3k4f4rs53f8sddfre', time() + 60 * 20, '/');
         }
@@ -178,6 +209,8 @@ class HttpSession
         if ($recoveryConfig !== null && count($recoveryConfig) !== 2) {
             throw new InvalidParamException('RecoveryConfig must contain exactly 2 parameters: $userAgentSystem and $ipSystem| $ticketSystem and $bindTicketIp will be initialized to false');
         }
+        
+        return $this;
     }
 
 

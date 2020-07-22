@@ -25,6 +25,7 @@ class PathExtension extends AbstractExtension
 
         foreach($routes as $key => $route){
             if($route['name'] === $routeName){
+                
                 if(strpos($key, '{') !== FALSE){
                     $sections = explode('/', $key);
 
@@ -35,6 +36,10 @@ class PathExtension extends AbstractExtension
 
                             if(!empty($param) && array_key_exists($purgedSection, $param)){
                                 $section = $param[$purgedSection];
+                                
+                                if(empty($section)){
+                                    throw new \Exception('Your parameter "' . $purgedSection . '" for route ' . $routeName . ' is void');
+                                }
                                 unset($param[$purgedSection]);
                             }else{
                                 throw new InvalidArgumentException('Missing an dynamic data in your url');

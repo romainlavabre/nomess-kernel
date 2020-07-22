@@ -38,8 +38,6 @@ class SelectResolver
     
     public function resolve( string $classname, $idOrSql, ?array $parameters, bool $lock )
     {
-        $cache = $this->cache->getCache( $this->getShortName( $classname ), $classname, '__SELECT__' );
-        
         $pregResult = preg_match( '/^[0-9]+$/', $idOrSql );
         
         if($pregResult){
@@ -50,18 +48,21 @@ class SelectResolver
             }
         }elseif(empty($idOrSql)){
             $array = $this->cacheManager->getAll($classname, $lock);
-
+            
             if(is_array($array)){
                 return $array;
             }
         }
         
+        $cache = $this->cache->getCache( $this->getShortName( $classname ), $classname, '__SELECT__' );
         $data  = $this->getData( $this->request( $this->getTable( $cache ), $idOrSql, $parameters, $lock ), $cache, $lock );
     
         if( $pregResult ) {
             return is_array( $data ) ? $data[0] : NULL;
         }elseif(empty($idOrSql)){
             $this->cacheManager->addAll($classname);
+        }elseif(!empty($idOrSql) && is_array($data) && count($data) === 1){
+            return $data[0];
         }
         
         
@@ -118,7 +119,6 @@ class SelectResolver
                 }
                 
                 if( $propertyName !== 'id' && $insert ) {
-                    
                     $propertyColumn = $propertyData[self::COLUMN];
                     $purgeLazyLoad  = $bean->$propertyColumn;
                     
@@ -133,10 +133,11 @@ class SelectResolver
                     }
                     
                     if( $propertyAction === 'unserialize' ) {
-                        $reflectionProperty->setValue( $target, ( is_array( $propertyValue ) ) ? unserialize( $propertyValue ) : NULL );
+                        $reflectionProperty->setValue( $target, !is_null( $propertyValue )  ? unserialize( $propertyValue ) : array() );
                     } elseif( $propertyAction === NULL ) {
                         $reflectionProperty->setValue( $target, $propertyValue );
                     } else {
+                        
                         if( !empty( $propertyRelation ) ) {
                             if( $propertyValue !== NULL ) {
                                 if( $propertyRelation['relation'] === 'ManyToOne' || $propertyRelation['relation'] === 'ManyToMany' ) {
@@ -148,6 +149,7 @@ class SelectResolver
                                     
                                     $reflectionProperty->setValue( $target, $tmp );
                                 } elseif( $propertyRelation['relation'] === 'OneToMany' || $propertyRelation['relation'] === 'OneToOneOwner' ) {
+                                    
                                     $reflectionProperty->setValue( $target, $this->getRelation( $propertyRelation, $propertyValue ) );
                                 }
                             }
@@ -156,8 +158,8 @@ class SelectResolver
                         if( $propertyRelation['relation'] === 'OneToOne' ) {
                             $owner = $this->resolve( $propertyRelation['type'], $bean->getMeta( 'type' ) . '_id = :param', [ 'param' => $bean->id ], FALSE );
                             
-                            if( !empty( $owner ) && is_array( $owner ) ) {
-                                $reflectionProperty->setValue( $target, $owner[0] );
+                            if( !empty( $owner ) ) {
+                                $reflectionProperty->setValue( $target, is_array($owner) ? $owner[0] : $owner );
                             }
                         }
                     }

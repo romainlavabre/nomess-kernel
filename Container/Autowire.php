@@ -46,9 +46,9 @@ class Autowire
         }else{
             $this->constructorResolver(NULL, $reflectionClass);
         }
-
-        $this->methodsResolver($reflectionClass->getMethods(), $this->instance[$classname]);
+    
         $this->propertyResolver($reflectionClass->getProperties(), $this->instance[$classname]);
+        $this->methodsResolver($reflectionClass->getMethods(), $this->instance[$classname]);
     
         return $this->instance[$classname];
 
@@ -85,7 +85,7 @@ class Autowire
                 || (!empty($this->force)
                     && ($reflectionMethod->getName() === $this->force['method']
                     && $reflectionMethod->getDeclaringClass()->getName() === $this->force['class']))){
-                $this->purgeForce($reflectionMethod->getName(), $reflectionMethod->getDeclaringClass()->getName());
+                $this->purgeForce($reflectionMethod);
                 $parameters = array();
 
                 $reflectionParameters = $reflectionMethod->getParameters();
@@ -259,9 +259,11 @@ class Autowire
         }
     }
 
-    private function purgeForce(string $methodName, string $classname): void
+    private function purgeForce(ReflectionMethod $reflectionMethod): void
     {
-        if($this->force['method'] === $methodName && $this->force['class'] === $classname) {
+        if($this->force['method'] === $reflectionMethod->getName()
+           && $this->force['class'] === $reflectionMethod->getDeclaringClass()->getName()) {
+            
             $this->force['method'] = NULL;
             $this->force['class'] = NULL;
         }

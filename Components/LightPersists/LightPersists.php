@@ -41,7 +41,16 @@ class LightPersists implements LightPersistsInterface
         $this->container = $container;
         $this->getContent();
     }
-
+    
+    
+    /**
+     * @param $index
+     * @return bool
+     */
+    public function has($index): bool
+    {
+        return isset($this->content[$index]);
+    }
 
     /**
      * Return value associate to index variable or null if doesn't exists
