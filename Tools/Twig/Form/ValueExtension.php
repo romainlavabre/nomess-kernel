@@ -60,7 +60,9 @@ class ValueExtension extends AbstractExtension
                     $reflectionProperty->setAccessible(TRUE);
                 }
                 
-                return $reflectionProperty->getValue($this->instance);
+                if(!is_object($reflectionProperty->getValue($this->instance))) {
+                    return $reflectionProperty->getValue($this->instance);
+                }
             }
         }
         

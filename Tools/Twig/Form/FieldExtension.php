@@ -10,6 +10,7 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
 {
     
     private bool           $bootstrap           = TRUE;
+    private bool           $first               = TRUE;
     private ?string        $last_id             = NULL;
     private ?string        $last_label          = NULL;
     private ?string        $last_type           = NULL;
@@ -94,7 +95,7 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
         $key      = key( $toCompose );
         $value    = current( $toCompose );
         $composed = array();
-        $data     = array();
+        $data     = NULL;
         
         if( !empty( $objects ) ) {
             
@@ -219,7 +220,13 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
     private function addBootstrap( string $content ): string
     {
         if( $this->bootstrap ) {
-            return '<div class="form-group mt-5">' . $content . '</div>';
+            if( $this->first ) {
+                $this->first = FALSE;
+                
+                return '<div class="form-group">' . $content . '</div>';
+            } else {
+                return '<div class="form-group mt-5">' . $content . '</div>';
+            }
         }
         
         return $content;
@@ -289,7 +296,7 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
         $metadata = [
             'type'     => 'text',
             'class'    => $this->bootstrap ? 'form-control' : NULL,
-            'required' => 'true',
+            'required' => TRUE,
             'id'       => $id
         ];
         
@@ -305,8 +312,10 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
         $content = '<input ';
         
         foreach( $metadata as $attribute => $value ) {
-            if( !is_null( $value ) ) {
+            if( !is_null( $value ) && $value !== FALSE ) {
                 $content .= "$attribute=\"$value\" ";
+            } elseif( $value === TRUE ) {
+                $content .= "$attribute ";
             }
         }
         
@@ -343,7 +352,7 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
         
         $metadata = [
             'class'    => $this->bootstrap ? 'custom-select' : NULL,
-            'required' => 'true',
+            'required' => TRUE,
             'id'       => $id
         ];
         
@@ -352,8 +361,10 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
         $content = '<select ';
         
         foreach( $metadata as $attribute => $value ) {
-            if( !is_null( $value ) ) {
+            if( !is_null( $value ) && $value !== FALSE ) {
                 $content .= "$attribute=\"$value\" ";
+            } elseif( $value === TRUE ) {
+                $content .= "$attribute ";
             }
         }
         
@@ -421,7 +432,7 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
         }
         
         $metadata = [
-            'required' => 'true',
+            'required' => TRUE,
             'id'       => $id
         ];
         
@@ -429,9 +440,11 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
         
         $content = '<textarea ';
         
-        foreach( $metadata as $key => $value ) {
-            if( !is_null( $value ) && $key !== 'value' ) {
-                $content .= "$key=\"$value\" ";
+        foreach( $metadata as $attribute => $value ) {
+            if( !is_null( $value ) && $value !== FALSE && $attribute !== 'value' ) {
+                $content .= "$attribute=\"$value\" ";
+            } elseif( $value === TRUE ) {
+                $content .= "$attribute ";
             }
         }
         
