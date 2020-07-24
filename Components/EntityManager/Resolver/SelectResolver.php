@@ -41,7 +41,7 @@ class SelectResolver
         $pregResult = preg_match( '/^[0-9]+$/', $idOrSql );
         
         if($pregResult){
-            $object = $this->cacheManager->get($classname, $idOrSql, FALSE, $lock);
+            $object = $this->cacheManager->get($classname, $idOrSql, $lock);
             
             if(!empty($object)){
                 return $object;
@@ -55,10 +55,10 @@ class SelectResolver
         }
         
         $cache = $this->cache->getCache( $this->getShortName( $classname ), $classname, '__SELECT__' );
-        $data  = $this->getData( $this->request( $this->getTable( $cache ), $idOrSql, $parameters, $lock ), $cache, $lock );
+        $data  = $this->getData( $this->request( $this->getTable( $cache ), $idOrSql, $parameters, $lock ), $cache );
     
         if( $pregResult ) {
-            return is_array( $data ) ? $data[0] : NULL;
+            return $data;
         }elseif(empty($idOrSql)){
             $this->cacheManager->addAll($classname);
         }elseif(!empty($idOrSql) && is_array($data) && count($data) === 1){

@@ -32,7 +32,8 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
             new TwigFunction( 'textarea', [ $this, 'textarea' ] ),
             new TwigFunction( 'label', [ $this, 'label' ] ),
             new TwigFunction( 'compose', [ $this, 'compose' ] ),
-            new TwigFunction( 'bootstrap', [ $this, 'bootstrap' ] )
+            new TwigFunction( 'bootstrap', [ $this, 'bootstrap' ] ),
+            new TwigFunction( 'first', [ $this, 'first' ] )
         ];
     }
     
@@ -40,6 +41,11 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
     public function bootstrap( bool $used )
     {
         $this->bootstrap = $used;
+    }
+    
+    public function first(bool $first = TRUE): void
+    {
+        $this->first = $first;
     }
     
     
@@ -433,7 +439,8 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
         
         $metadata = [
             'required' => TRUE,
-            'id'       => $id
+            'id'       => $id,
+            'class'    => 'form-control'
         ];
         
         $metadata = array_merge( $metadata, $options );
