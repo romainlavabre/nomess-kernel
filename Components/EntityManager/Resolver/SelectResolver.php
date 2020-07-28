@@ -55,14 +55,12 @@ class SelectResolver
         }
         
         $cache = $this->cache->getCache( $this->getShortName( $classname ), $classname, '__SELECT__' );
-        $data  = $this->getData( $this->request( $this->getTable( $cache ), $idOrSql, $parameters, $lock ), $cache );
+        $data  = $this->getData( $this->request( $this->getTable( $cache ), $idOrSql, $parameters, $lock ), $cache, $lock );
     
         if( $pregResult ) {
-            return $data;
+            return is_array($data) && !empty($data) ? $data[0] : NULL;
         }elseif(empty($idOrSql)){
             $this->cacheManager->addAll($classname);
-        }elseif(!empty($idOrSql) && is_array($data) && count($data) === 1){
-            return $data[0];
         }
         
         
@@ -70,8 +68,9 @@ class SelectResolver
     }
     
     
-    protected function getData( array $beans, array $cache)
+    protected function getData( array $beans, array $cache, bool $lock = FALSE)
     {
+        
         unset( $cache['nomess_table'] );
         
         if( empty( $beans ) || empty( $cache ) || !is_object( current( $beans ) ) || current( $beans )->isEmpty() ) {
@@ -102,7 +101,7 @@ class SelectResolver
                 
                 if( $target === NULL && $insert && $bean->id !== 0 ) {
                     
-                    $cacheProvide = $this->cacheManager->get($classname, $bean->id, FALSE);
+                    $cacheProvide = $this->cacheManager->get($classname, $bean->id, $lock);
                     
                     if($cacheProvide !== NULL){
                         $list[] = $cacheProvide;

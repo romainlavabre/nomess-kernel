@@ -106,20 +106,23 @@ class EntityManager implements EntityManagerInterface, TransactionSubjectInterfa
             R::begin();
             
             try {
-                foreach( $this->entity as &$data ) {
-                    
+                foreach( $this->entity as $key => &$data ) {
+    
                     if( $data['context'] === self::PERSISTS ) {
                         $bean = $this->persistsResolver->resolve( $data['data'] );
-                        
+        
                         if( !empty( $bean ) ) {
                             R::store( $bean );
                         }
-    
+        
                         $this->createEvent->execute();
                     } else {
                         $bean = $this->deleteResolver->resolve( $data['data'] );
                         R::trash( $bean );
                     }
+    
+                    unset( $this->entity[$key] );
+                    
                 }
                 
                 $this->notifySubscriber( TRUE );

@@ -95,6 +95,7 @@ class HttpRequest
                     } );
                 }
                 
+                
                 return $_POST[$index];
             } else {
                 return $_POST[$index];
@@ -147,14 +148,16 @@ class HttpRequest
      */
     public function getPart( string $index ): ?array
     {
-        if( is_array( $_FILES[$index]['name'] ) ) {
-            if(!empty( $_FILES[$index]['name'][0] )) {
+        if(array_key_exists($index, $_FILES)) {
+            if( is_array( $_FILES[$index]['name'] ) ) {
+                if( !empty( $_FILES[$index]['name'][0] ) ) {
+                    return $_FILES[$index];
+                }
+        
+                return NULL;
+            } elseif( !empty( $_FILES[$index]['name'] ) ) {
                 return $_FILES[$index];
             }
-            
-            return NULL;
-        }elseif(!empty( $_FILES[$index]['name'] )){
-            return $_FILES[$index];
         }
         
         return NULL;

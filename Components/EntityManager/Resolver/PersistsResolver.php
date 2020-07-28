@@ -30,6 +30,7 @@ class PersistsResolver extends AbstractResolver
 
 
     private bool $isRelation = FALSE;
+    private array $resolved = array();
     
     public function resolve(object $object): ?OODBBean
     {
@@ -42,6 +43,10 @@ class PersistsResolver extends AbstractResolver
         $bean = $this->getBean($cache, $object);
     
         $this->subscribeToMapper($object, $bean);
+        $this->resolved[get_class($object)][] = [
+            'object' => $object,
+            'bean' => $bean
+        ];
         
         if(empty($bean->id)){
             $this->createEvent->add($object, $bean);
@@ -53,7 +58,7 @@ class PersistsResolver extends AbstractResolver
             $propertyRelation   = $property[self::RELATION];
             $propertyName       = $property[self::NAME];
             $propertyValue      = $this->getPropertyValue($object, $propertyName);
-
+            
             if($property[self::ACTION] === 'serialize'){
                 $bean->$propertyColumn = (!empty($propertyValue)) ? serialize($propertyValue) : NULL;
             }elseif($property[self::ACTION] === NULL){
@@ -62,11 +67,11 @@ class PersistsResolver extends AbstractResolver
             }elseif(!empty($propertyRelation)){
 
                 $columnRelation = NULL;
-
+                
                 if($propertyRelation['relation'] === 'OneToOneOwner' || $propertyRelation['relation'] === 'OneToMany'){
                     $columnRelation = $this->getRelation($object, $propertyRelation, $propertyValue);
                 }elseif($propertyRelation['relation'] === 'OneToOne'){
-
+                    
                     if(!empty($propertyValue)){
                         $reflectionProperty = new \ReflectionProperty(get_class($propertyValue), $propertyRelation['propertyName']);
 
@@ -78,7 +83,6 @@ class PersistsResolver extends AbstractResolver
                             $reflectionProperty->setValue($propertyValue, $object);
                         }
 
-
                         if(!$this->entityManager->has($propertyValue)) {
                             $this->entityManager->persists($propertyValue);
                         }
@@ -87,7 +91,11 @@ class PersistsResolver extends AbstractResolver
                     $tmp = array();
 
                     foreach($propertyValue as $value) {
-                        $tmp[] = $this->getRelation($object, $propertyRelation, $value);
+                        $resultRelation = $this->getRelation($object, $propertyRelation, $value);
+                        
+                        if(!empty($resultRelation)){
+                            $tmp[] = $resultRelation;
+                        }
                     }
 
                     $columnRelation = $tmp;
@@ -106,8 +114,8 @@ class PersistsResolver extends AbstractResolver
         if(!empty($propertyValue)) {
 
             $classname = get_class($propertyValue);
-            if(!empty(Instance::$mapper) && array_key_exists($classname, Instance::$mapper)){
-                foreach(Instance::$mapper[$classname] as $value){
+            if(!empty($this->resolved) && array_key_exists($classname, $this->resolved)){
+                foreach($this->resolved[$classname] as $value){
                     if($value['object'] === $propertyValue){
                         return $value['bean'];
                     }

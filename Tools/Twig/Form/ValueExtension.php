@@ -39,6 +39,8 @@ class ValueExtension extends AbstractExtension
     
     public function value(string $name, ?string $propertyName = NULL, string $default = NULL): ?string
     {
+        $name = $this->purgeName($name);
+        
         if(isset($this->data[$name])){
             return $this->data[$name];
         }
@@ -75,6 +77,8 @@ class ValueExtension extends AbstractExtension
     
     public function select(string $name, string $value, ?array $searchData = NULL, ?string $propertyName = NULL): ?string
     {
+        $name = $this->purgeName($name);
+        
         if(isset($this->data[$name])){
             if(is_array($this->data[$name])){
                 foreach($this->data[$name] as $data){
@@ -139,4 +143,12 @@ class ValueExtension extends AbstractExtension
         return NULL;
     }
     
+    private function purgeName(string $name): string
+    {
+        if(strpos($name, '[') !== FALSE){
+            return explode('[', $name)[0];
+        }
+        
+        return $name;
+    }
 }

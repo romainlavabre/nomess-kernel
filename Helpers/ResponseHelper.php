@@ -6,6 +6,7 @@ namespace Nomess\Helpers;
 use InvalidArgumentException;
 use Nomess\Exception\NotFoundException;
 use Nomess\Http\HttpRequest;
+use Nomess\Tools\Twig\Form\ComposeExtension;
 use Nomess\Tools\Twig\Form\CsrfExtension;
 use Nomess\Tools\Twig\Form\FieldExtension;
 use Nomess\Tools\Twig\Form\ValueExtension;
@@ -61,6 +62,7 @@ trait ResponseHelper
         $engine->addExtension(new CsrfExtension());
         $engine->addExtension($valueExtension = new ValueExtension($data['POST']));
         $engine->addExtension(new FieldExtension($valueExtension));
+        $engine->addExtension(new ComposeExtension());
         
         echo $engine->render($template, $data);
         
