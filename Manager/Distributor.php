@@ -91,6 +91,7 @@ abstract class Distributor
     protected final function redirectLocal(string $routeName, ?array $parameters = NULL): self
     {
         if(isset($this->data)){
+            unset($this->data['POST'], $this->data['GET']);
             $_SESSION[self::SESSION_DATA] = $this->data;
         }
 
@@ -152,9 +153,7 @@ abstract class Distributor
     {
         $this->bindPHPEngine(
             $template,
-            (isset($this->data)) ? $this->data : NULL,
-            (isset($this->request)) ? $this->request->getPost(TRUE) : NULL,
-            (isset($this->request)) ? $this->request->getGet(TRUE) : NULL);
+            (isset($this->data)) ? $this->data : NULL);
 
         return $this;
     }
