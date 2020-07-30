@@ -100,7 +100,8 @@ class PersistsResolver extends AbstractResolver
 
                     $columnRelation = $tmp;
                 }
-
+    
+                $bean->$propertyColumn = NULL;
                 $bean->$propertyColumn = $columnRelation;
             }
         }
