@@ -136,7 +136,9 @@ class CacheManager implements TransactionObserverInterface
      */
     public function clonable( object $object ): void
     {
-        $this->repository->addClone( $object );
+        if($this->isAccepted(get_class($object))) {
+            $this->repository->addClone( $object );
+        }
     }
     
     
