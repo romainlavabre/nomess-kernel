@@ -248,7 +248,7 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
     private function buildId( array $options ): ?string
     {
         if( array_key_exists( 'name', $options ) ) {
-            return $this->last_id = 'form_' . $options['name'];
+            return $this->last_id = 'form_' . str_replace('[]', '', $options['name']);
         }
         
         return NULL;
