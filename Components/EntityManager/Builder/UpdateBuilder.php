@@ -8,13 +8,13 @@ use Nomess\Exception\ORMException;
 
 class UpdateBuilder extends AbstractBuilder
 {
-
+    
     public function builder(string $classname): array
     {
         $reflectionClass = new \ReflectionClass($classname);
-        return array_merge(['nomess_table' => $this->tableResolver($this->getShortenName($classname))], $this->propertyResolver($reflectionClass->getProperties()));
+        return array_merge(['nomess_table' => $this->tableResolver($this->getShortenName($classname))], $this->propertiesResolver($reflectionClass->getProperties()));
     }
-
+    
     /**
      * Precise the action to executed
      *
@@ -25,19 +25,19 @@ class UpdateBuilder extends AbstractBuilder
     protected function getAction(\ReflectionProperty $reflectionProperty): ?string
     {
         $type = $this->getType($reflectionProperty);
-
+        
         if($type === 'array'){
             return 'serialize';
         }elseif(class_exists($type)
-            && $reflectionProperty->getType()->getName() === 'array'){
-
+                && $reflectionProperty->getType()->getName() === 'array'){
+            
             return 'iteration';
-
+            
         }elseif(class_exists($type)){
             return 'bean';
         }
-
+        
         return NULL;
-
+        
     }
 }
