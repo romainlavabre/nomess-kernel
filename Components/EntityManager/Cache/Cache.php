@@ -71,7 +71,6 @@ class Cache
     private function getRefreshCache(string $context, string $classname): array
     {
         if($context === '__UPDATED__'){
-            var_dump($this->container->get(UpdateBuilder::class)->builder($classname));
             return $this->container->get(UpdateBuilder::class)->builder($classname);
         }
         
