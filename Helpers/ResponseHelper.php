@@ -50,7 +50,7 @@ trait ResponseHelper
                 'debug' => true,
                 'cache' => false,
             ]);
-    
+            
             $engine->addExtension(new \Twig\Extension\DebugExtension());
         }else{
             $engine = new Environment($loader, [
@@ -63,6 +63,7 @@ trait ResponseHelper
         $engine->addExtension($valueExtension = new ValueExtension($data['POST']));
         $engine->addExtension(new FieldExtension($valueExtension));
         $engine->addExtension(new ComposeExtension());
+        $this->addTwigExtension($engine);
         
         echo $engine->render($template, $data);
         
@@ -106,7 +107,6 @@ trait ResponseHelper
      */
     protected final function redirectToLocalResource(string $routeName, ?array $parameters): void
     {
-        
         $routes = $this->getCacheRoute();
         
         foreach($routes as $key => $route){
@@ -188,6 +188,15 @@ trait ResponseHelper
             return require $filename;
         }else{
             throw new NotFoundException('Impossible to find the cache file of route');
+        }
+    }
+    
+    private function addTwigExtension(Environment $environment): void
+    {
+        $extensions = require ROOT . 'config/components/Twig.php';
+        
+        foreach($extensions as $extension){
+            $environment->addExtension(new $extension());
         }
     }
 }
