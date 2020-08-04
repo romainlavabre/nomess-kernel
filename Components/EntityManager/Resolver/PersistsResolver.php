@@ -101,7 +101,16 @@ class PersistsResolver extends AbstractResolver
                     $columnRelation = $tmp;
                 }
     
-                $bean->$propertyColumn = NULL;
+                if(strpos($propertyColumn, 'List') !== FALSE){
+                    $bean->$propertyColumn = array();
+        
+                    if(empty($columnRelation)){
+                        $columnRelation = array();
+                    }
+                }else{
+                    $bean->$propertyColumn = NULL;
+                }
+                
                 $bean->$propertyColumn = $columnRelation;
             }
         }
