@@ -42,7 +42,7 @@ abstract class Distributor
 
     private ?array $observer = array();
 
-    private ?array $data;
+    private $data;
 
 
     /**
@@ -163,9 +163,9 @@ abstract class Distributor
     /**
      * Return data
      *
-     * @return array|null
+     * @return array|null|string
      */
-    protected final function sendData(): ?array
+    protected final function sendData()
     {
         return $this->data;
     }
