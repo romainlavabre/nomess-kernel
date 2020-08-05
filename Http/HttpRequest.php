@@ -85,7 +85,7 @@ class HttpRequest
      */
     public function getParameter( string $index, bool $escape = TRUE )
     {
-        if( isset( $_POST[$index] ) && !empty( $_POST[$index] ) ) {
+        if( isset( $_POST[$index] ) &&  $_POST[$index] !== '' ) {
             
             if( $escape === TRUE ) {
                 if( is_array( $_POST[$index] ) ) {
@@ -100,7 +100,7 @@ class HttpRequest
             } else {
                 return $_POST[$index];
             }
-        } elseif( isset( $_GET[$index] ) && !empty( $_GET[$index] ) ) {
+        } elseif( isset( $_GET[$index] ) && $_GET[$index] !== '' ) {
             
             if( $escape === TRUE ) {
                 
@@ -116,7 +116,6 @@ class HttpRequest
                 return $_GET[$index];
             }
         } elseif( isset( $this->parameters[$index] ) ) {
-            
             return $this->parameters[$index];
         } else {
             return NULL;
@@ -153,7 +152,7 @@ class HttpRequest
                 if( !empty( $_FILES[$index]['name'][0] ) ) {
                     return $_FILES[$index];
                 }
-        
+                
                 return NULL;
             } elseif( !empty( $_FILES[$index]['name'] ) ) {
                 return $_FILES[$index];
