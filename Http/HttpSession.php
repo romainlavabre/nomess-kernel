@@ -166,11 +166,19 @@ class HttpSession
      */
     public function kill(): self
     {
-        $toolbar = $_SESSION['app']['toolbar'];
+        $toolbar = NULL;
+        
+        if(isset($_SESSION['app']['toolbar'])) {
+            $toolbar = $_SESSION['app']['toolbar'];
+        }
+        
         $_SESSION = array();
         session_destroy();
         session_start();
-        $_SESSION['app']['toolbar'] = $toolbar;
+        
+        if(!is_null($toolbar)) {
+            $_SESSION['app']['toolbar'] = $toolbar;
+        }
         
         return $this;
     }
@@ -178,7 +186,7 @@ class HttpSession
     
     
     /*
-     * Configuration des brique de sécurité
+     * Configuration of security modules
      */
     
     
@@ -187,8 +195,8 @@ class HttpSession
      *
      * @param bool $userAgentSystem if TRUE, the useragent will be controlled
      * @param bool $ticketSystem If TRUE, an ticket system will be initialize
-     * @param bool $ipSystem If TRUE, the IP ADRESS will be controlled
-     * @param bool $bindTicketIp If TRUE, add an felexibility for IP modules, if IP doesn't match but the ticket is valid, the connexion will be accepted
+     * @param bool $ipSystem If TRUE, the IP ADDRESS will be controlled
+     * @param bool $bindTicketIp If TRUE, add an flexibility for IP modules, if IP doesn't match but the ticket is valid, the connexion will be accepted
      * @param array[bool $userAgentSystem, bool $ipSystem]|null $recoveryConfig Array of secondary configuration in case of error from ticket modules (Client doesn't accept the cookie)
      * @return $this
      * @throws InvalidParamException
@@ -222,6 +230,8 @@ class HttpSession
     
     /**
      * Execute the modules
+     *
+     * @throws InvalidParamException
      */
     private function executedModule(): void
     {
@@ -247,7 +257,6 @@ class HttpSession
         }
         
         
-        //r($success);
         if ($success === false) {
             session_regenerate_id(true);
             $_SESSION = array();
@@ -257,7 +266,7 @@ class HttpSession
     
     
     /*
-     *  Module de sécurité de session
+     *  Security modules
      */
     
     
@@ -300,7 +309,7 @@ class HttpSession
     /**
      * Module ticket
      *
-     * @return void
+     * @return bool
      * @throws InvalidParamException
      */
     private function securityTicket(): bool
