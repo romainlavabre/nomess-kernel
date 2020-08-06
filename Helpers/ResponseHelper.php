@@ -23,7 +23,7 @@ trait ResponseHelper
         
         $tabError = require ROOT . 'config/error.php';
         
-        if(strpos($tabError[$code], '.twig')){
+        if(strpos($tabError[$code], '.twig') !== FALSE){
             if(file_exists(ROOT . 'templates/' . $tabError[$code])) {
                 $this->bindTwigEngine($tabError[$code]);
             }
@@ -60,12 +60,16 @@ trait ResponseHelper
         
         $engine->addExtension(new PathExtension());
         $engine->addExtension(new CsrfExtension());
-        $engine->addExtension($valueExtension = new ValueExtension($data['POST']));
-        $engine->addExtension(new FieldExtension($valueExtension));
         $engine->addExtension(new ComposeExtension());
+        
+        if(is_array($data)) {
+            $engine->addExtension( $valueExtension = new ValueExtension( $data['POST'] ) );
+            $engine->addExtension( new FieldExtension( $valueExtension ) );
+        }
+        
         $this->addTwigExtension($engine);
         
-        echo $engine->render($template, $data);
+        echo $engine->render($template, is_array($data) ? $data : []);
         
         if (NOMESS_CONTEXT === 'DEV') {
             $this->getDevToolbar($time);
