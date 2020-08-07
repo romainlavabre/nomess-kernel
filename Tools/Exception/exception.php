@@ -127,13 +127,20 @@ if(file_exists($e->getFile())) {
             <a class="nav-link" id="contact-tab"><?php echo $_SERVER['SERVER_PROTOCOL'] . ' ' . $_SERVER['REQUEST_METHOD'] ?></a>
         </li>
         <li class="nav-item" role="presentation">
-            <a class="nav-link" id="contact-tab"><?php echo $_SERVER['REDIRECT_STATUS'] ?></a>
+            <a class="nav-link" id="contact-tab"><?php echo isset($_SERVER['REDIRECT_STATUS']) ? $_SERVER['REDIRECT_STATUS'] : 'Unknow' ?></a>
         </li>
         <li class="nav-item" role="presentation">
-            <a class="nav-link"><?php echo $_SERVER['REDIRECT_URL'] ?></a>
+            <a class="nav-link"><?php echo isset($_SERVER['REDIRECT_URL']) ? $_SERVER['REDIRECT_URL'] : 'Unknow' ?></a>
         </li>
         <li class="nav-item" role="presentation">
-            <a class="nav-link" id="profile-tab"><?php echo $_SERVER['HTTP_HOST'] . '=' . $_SERVER['SERVER_ADDR'] . ':' . $_SERVER['SERVER_PORT'] ?></a>
+            <?php
+            if(isset($_SERVER['HTTP_HOST']) && isset($_SERVER['SERVER_ADDR']) && isset($_SERVER['SERVER_PORT'])){
+                ?>
+            <a class="nav-link" id="profile-tab">
+                <?php echo $_SERVER['HTTP_HOST'] . '=' . $_SERVER['SERVER_ADDR'] . ':' . $_SERVER['SERVER_PORT'];
+            ?>
+            </a>
+            <?php }?>
         </li>
         <li class="nav-item" role="presentation">
             <a class="nav-link" id="contact-tab"><?php echo $_SERVER['SERVER_SOFTWARE'] ?></a>
