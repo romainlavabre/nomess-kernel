@@ -56,7 +56,7 @@ class SelectResolver
         
         $cache = $this->cache->getCache( $this->getShortName( $classname ), $classname, '__SELECT__' );
         $data  = $this->getData( $this->request( $this->getTable( $cache ), $idOrSql, $parameters, $lock ), $cache, $lock );
-    
+        
         if( $pregResult ) {
             return is_array($data) && !empty($data) ? $data[0] : NULL;
         }elseif(empty($idOrSql)){
@@ -73,7 +73,9 @@ class SelectResolver
         
         unset( $cache['nomess_table'] );
         
-        if( empty( $beans ) || empty( $cache ) || !is_object( current( $beans ) ) || current( $beans )->isEmpty() ) {
+        
+        if( empty( $beans ) || empty( $cache ) || !is_object( current( $beans ) ) || empty(current( $beans )->id) ) {
+            
             return NULL;
         }
         
@@ -109,7 +111,7 @@ class SelectResolver
                     }else {
                         $target = new $classname();
                         $this->subscribeToMapper( $target, $bean );
-    
+                        
                         $reflectionProperty = new \ReflectionProperty( $classname, $propertyName );
                         $reflectionProperty->setAccessible( TRUE );
                         $reflectionProperty->setValue( $target, $bean->id );

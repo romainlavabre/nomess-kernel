@@ -68,8 +68,10 @@ class Reader
                                 if( is_null( $entity ) ) {
                                     $entity = $this->entityManager->find( $metadata[self::INDEX_DEPENDENCY_CLASSNAME], $value );
                                 }
-                                
-                                $list[] = $entity;
+    
+                                if(!empty($entity)) {
+                                    $list[] = $entity;
+                                }
                             }
                             
                             $reflectionProperty->setValue( $instance, $list );

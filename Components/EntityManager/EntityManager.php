@@ -146,7 +146,7 @@ class EntityManager implements EntityManagerInterface, TransactionSubjectInterfa
                 } else {
                     $this->request->resetSuccess();
                     $this->request->setError( $this->get( 'orm_error' ) );
-                    $this->report($e->getMessage());
+                    $this->report($e->getMessage() . ' in ' . $e->getFile() . ' line ' . $e->getLine());
                 }
                 
                 return FALSE;
