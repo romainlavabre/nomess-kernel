@@ -63,10 +63,15 @@ function customException($e) {
         http_response_code(500);
 
         $tabError = require ROOT . 'config/error.php';
-
+    
         if(strpos($tabError[500], '.twig')){
-            if(file_exists(ROOT . 'templates' . $tabError[500])) {
-                bindTwig($tabError[500]);
+            if(file_exists(ROOT . 'templates/' . $tabError[500])) {
+                $engine = new Twig\Environment\Environment($loader, [
+                    'debug' => true,
+                    'cache' => false,
+                ]);
+                $engine->addExtension(new Nomess\Tools\Twig\PathExtension\PathExtension());
+                echo $engine->render($tabError[500]);
             }
         }else{
             if(file_exists(ROOT . $tabError[500])) {
