@@ -124,7 +124,9 @@ class Writer
                     $list = array();
                     
                     foreach( $value as $object ) {
-                        $list[] = $object->getId();
+                        if(is_object($object)) {
+                            $list[] = $object->getId();
+                        }
                     }
                     
                     return $list;

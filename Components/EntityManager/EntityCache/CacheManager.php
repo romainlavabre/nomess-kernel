@@ -157,7 +157,7 @@ class CacheManager implements TransactionObserverInterface
     
     private function isAccepted( string $classname ): bool
     {
-        return $this->config['enable'] && array_key_exists( $classname, $this->config );
+        return $this->config['enable'] && in_array( $classname, $this->config );
     }
     
     
