@@ -2,6 +2,7 @@
 
 namespace Nomess\Components\EntityManager;
 
+use App\Entities\Notification;
 use Nomess\Annotations\Inject;
 use Nomess\Components\EntityManager\Event\CreateEventInterface;
 use Nomess\Components\EntityManager\Resolver\DeleteResolver;
@@ -11,6 +12,7 @@ use Nomess\Components\EntityManager\Resolver\SelectResolver;
 use Nomess\Container\Container;
 use Nomess\Exception\ORMException;
 use Nomess\Helpers\DataHelper;
+use Nomess\Helpers\ReportHelper;
 use Nomess\Http\HttpRequest;
 use RedBeanPHP\R;
 
@@ -18,6 +20,7 @@ class EntityManager implements EntityManagerInterface, TransactionSubjectInterfa
 {
     
     use DataHelper;
+    use ReportHelper;
     
     private const STORAGE_CACHE = ROOT . 'var/cache/em/';
     
@@ -106,23 +109,30 @@ class EntityManager implements EntityManagerInterface, TransactionSubjectInterfa
             R::begin();
             
             try {
+                
+                foreach($this->entity as $key => &$data){
+                    if($data['context'] === self::DELETE){
+                        $bean = $this->deleteResolver->resolve( $data['data'] );
+                        R::trash( $bean );
+                        
+                        unset($this->entity[$key]);
+                    }
+                    
+                }
+                
                 foreach( $this->entity as $key => &$data ) {
-    
+                    
                     if( $data['context'] === self::PERSISTS ) {
+                        
                         $bean = $this->persistsResolver->resolve( $data['data'] );
-        
+                        
                         if( !empty( $bean ) ) {
                             R::store( $bean );
                         }
-        
+                        
                         $this->createEvent->execute();
-                    } else {
-                        $bean = $this->deleteResolver->resolve( $data['data'] );
-                        R::trash( $bean );
+                        unset( $this->entity[$key] );
                     }
-    
-                    unset( $this->entity[$key] );
-                    
                 }
                 
                 $this->notifySubscriber( TRUE );
@@ -136,6 +146,7 @@ class EntityManager implements EntityManagerInterface, TransactionSubjectInterfa
                 } else {
                     $this->request->resetSuccess();
                     $this->request->setError( $this->get( 'orm_error' ) );
+                    $this->report($e->getMessage());
                 }
                 
                 return FALSE;
