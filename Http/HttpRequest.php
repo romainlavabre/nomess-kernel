@@ -6,7 +6,6 @@ class HttpRequest
 {
     
     private const SESSION_DATA = 'nomess_persiste_data';
-    
     private ?array $error      = array();
     private ?array $success    = array();
     private ?array $parameters = array();
@@ -85,7 +84,7 @@ class HttpRequest
      */
     public function getParameter( string $index, bool $escape = TRUE )
     {
-        if( isset( $_POST[$index] ) &&  $_POST[$index] !== '' ) {
+        if( isset( $_POST[$index] ) && $_POST[$index] !== '' ) {
             
             if( $escape === TRUE ) {
                 if( is_array( $_POST[$index] ) ) {
@@ -147,7 +146,7 @@ class HttpRequest
      */
     public function getPart( string $index ): ?array
     {
-        if(array_key_exists($index, $_FILES)) {
+        if( array_key_exists( $index, $_FILES ) ) {
             if( is_array( $_FILES[$index]['name'] ) ) {
                 if( !empty( $_FILES[$index]['name'][0] ) ) {
                     return $_FILES[$index];
@@ -228,9 +227,15 @@ class HttpRequest
     }
     
     
-    public function getJsonData()
+    /**
+     * Return the "php://input" and decode it
+     *
+     * @param array $options Options for json_decode function
+     * @return mixed
+     */
+    public function getJsonData( array $options = [] )
     {
-        return json_decode( file_get_contents( 'php://input' ) );
+        return call_user_func_array( 'json_decode', array_push( [ file_get_contents( 'php://input' ) ], $options ) );
     }
     
     
