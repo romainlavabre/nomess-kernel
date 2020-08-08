@@ -161,13 +161,19 @@ abstract class Distributor
 
 
     /**
-     * Return data
+     * Return data of request if forwarded or data passed by parameters
      *
-     * @return array|null|string
+     * @return Distributor
      */
-    protected final function sendData()
+    protected final function sendData($data = NULL): Distributor
     {
-        return $this->data;
+        if(isset($this->data)) {
+            echo $this->data;
+        }else{
+            echo $data;
+        }
+        
+        return $this;
     }
 
 

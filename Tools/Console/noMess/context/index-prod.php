@@ -13,10 +13,4 @@ ini_set( 'error_log', ROOT . 'var/log/error.log' );
 require( ROOT . 'vendor/autoload.php' );
 require( ROOT . 'vendor/nomess/kernel/Exception/NomessException.php' );
 
-$initializer = ( new Nomess\Initiator\Initiator() )->initializer();
-
-if( is_string( $initializer ) ) {
-    echo $initializer;
-} else {
-    return $initializer;
-}
+( new Nomess\Initiator\Initiator() )->initializer();
