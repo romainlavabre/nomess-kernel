@@ -236,7 +236,7 @@ class HttpRequest
     public function getJsonData( array $options = [] )
     {
         $data = [file_get_contents( 'php://input' )];
-        return call_user_func_array( 'json_decode', array_push( $data, $options ) );
+        return call_user_func_array( 'json_decode', array_merge( $data, $options ) );
     }
     
     
