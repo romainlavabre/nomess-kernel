@@ -9,31 +9,31 @@ use Twig\TwigFunction;
 
 class PathExtension extends AbstractExtension
 {
-
+    
     private const CACHE         = ROOT . 'var/cache/routes/route.php';
-
+    
     public function getFunctions()
     {
         return [
             new TwigFunction('path', [$this, 'path']),
         ];
     }
-
+    
     public function path(string $routeName, array $param = NULL)
     {
         $routes = $this->getCache();
-
+        
         foreach($routes as $key => $route){
             if($route['name'] === $routeName){
                 
                 if(strpos($key, '{') !== FALSE){
                     $sections = explode('/', $key);
-
+                    
                     foreach($sections as &$section){
-
+                        
                         if(strpos($section, '{') !== FALSE){
                             $purgedSection = str_replace(['{', '}'], '', $section);
-
+                            
                             if(!empty($param) && array_key_exists($purgedSection, $param)){
                                 $section = $param[$purgedSection];
                                 
@@ -42,23 +42,31 @@ class PathExtension extends AbstractExtension
                                 }
                                 unset($param[$purgedSection]);
                             }else{
-                                throw new InvalidArgumentException('Missing an dynamic data in your url');
+                                if(NOMESS_CONTEXT === 'DEV') {
+                                    throw new InvalidArgumentException( 'Missing an dynamic data in your url' );
+                                }
+                                
+                                return '#';
                             }
                         }
                     }
-
+                    
                     $key = implode('/', $sections);
                 }
-
+                
                 if(strpos($key, '{')){
-                    throw new InvalidArgumentException('Missing an dynamic data in your url');
+                    if(NOMESS_CONTEXT === 'DEV') {
+                        throw new InvalidArgumentException( 'Missing an dynamic data in your url' );
+                    }
+                    
+                    return '#';
                 }
-
+                
                 if(!empty($param)){
                     $i = 0;
-
+                    
                     foreach($param as $index => $value) {
-
+                        
                         if($i === 0){
                             $key .= "?$index=$value";
                             $i++;
@@ -67,20 +75,28 @@ class PathExtension extends AbstractExtension
                         }
                     }
                 }
-
+                
                 return $key;
             }
         }
-
-        throw new NotFoundException("Your route $routeName has not found");
+        
+        if(NOMESS_CONTEXT === 'DEV') {
+            throw new NotFoundException( "Your route $routeName has not found" );
+        }
+        
+        return '#';
     }
-
+    
     private function getCache(): array
     {
         if(file_exists(self::CACHE)){
             return require self::CACHE;
         }else{
-            throw new NotFoundException('Impossible to find the cache file of route');
+            if(NOMESS_CONTEXT === 'DEV') {
+                throw new NotFoundException( 'Impossible to find the cache file of route' );
+            }
+            
+            return [];
         }
     }
 }

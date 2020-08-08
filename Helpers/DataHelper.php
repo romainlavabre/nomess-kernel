@@ -13,7 +13,7 @@ trait DataHelper
      * @param string|null $index
      * @return mixed
      */
-    public function get(?string $index)
+    protected function get(?string $index)
     {
         $this->getDataCenter();
         return (isset($this->data[$index])) ? $this->data[$index] : NULL;

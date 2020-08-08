@@ -5,7 +5,6 @@ namespace Nomess\Helpers;
 
 use InvalidArgumentException;
 use Nomess\Exception\NotFoundException;
-use Nomess\Http\HttpRequest;
 use Nomess\Tools\Twig\Form\ComposeExtension;
 use Nomess\Tools\Twig\Form\CsrfExtension;
 use Nomess\Tools\Twig\Form\FieldExtension;
@@ -17,7 +16,7 @@ use Twig\Node\NodeOutputInterface;
 
 trait ResponseHelper
 {
-    public function response_code(int $code): void
+    protected function response_code(int $code): void
     {
         http_response_code($code);
         
@@ -35,7 +34,7 @@ trait ResponseHelper
         die;
     }
     
-    public function bindTwigEngine(string $template, ?array $data = NULL) : void
+    protected function bindTwigEngine(string $template, ?array $data = NULL) : void
     {
         $time = 0;
         
@@ -82,7 +81,7 @@ trait ResponseHelper
      * @param string $template
      * @return void
      */
-    public final function bindPHPEngine(string $template, ?array $param = NULL): void
+    protected final function bindPHPEngine(string $template, ?array $param = NULL): void
     {
         $time = NULL;
         

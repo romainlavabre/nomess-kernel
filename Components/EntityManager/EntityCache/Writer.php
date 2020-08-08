@@ -32,6 +32,8 @@ class Writer
     
     public function writerNotifiedEvent( bool $status ): void
     {
+        $this->isNotified = TRUE;
+        
         if( $status ) {
             
             foreach( $this->repository->getStore() as $classname => $data ) {

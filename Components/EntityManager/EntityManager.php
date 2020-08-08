@@ -4,6 +4,8 @@ namespace Nomess\Components\EntityManager;
 
 use App\Entities\Notification;
 use Nomess\Annotations\Inject;
+use Nomess\Components\EntityManager\EntityCache\CacheManager;
+use Nomess\Components\EntityManager\EntityCache\Writer;
 use Nomess\Components\EntityManager\Event\CreateEventInterface;
 use Nomess\Components\EntityManager\Resolver\DeleteResolver;
 use Nomess\Components\EntityManager\Resolver\Instance;
@@ -21,8 +23,6 @@ class EntityManager implements EntityManagerInterface, TransactionSubjectInterfa
     
     use DataHelper;
     use ReportHelper;
-    
-    private const STORAGE_CACHE = ROOT . 'var/cache/em/';
     
     private const PERSISTS      = 'persists';
     
@@ -146,7 +146,7 @@ class EntityManager implements EntityManagerInterface, TransactionSubjectInterfa
                 } else {
                     $this->request->resetSuccess();
                     $this->request->setError( $this->get( 'orm_error' ) );
-                    $this->report($e->getMessage() . ' in ' . $e->getFile() . ' line ' . $e->getLine());
+                    $this->report("[" . date('d/m/Y H:i:s') . "] Line " . $e->getLine() . ": " . $e->getFile() . "\nException: " . $e->getMessage());
                 }
                 
                 return FALSE;
@@ -169,10 +169,22 @@ class EntityManager implements EntityManagerInterface, TransactionSubjectInterfa
     {
         
         if( !empty( $this->transactionSubscriber ) ) {
+            $notifyAfterService = NULL;
+            
             /** @var TransactionObserverInterface $subscriber */
             foreach( $this->transactionSubscriber as $subscriber ) {
-                $subscriber->statusTransactionNotified( $status );
+                // Notify cache manager after all service for writen object
+                if(!$subscriber instanceof CacheManager) {
+                    $subscriber->statusTransactionNotified( $status );
+                }else{
+                    $notifyAfterService = $subscriber;
+                }
             }
+            
+            if(!is_null($notifyAfterService)){
+                $notifyAfterService->statusTransactionNotified($status);
+            }
+            
         }
         
     }
