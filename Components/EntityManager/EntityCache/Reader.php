@@ -54,7 +54,15 @@ class Reader
                 $reflectionProperty = $this->getReflectionProperty( $content[self::INDEX_CLASSNAME], $propertyName );
                 
                 if( is_null( $metadata[self::INDEX_DEPENDENCY_CLASSNAME] ) ) {
-                    $reflectionProperty->setValue( $instance, $metadata[self::INDEX_VALUE] );
+                    if($reflectionProperty->getType()->getName() === 'array'){
+                        if(!is_null($metadata[self::INDEX_VALUE])){
+                            $reflectionProperty->setValue($instance, $metadata[self::INDEX_VALUE]);
+                        }else{
+                            $reflectionProperty->setValue($instance, []);
+                        }
+                    }else {
+                        $reflectionProperty->setValue( $instance, $metadata[self::INDEX_VALUE] );
+                    }
                 } else {
                     
                     if( $reflectionProperty->getType()->getName() === 'array' ) {

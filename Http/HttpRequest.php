@@ -88,6 +88,11 @@ class HttpRequest
             
             if( $escape === TRUE ) {
                 if( is_array( $_POST[$index] ) ) {
+                    
+                    if(count($_POST[$index]) === 1 && isset($_POST[$index][0]) && empty($_POST[$index][0])){
+                        return NULL;
+                    }
+                    
                     array_walk_recursive( $_POST[$index], function ( $key, &$value ) {
                         $value = htmlspecialchars( $value );
                         $value = trim( $value );
@@ -104,6 +109,11 @@ class HttpRequest
             if( $escape === TRUE ) {
                 
                 if( is_array( $_GET[$index] ) ) {
+                    
+                    if(count($_GET[$index]) === 1 && isset($_GET[$index][0]) && empty($_GET[$index][0])){
+                        return NULL;
+                    }
+                    
                     array_walk_recursive( $_GET[$index], function ( $key, &$value ) {
                         $value = htmlspecialchars( $value );
                         $value = trim( $value );
@@ -236,7 +246,7 @@ class HttpRequest
     public function getJsonData( array $options = [] )
     {
         $data = [file_get_contents( 'php://input' )];
-        return call_user_func_array( 'json_decode', array_merge( $data, $options ) );
+        return call_user_func_array( 'json_decode', array_push( $data, $options ) );
     }
     
     
