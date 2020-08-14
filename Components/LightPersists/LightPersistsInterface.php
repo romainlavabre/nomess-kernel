@@ -1,7 +1,7 @@
 <?php
 
 
-namespace NoMess\Components\LightPersists;
+namespace Nomess\Components\LightPersists;
 
 
 use Nomess\Exception\NomessException;

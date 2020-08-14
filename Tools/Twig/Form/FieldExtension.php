@@ -4,6 +4,7 @@
 namespace Nomess\Tools\Twig\Form;
 
 
+use Nomess\Exception\MissingConfigurationException;
 use Twig\TwigFunction;
 
 class FieldExtension extends \Twig\Extension\AbstractExtension
@@ -258,6 +259,10 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
     private function getValueExtension( array $options, $valueExtension, bool $select = FALSE )
     {
         if( !isset( $options['value'] ) ) {
+            if(!isset($options['name'])){
+                throw new MissingConfigurationException('A select miss a name property, please, add name property or disable the value extension');
+            }
+            
             if( is_null( $valueExtension ) ) {
                 $valueExtension = [
                     0 => $options['name'],
