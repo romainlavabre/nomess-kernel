@@ -4,7 +4,7 @@
 namespace Nomess\Components\PersistsManager\Builder;
 
 
-use NoMess\Container\Container;
+use \Container\Container;
 use Nomess\Exception\NotFoundException;
 use ReflectionClass;
 use ReflectionException;

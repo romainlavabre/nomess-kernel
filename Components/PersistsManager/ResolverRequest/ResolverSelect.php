@@ -215,7 +215,7 @@ class ResolverSelect extends Resolver
      */
     private function getBeginningClass(string $classNameCache): string
     {
-        $parameter = "NoMess\Database\IPDOFactory \$instance, NoMess\Container\Container \$container";
+        $parameter = "Nomess\Database\IPDOFactory \$instance, Nomess\Container\Container \$container";
 
 
         //Add arbitrary parameters given

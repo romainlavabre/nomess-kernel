@@ -28,7 +28,7 @@ class ResolverUpdate extends ResolverImpactData
 
 
         $className = $this->generateClassName($this->className . "::" . $this->method);
-        $parameter = "NoMess\Database\IPDOFactory \$instance, NoMess\Container\Container \$container";
+        $parameter = "Nomess\Database\IPDOFactory \$instance, Nomess\Container\Container \$container";
 
         $parameter = $this->adjustParameter($parameter);
 

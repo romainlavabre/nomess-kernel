@@ -1,8 +1,6 @@
 <?php
 
-namespace NoMess\Database;
-
-use NoMess\Exception\WorkException;
+namespace Nomess\Database;
 
 class PDOFactory implements IPDOFactory
 {
@@ -59,7 +57,7 @@ class PDOFactory implements IPDOFactory
     {
 
         if (!isset($this->tabConfiguration[$this->config])) {
-            throw new WorkException('PDOFactory encountered an error: impossible of find configuration for "' . $this->config . '"');
+            throw new \Exception('PDOFactory encountered an error: impossible of find configuration for "' . $this->config . '"');
         } else {
             $tab = $this->tabConfiguration[$this->config];
         }

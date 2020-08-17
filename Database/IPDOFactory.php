@@ -1,6 +1,6 @@
 <?php
 
-namespace NoMess\Database;
+namespace Nomess\Database;
 
 interface IPDOFactory
 {

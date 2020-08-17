@@ -1,7 +1,7 @@
 <?php
 
 
-namespace NoMess\Annotations;
+namespace Nomess\Annotations;
 
 /**
  * @Annotation

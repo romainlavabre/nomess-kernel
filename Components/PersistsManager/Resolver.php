@@ -4,7 +4,7 @@
 namespace Nomess\Components\PersistsManager;
 
 
-use NoMess\Database\IPDOFactory;
+use \Database\IPDOFactory;
 use Nomess\Exception\NomessException;
 use Nomess\Exception\NotFoundException;
 
