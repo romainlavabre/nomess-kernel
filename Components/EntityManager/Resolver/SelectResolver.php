@@ -153,14 +153,20 @@ class SelectResolver
                                     
                                     $reflectionProperty->setValue( $target, $this->getRelation( $propertyRelation, $propertyValue ) );
                                 }
-                            }
-                        }
-                        
-                        if( $propertyRelation['relation'] === 'OneToOne' ) {
-                            $owner = $this->resolve( $propertyRelation['type'], $bean->getMeta( 'type' ) . '_id = :param', [ 'param' => $bean->id ], FALSE );
-                            
-                            if( !empty( $owner ) ) {
-                                $reflectionProperty->setValue( $target, is_array($owner) ? $owner[0] : $owner );
+                                
+                                if( $propertyRelation['relation'] === 'OneToOne' ) {
+                                    $owner = $this->resolve( $propertyRelation['type'], $bean->getMeta( 'type' ) . '_id = :param', [ 'param' => $bean->id ], FALSE );
+        
+                                    if( !empty( $owner ) ) {
+                                        $reflectionProperty->setValue( $target, is_array($owner) ? $owner[0] : $owner );
+                                    }
+                                }
+                            }else{
+                                if($reflectionProperty->getType()->getName() === 'array'){
+                                    $reflectionProperty->setValue($target, array());
+                                }else{
+                                    $reflectionProperty->setValue($target, NULL);
+                                }
                             }
                         }
                     }

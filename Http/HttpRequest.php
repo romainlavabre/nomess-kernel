@@ -9,7 +9,7 @@ class HttpRequest
     private ?array $error      = array();
     private ?array $success    = array();
     private ?array $parameters = array();
-    private ?array $render     = array();
+    private bool $block_success = FALSE;
     
     
     public function __construct()
@@ -49,16 +49,24 @@ class HttpRequest
      */
     public function setSuccess( string $message ): void
     {
-        $this->success[] = $message;
+        if(!$this->block_success) {
+            $this->success[] = $message;
+        }
     }
     
     
     /**
      * Delete all success message
+     *
+     * @param bool $block
      */
-    public function resetSuccess(): void
+    public function resetSuccess(bool $block = FALSE): void
     {
         $this->success = NULL;
+        
+        if($block){
+            $this->block_success = TRUE;
+        }
     }
     
     

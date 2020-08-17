@@ -144,7 +144,7 @@ class EntityManager implements EntityManagerInterface, TransactionSubjectInterfa
                 if( NOMESS_CONTEXT === 'DEV' ) {
                     throw new ORMException( $e->getMessage() . ' in ' . $e->getFile() . ' line ' . $e->getLine() );
                 } else {
-                    $this->request->resetSuccess();
+                    $this->request->resetSuccess(TRUE);
                     $this->request->setError( $this->get( 'orm_error' ) );
                     $this->report("[" . date('d/m/Y H:i:s') . "] Line " . $e->getLine() . ": " . $e->getFile() . "\nException: " . $e->getMessage());
                 }
