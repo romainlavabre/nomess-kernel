@@ -4,6 +4,7 @@
 namespace Nomess\Initiator\Filters;
 
 
+use Nomess\Annotations\Inject;
 use Nomess\Container\Container;
 
 class FilterResolver

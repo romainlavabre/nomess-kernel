@@ -12,19 +12,23 @@ class FilterBuilder
 
     public function build(): array
     {
-        $filters = scandir(self::FILTERS);
-        $found = array();
-
-        foreach($filters as $filter){
-            if($filter !== '.' && $filter !== '..'){
-                $filterName = 'App\\Filters\\' . str_replace('.php', '', $filter);
-                $regex = $this->getAnnotation($filterName);
-
-                $found[$filterName] = $regex;
+        if(is_dir(self::FILTERS)) {
+            $filters = scandir( self::FILTERS );
+            $found   = array();
+    
+            foreach( $filters as $filter ) {
+                if( $filter !== '.' && $filter !== '..' && $filter !== '.gitkeep' ) {
+                    $filterName = 'App\\Filters\\' . str_replace( '.php', '', $filter );
+                    $regex      = $this->getAnnotation( $filterName );
+            
+                    $found[$filterName] = $regex;
+                }
             }
+    
+            return $found;
         }
-
-        return $found;
+        
+        return [];
     }
 
     /**
@@ -35,11 +39,7 @@ class FilterBuilder
      */
     private function getAnnotation(string $classname): string
     {
-        $reflectionClass = new \ReflectionClass($classname);
-
-        $comments = $reflectionClass->getDocComment();
-
-        if(preg_match('/@Filter\("(.+)"\)/', $comments, $output)){
+        if(preg_match('/@Filter\("(.+)"\)/', (new \ReflectionClass($classname))->getDocComment(), $output)){
             return $output[1];
         }
 
