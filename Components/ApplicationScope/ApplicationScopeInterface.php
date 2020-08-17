@@ -1,7 +1,7 @@
 <?php
 
 
-namespace NoMess\Components\ApplicationScope;
+namespace Nomess\Components\ApplicationScope;
 
 
 interface ApplicationScopeInterface
