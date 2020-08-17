@@ -38,7 +38,11 @@ class PathExtension extends AbstractExtension
                                 $section = $param[$purgedSection];
                                 
                                 if(empty($section)){
-                                    throw new \Exception('Your parameter "' . $purgedSection . '" for route ' . $routeName . ' is void');
+                                    if(NOMESS_CONTEXT === 'DEV') {
+                                        throw new \Exception( 'Your parameter "' . $purgedSection . '" for route ' . $routeName . ' is void' );
+                                    }
+                                    
+                                    return '#';
                                 }
                                 unset($param[$purgedSection]);
                             }else{
