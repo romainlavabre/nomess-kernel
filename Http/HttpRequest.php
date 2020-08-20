@@ -96,8 +96,8 @@ class HttpRequest
             
             if( $escape === TRUE ) {
                 if( is_array( $_POST[$index] ) ) {
-                    
-                    if(count($_POST[$index]) === 1 && isset($_POST[$index][0]) && empty($_POST[$index][0])){
+    
+                    if(count($_POST[$index]) === 1 && isset($_POST[$index][0]) && $_POST[$index][0] === ''){
                         return NULL;
                     }
                     
@@ -117,8 +117,8 @@ class HttpRequest
             if( $escape === TRUE ) {
                 
                 if( is_array( $_GET[$index] ) ) {
-                    
-                    if(count($_GET[$index]) === 1 && isset($_GET[$index][0]) && empty($_GET[$index][0])){
+    
+                    if(count($_GET[$index]) === 1 && isset($_GET[$index][0]) && $_GET[$index][0] === ''){
                         return NULL;
                     }
                     

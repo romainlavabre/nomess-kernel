@@ -33,13 +33,13 @@ abstract class AbstractResolver
         unset($data['nomess_table']);
 
         if($object !== NULL){
-            try {
+            if(array_key_exists(get_class($object), Instance::$mapper)) {
                 foreach( Instance::$mapper[get_class( $object )] as $key => $array ) {
                     if( in_array( $object, $array, TRUE ) ) {
                         return $array['bean'];
                     }
                 }
-            }catch(\Throwable $throwable){}
+            }
             
             $bean = R::dispense($table);
             
