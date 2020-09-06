@@ -4,33 +4,58 @@
 namespace Nomess\Container;
 
 
-
 class Container implements ContainerInterface
 {
-
-    private Autowire $autowire;
-
-    public function __construct()
+    
+    private Autowire         $autowire;
+    private static Container $instance;
+    
+    
+    private function __construct()
     {
-        $this->autowire = new Autowire($this);
     }
-
-    public function get(string $classname)
+    
+    
+    public function get( string $classname )
     {
-        return $this->autowire->get($classname);
+        $this->initAutowire();
+        
+        return $this->autowire->get( $classname );
     }
-
-
-    public function make(string $className)
+    
+    
+    public function make( string $className )
     {
-        return $this->autowire->make($className);
+        $this->initAutowire();
+        
+        return $this->autowire->make( $className );
     }
-
-    public function callController(string $classname, string $methodName)
+    
+    
+    public function callController( string $classname, string $methodName )
     {
+        $this->initAutowire();
         $this->autowire->force['method'] = $methodName;
-        $this->autowire->force['class'] = $classname;
-        return $this->autowire->make($classname);
+        $this->autowire->force['class']  = $classname;
+        
+        return $this->autowire->make( $classname );
     }
-
+    
+    
+    public static function getInstance(): Container
+    {
+        if( !isset( self::$instance ) ) {
+            self::$instance = new self();
+        }
+        
+        return self::$instance;
+    }
+    
+    
+    private function initAutowire(): void
+    {
+        if( !isset( $this->autowire ) ) {
+            $this->autowire = new Autowire( $this );
+        }
+    }
 }

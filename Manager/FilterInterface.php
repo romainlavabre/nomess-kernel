@@ -4,7 +4,7 @@
 namespace Nomess\Manager;
 
 
-interface FiltersInterface
+interface FilterInterface
 {
     public function filtrate(): void;
 }

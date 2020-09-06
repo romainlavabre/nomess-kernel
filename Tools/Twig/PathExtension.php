@@ -3,50 +3,56 @@
 namespace Nomess\Tools\Twig;
 
 use InvalidArgumentException;
+use Nomess\Component\Cache\CacheHandler;
+use Nomess\Component\Cache\CacheHandlerInterface;
+use Nomess\Container\Container;
 use Nomess\Exception\NotFoundException;
+use Nomess\Initiator\Route\RouteBuilder;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
 class PathExtension extends AbstractExtension
 {
     
-    private const CACHE         = ROOT . 'var/cache/routes/route.php';
+    private const CACHE_NAME = 'routes';
+    
     
     public function getFunctions()
     {
         return [
-            new TwigFunction('path', [$this, 'path']),
+            new TwigFunction( 'path', [ $this, 'path' ] ),
         ];
     }
     
-    public function path(string $routeName, array $param = NULL)
+    
+    public function path( string $routeName, array $param = NULL )
     {
         $routes = $this->getCache();
         
-        foreach($routes as $key => $route){
-            if($route['name'] === $routeName){
+        foreach( $routes as $key => $route ) {
+            if( $route['name'] === $routeName ) {
                 
-                if(strpos($key, '{') !== FALSE){
-                    $sections = explode('/', $key);
+                if( strpos( $key, '{' ) !== FALSE ) {
+                    $sections = explode( '/', $key );
                     
-                    foreach($sections as &$section){
+                    foreach( $sections as &$section ) {
                         
-                        if(strpos($section, '{') !== FALSE){
-                            $purgedSection = str_replace(['{', '}'], '', $section);
+                        if( strpos( $section, '{' ) !== FALSE ) {
+                            $purgedSection = str_replace( [ '{', '}' ], '', $section );
                             
-                            if(!empty($param) && array_key_exists($purgedSection, $param)){
+                            if( !empty( $param ) && array_key_exists( $purgedSection, $param ) ) {
                                 $section = $param[$purgedSection];
                                 
-                                if(empty($section)){
-                                    if(NOMESS_CONTEXT === 'DEV') {
+                                if( empty( $section ) ) {
+                                    if( NOMESS_CONTEXT === 'DEV' ) {
                                         throw new \Exception( 'Your parameter "' . $purgedSection . '" for route ' . $routeName . ' is void' );
                                     }
                                     
                                     return '#';
                                 }
-                                unset($param[$purgedSection]);
-                            }else{
-                                if(NOMESS_CONTEXT === 'DEV') {
+                                unset( $param[$purgedSection] );
+                            } else {
+                                if( NOMESS_CONTEXT === 'DEV' ) {
                                     throw new InvalidArgumentException( 'Missing an dynamic data in your url' );
                                 }
                                 
@@ -55,26 +61,26 @@ class PathExtension extends AbstractExtension
                         }
                     }
                     
-                    $key = implode('/', $sections);
+                    $key = implode( '/', $sections );
                 }
                 
-                if(strpos($key, '{')){
-                    if(NOMESS_CONTEXT === 'DEV') {
+                if( strpos( $key, '{' ) ) {
+                    if( NOMESS_CONTEXT === 'DEV' ) {
                         throw new InvalidArgumentException( 'Missing an dynamic data in your url' );
                     }
                     
                     return '#';
                 }
                 
-                if(!empty($param)){
+                if( !empty( $param ) ) {
                     $i = 0;
                     
-                    foreach($param as $index => $value) {
+                    foreach( $param as $index => $value ) {
                         
-                        if($i === 0){
+                        if( $i === 0 ) {
                             $key .= "?$index=$value";
                             $i++;
-                        }else{
+                        } else {
                             $key .= "&$index=$value";
                         }
                     }
@@ -84,23 +90,21 @@ class PathExtension extends AbstractExtension
             }
         }
         
-        if(NOMESS_CONTEXT === 'DEV') {
+        if( NOMESS_CONTEXT === 'DEV' ) {
             throw new NotFoundException( "Your route $routeName has not found" );
         }
         
         return '#';
     }
     
+    
     private function getCache(): array
     {
-        if(file_exists(self::CACHE)){
-            return require self::CACHE;
-        }else{
-            if(NOMESS_CONTEXT === 'DEV') {
-                throw new NotFoundException( 'Impossible to find the cache file of route' );
-            }
-            
-            return [];
+        /** @var CacheHandlerInterface $cacheHandler */
+        $cacheHandler = Container::getInstance()->get( CacheHandler::class );
+        
+        if( ( $route = $cacheHandler->get( self::CACHE_NAME, 'routes_match' ) ) == NULL ) {
+            return Container::getInstance()->get( RouteBuilder::class )->build();
         }
     }
 }

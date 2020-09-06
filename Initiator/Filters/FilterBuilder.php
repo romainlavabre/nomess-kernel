@@ -4,21 +4,31 @@
 namespace Nomess\Initiator\Filters;
 
 
+use Nomess\Component\Config\ConfigHandler;
+use Nomess\Component\Config\ConfigStoreInterface;
 use Nomess\Exception\MissingConfigurationException;
 
 class FilterBuilder
 {
-    private const FILTERS           = ROOT . 'src/Filters/';
-
+    private ConfigStoreInterface $configStore;
+    
+    public function __construct(ConfigStoreInterface $configStore)
+    {
+        $this->configStore = $configStore;
+    }
+    
+    
     public function build(): array
     {
-        if(is_dir(self::FILTERS)) {
-            $filters = scandir( self::FILTERS );
+        $directory = $this->configStore->get(ConfigStoreInterface::DEFAULT_NOMESS)['general']['path']['default_filter'];
+        
+        if(is_dir($directory)) {
+            $filters = scandir( $directory );
             $found   = array();
     
             foreach( $filters as $filter ) {
                 if( $filter !== '.' && $filter !== '..' && $filter !== '.gitkeep' ) {
-                    $filterName = 'App\\Filters\\' . str_replace( '.php', '', $filter );
+                    $filterName = 'App\\Filter\\' . str_replace( '.php', '', $filter );
                     $regex      = $this->getAnnotation( $filterName );
             
                     $found[$filterName] = $regex;

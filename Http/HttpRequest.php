@@ -5,11 +5,16 @@ namespace Nomess\Http;
 class HttpRequest
 {
     
+    public const  STRING       = 'string';
+    public const  INTEGER      = 'int';
+    public const  BOOLEAN      = 'bool';
+    public const ARRAY         = 'array';
+    public const  FLOAT        = 'float';
     private const SESSION_DATA = 'nomess_persiste_data';
-    private ?array $error      = array();
-    private ?array $success    = array();
-    private ?array $parameters = array();
-    private bool $block_success = FALSE;
+    private ?array $error         = array();
+    private ?array $success       = array();
+    private ?array $parameters    = array();
+    private bool   $block_success = FALSE;
     
     
     public function __construct()
@@ -49,7 +54,7 @@ class HttpRequest
      */
     public function setSuccess( string $message ): void
     {
-        if(!$this->block_success) {
+        if( !$this->block_success ) {
             $this->success[] = $message;
         }
     }
@@ -60,11 +65,11 @@ class HttpRequest
      *
      * @param bool $block
      */
-    public function resetSuccess(bool $block = FALSE): void
+    public function resetSuccess( bool $block = FALSE ): void
     {
         $this->success = NULL;
         
-        if($block){
+        if( $block ) {
             $this->block_success = TRUE;
         }
     }
@@ -87,19 +92,16 @@ class HttpRequest
      * If doesn't exists parameter, null is retuned
      *
      * @param string $index
+     * @param string $type
      * @param bool $escape True by default, htmlspecialchars is apply
      * @return mixed
      */
-    public function getParameter( string $index, bool $escape = TRUE )
+    public function getParameter( string $index, string $type = 'string', bool $escape = TRUE )
     {
         if( isset( $_POST[$index] ) && $_POST[$index] !== '' ) {
             
             if( $escape === TRUE ) {
                 if( is_array( $_POST[$index] ) ) {
-    
-                    if(count($_POST[$index]) === 1 && isset($_POST[$index][0]) && $_POST[$index][0] === ''){
-                        return NULL;
-                    }
                     
                     array_walk_recursive( $_POST[$index], function ( $key, &$value ) {
                         $value = htmlspecialchars( $value );
@@ -108,17 +110,16 @@ class HttpRequest
                 }
                 
                 
-                return $_POST[$index];
-            } else {
-                return $_POST[$index];
             }
+            
+            return $this->cast($type, $_POST[$index]);
         } elseif( isset( $_GET[$index] ) && $_GET[$index] !== '' ) {
             
             if( $escape === TRUE ) {
                 
                 if( is_array( $_GET[$index] ) ) {
-    
-                    if(count($_GET[$index]) === 1 && isset($_GET[$index][0]) && $_GET[$index][0] === ''){
+                    
+                    if( count( $_GET[$index] ) === 1 && isset( $_GET[$index][0] ) && $_GET[$index][0] === '' ) {
                         return NULL;
                     }
                     
@@ -128,15 +129,26 @@ class HttpRequest
                     } );
                 }
                 
-                return $_GET[$index];
-            } else {
-                return $_GET[$index];
             }
+            
+            return $this->cast($type, $_GET[$index]);
+            
         } elseif( isset( $this->parameters[$index] ) ) {
-            return $this->parameters[$index];
+            return $this->cast($type, $this->parameters[$index]);
         } else {
             return NULL;
         }
+    }
+    
+    
+    /**
+     * Return true if request has received this parameter
+     * @param string $index
+     * @return bool
+     */
+    public function hasParameter(string $index): bool
+    {
+        return array_key_exists($index, $_POST) || array_key_exists($index, $_GET) || array_key_exists($index, $this->parameters);
     }
     
     
@@ -251,9 +263,10 @@ class HttpRequest
      * @param array $options Options for json_decode function
      * @return mixed
      */
-    public function getJsonData( array $options = [] )
+    public function getJson( array $options = [] )
     {
-        $data = [file_get_contents( 'php://input' )];
+        $data = [ file_get_contents( 'php://input' ) ];
+        
         return call_user_func_array( 'json_decode', array_push( $data, $options ) );
     }
     
@@ -281,5 +294,21 @@ class HttpRequest
     public function isRequestMethod( string $methodName ): bool
     {
         return $_SERVER['REQUEST_METHOD'] === mb_strtoupper( $methodName );
+    }
+    
+    
+    private function cast( string $type, $data )
+    {
+        if( $type === self::STRING ) {
+            return $data !== NULL ? (string)$data : NULL;
+        } elseif( $type === self::INTEGER ) {
+            return $data !== NULL ? (int)$data : NULL;
+        } elseif( $type === self::FLOAT ) {
+            return $data !== NULL ? (float)$data : NULL;
+        } elseif( $type === self::ARRAY){
+            return $data !== NULL ? (array)$data : NULL;
+        }elseif($type === self::BOOLEAN){
+            return $data !== NULL ? (bool)$data : NULL;
+        }
     }
 }

@@ -4,6 +4,9 @@
 namespace Nomess\Container;
 
 
+use Nomess\Component\Config\ConfigHandler;
+use Nomess\Component\Config\ConfigStoreInterface;
+use Nomess\Component\Parser\YamlParser;
 use Nomess\Exception\MissingConfigurationException;
 use Nomess\Exception\NotFoundException;
 use ReflectionMethod;
@@ -19,7 +22,9 @@ class Autowire
     public function __construct(Container $container)
     {
         $this->instance[Container::class] = $container;
-        $this->configuration = require self::CONFIGURATION;
+        $this->instance[ConfigHandler::class] = new ConfigHandler();
+        $this->instance[YamlParser::class] = new YamlParser();
+        $this->initConfig($this->instance[ConfigHandler::class], $this->instance[YamlParser::class]);
     }
 
     public function get(string $classname)
@@ -268,4 +273,19 @@ class Autowire
             $this->force['class'] = NULL;
         }
     }
+    
+    private function initConfig(ConfigHandler $configHandler,YamlParser $yamlParser): void
+    {
+        $config = $configHandler->get(ConfigStoreInterface::DEFAULT_CONTAINER)['services'];
+        $initial = array();
+        
+        array_push($initial, $config['framework'], $config['application']);
+        
+        foreach($config['components'] as $filename){
+            array_push($initial, $yamlParser->parse($filename));
+        }
+        
+        $this->configuration = $initial;
+    }
+    
 }

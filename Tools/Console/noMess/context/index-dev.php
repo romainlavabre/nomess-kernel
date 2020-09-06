@@ -16,5 +16,6 @@ ini_set( 'error_log', ROOT . 'var/log/error.log' );
 require( ROOT . 'vendor/autoload.php' );
 require( ROOT . 'vendor/nomess/kernel/Exception/NomessException.php' );
 
-( new Nomess\Initiator\Initiator() )->initializer();
+$response = ( new Nomess\Initiator\Initiator() )->initializer();
+$response->show();
 

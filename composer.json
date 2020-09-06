@@ -1,7 +1,9 @@
 {
     "name": "nomess/kernel",
     "description": "Noyau de nomess",
-    "keywords": ["framework"],
+    "keywords": [
+        "framework"
+    ],
     "authors": [
         {
             "name": "Romain Lavabre",
@@ -13,15 +15,18 @@
         "digitalnature/php-ref": "^1.3",
         "phpunit/phpunit": "^9.1",
         "twig/twig": "^3.0",
-        "gabordemooij/redbean": "^5.5",
         "ext-xdebug": "*",
         "ext-json": "*",
-        "ext-mbstring": "*"
+        "ext-mbstring": "*",
+        "nomess/config": "*",
+        "nomess/parser": "*",
+        "nomess/cache": "*",
+        "nomess/parameter": "*"
     },
-    "autoload" : {
-		"psr-4" : {
+    "autoload": {
+        "psr-4": {
             "Nomess\\": "/"
-		}
+        }
     },
     "minimum-stability": "stable"
 }

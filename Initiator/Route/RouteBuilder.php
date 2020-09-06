@@ -1,21 +1,27 @@
 <?php
 namespace Nomess\Initiator\Route;
+use Nomess\Component\Config\ConfigStoreInterface;
 use Nomess\Exception\ConflictException;
 use Nomess\Internal\Scanner;
 
 class RouteBuilder
 {
     use Scanner;
-
-    private const CONTROLLER_DIRECTORY          = ROOT . 'src/Controllers/';
-
+    private ConfigStoreInterface $configStore;
     private array $routes = array();
-
     private ?string $header = NULL;
-
+    
+    public function __construct(ConfigStoreInterface $configStore)
+    {
+        $this->configStore = $configStore;
+    }
+    
+    
     public function build(): array
     {
-        $tree = $this->scanRecursive(self::CONTROLLER_DIRECTORY);
+        $tree = $this->scanRecursive(
+            $this->configStore->get(ConfigStoreInterface::DEFAULT_NOMESS)['general']['path']['default_controller']
+        );
 
         foreach($tree as $directory){
 
@@ -109,10 +115,13 @@ class RouteBuilder
 
     private function getNamespace(string $filename): string
     {
-        $filename = str_replace([ROOT, 'src/Controllers/', '.php'], '', $filename);
+        $filename = str_replace([
+            $this->configStore->get(ConfigStoreInterface::DEFAULT_NOMESS)['general']['path']['default_controller'],
+            '.php'
+                                ], '', $filename);
         $filename = str_replace('/', '\\', $filename);
 
-        return "App\\Controllers\\$filename";
+        return "App\\Controller\\$filename";
     }
     
     private function isUniqueRoute(string $route): void

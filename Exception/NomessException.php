@@ -4,14 +4,16 @@
 namespace Nomess\Exception;
 
 
-use Twig\Loader\FilesystemLoader;
-use Twig\Environment;
-use Nomess\Tools\Twig\PathExtension;
+use Nomess\Component\Config\ConfigStoreInterface;
+use Nomess\Container\Container;
+use Nomess\Http\HttpResponse;
 
 class NomessException extends \ErrorException
 {
-    public function __toString() {
-        switch ($this->severity) {
+    
+    public function __toString()
+    {
+        switch( $this->severity ) {
             case E_USER_ERROR : // Si l'utilisateur émet une erreur fatale.
                 $type = 'Erreur fatale';
                 break;
@@ -35,58 +37,30 @@ class NomessException extends \ErrorException
     }
 }
 
-function error2exception($code, $message, $fichier, $ligne) {
-    file_put_contents(ROOT . 'var/log/error.log', "[" . date('d/m/Y H:i:s') . "] " . $code . ": " . $message . "\n line " . $ligne . " in " . $fichier . "\n---------------------------------------------------------\n", FILE_APPEND);
-    throw new NomessException($message, 0, $code, $fichier, $ligne);
+function error2exception( $code, $message, $file, $line )
+{
+    report( $message, $file, $line );
+    throw new NomessException( $message, 0, $code, $file, $line );
 }
 
-function customException($e) {
+function customException( \Throwable $e )
+{
+    report( $e->getMessage(), $e->getFile(), $e->getLine() );
     
-    file_put_contents(ROOT . 'var/log/error.log', "[" . date('d/m/Y H:i:s') . "] Line " . $e->getLine() . ": " . $e->getFile() . "\nException: " . $e->getMessage() . "\n---------------------------------------------------------\n", FILE_APPEND);
-    
-    if(NOMESS_CONTEXT === 'DEV') {
-        require ROOT . 'vendor/nomess/kernel/Tools/Exception/exception.php';
-        
-        $time = xdebug_time_index();
-        
-        $controller = NULL;
-        $method = NULL;
-        $action = NULL;
-        
-        if(isset($_SESSION['app']['toolbar'])) {
-            $controller = $_SESSION['app']['toolbar']['controller'];
-            $method = $_SESSION['app']['toolbar']['method'];
-            $action = $_SERVER['REQUEST_METHOD'];
-            
-            unset($_SESSION['app']['toolbar']);
-        }
-        
-        require ROOT . 'vendor/nomess/kernel/Tools/tools/toolbar.php';
-    }else{
-        
-        http_response_code(500);
-        
-        $tabError = require ROOT . 'config/error.php';
-        
-        if(strpos($tabError[500], '.twig') !== false){
-            if(file_exists(ROOT . 'templates/' . $tabError[500])) {
-                $loader = new FilesystemLoader(ROOT . 'templates');
-                $engine = new Environment($loader, [
-                    'debug' => true,
-                    'cache' => false,
-                ]);
-                $engine->addExtension(new PathExtension());
-                echo $engine->render($tabError[500]);
-            }
-        }else{
-            if(file_exists(ROOT . $tabError[500])) {
-                include(ROOT . $tabError[500]);
-            }
-        }
-        die;
-    }
+    /** @var HttpResponse $response */
+    Container::getInstance()->get( HttpResponse::class )->response_code( 500 )->show();
+    die();
+}
+
+function report( string $message, string $file, string $line )
+{
+    $config = Container::getInstance()->get( ConfigStoreInterface::class );
+    file_put_contents(
+        $config->get( ConfigStoreInterface::DEFAULT_NOMESS )['genral']['path']['default_error_log'],
+        "[" . date( 'd/m/Y H:i:s' ) . "] Line " . $line . ": " . $file . "\nException: " . $message . "\n---------------------------------------------------------\n",
+        FILE_APPEND );
 }
 
 
-set_error_handler('NoMess\Exception\error2exception');
-set_exception_handler('NoMess\Exception\customException');
+set_error_handler( 'NoMess\Exception\error2exception' );
+set_exception_handler( 'NoMess\Exception\customException' );

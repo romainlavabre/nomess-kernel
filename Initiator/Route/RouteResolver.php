@@ -2,41 +2,58 @@
 
 namespace Nomess\Initiator\Route;
 
+use Nomess\Component\Cache\CacheHandlerInterface;
 use Nomess\Internal\Scanner;
 
 class RouteResolver
 {
+    
     use Scanner;
     
-    private const CACHE     = ROOT . 'var/cache/routes/route.php';
+    private const CACHE_NAME = 'route';
+    private CacheHandlerInterface $cacheHandler;
+    private RouteBuilder          $routeBuilder;
+    
+    
+    public function __construct(
+        CacheHandlerInterface $cacheHandler,
+        RouteBuilder $routeBuilder
+    )
+    {
+        $this->cacheHandler = $cacheHandler;
+        $this->routeBuilder = $routeBuilder;
+    }
+    
     
     public function resolve(): ?array
     {
-        $routes = $this->getCache();
+        $routes = $this->cacheHandler->get( self::CACHE_NAME, 'routes_match' );
         
-        if($routes === NULL){
-            $routes = (new RouteBuilder())->build();
-            $this->setCache($routes);
+        if( $routes === NULL ) {
+            $routes = $this->routeBuilder->build();
+            $this->cacheHandler->add( self::CACHE_NAME, [
+                'value' => $routes
+            ] );
         }
         
         
-        foreach($routes as $key => $route){
+        foreach( $routes as $key => $route ) {
             
             
-            if($key === '/' . $_GET['p']){
+            if( $key === '/' . $_GET['p'] ) {
                 return $route;
             }
             
-            $arrayRoute = explode('/', $key);
-            $arrayUrl = explode('/', $_GET['p']);
+            $arrayRoute = explode( '/', $key );
+            $arrayUrl   = explode( '/', $_GET['p'] );
             
-            unset($arrayRoute[0]);
+            unset( $arrayRoute[0] );
             
             $success = TRUE;
-            $i = 0;
+            $i       = 0;
             
-            foreach($arrayRoute as $key => $section){
-                if(!empty($section)) {
+            foreach( $arrayRoute as $key => $section ) {
+                if( !empty( $section ) ) {
                     if( strpos( $section, '{' ) === FALSE ) {
                         
                         if( isset( $arrayUrl[$i] ) ) {
@@ -76,16 +93,15 @@ class RouteResolver
                         $_GET[$sectionPurged] = $arrayUrl[$i];
                     }
                     
-                    unset($arrayUrl[$i]);
+                    unset( $arrayUrl[$i] );
                     $i++;
-                }else{
+                } else {
                     $success = FALSE;
                     break 1;
                 }
-                
             }
             
-            if($success === TRUE && empty($arrayUrl)){
+            if( $success === TRUE && empty( $arrayUrl ) ) {
                 return $route;
             }
         }
@@ -93,23 +109,9 @@ class RouteResolver
         return NULL;
     }
     
-    private function getCache(): ?array
-    {
-        if(NOMESS_CONTEXT === 'PROD' && file_exists(self::CACHE)){
-            return require self::CACHE;
-        }
-        
-        return NULL;
-    }
     
-    private function setCache(array $routes): void
+    private function getIdSection( string $section ): string
     {
-        file_put_contents(self::CACHE, '<?php return unserialize(\'' . serialize($routes) . '\');');
+        return str_replace( [ '{', '}' ], '', $section );
     }
-    
-    private function getIdSection(string $section): string
-    {
-        return str_replace(['{', '}'], '', $section);
-    }
-    
 }

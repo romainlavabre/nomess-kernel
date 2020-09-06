@@ -4,46 +4,50 @@
 namespace Nomess\Initiator\Filters;
 
 
-use Nomess\Annotations\Inject;
+use Nomess\Component\Cache\CacheHandlerInterface;
+use Nomess\Component\Config\ConfigStoreInterface;
 use Nomess\Container\Container;
 
 class FilterResolver
 {
-
-    private const CACHE         = ROOT . 'var/cache/filters/filter.php';
-
-    /**
-     * @Inject()
-     */
-    private Container $container;
-
-    public function resolve(string $route): void
+    
+    private const CACHE_FILER = 'filter';
+    private Container             $container;
+    private CacheHandlerInterface $cacheHandler;
+    private ConfigStoreInterface  $configStore;
+    private FilterBuilder         $filterBuilder;
+    
+    
+    public function __construct(
+        Container $container,
+        CacheHandlerInterface $cacheHandler,
+        ConfigStoreInterface $configStore,
+        FilterBuilder $filterBuilder
+    )
     {
-        $filters = $this->getCache();
-
-        if($filters === NULL){
-            $filters = (new FilterBuilder())->build();
-            $this->setCache($filters);
+        $this->container     = $container;
+        $this->cacheHandler  = $cacheHandler;
+        $this->configStore   = $configStore;
+        $this->filterBuilder = $filterBuilder;
+    }
+    
+    
+    public function resolve( string $route ): void
+    {
+        $filters = $this->cacheHandler->get( self::CACHE_FILER, 'filters_match' );
+        
+        if( $filters === NULL ) {
+            $filters = $this->filterBuilder->build();
+            $this->cacheHandler->add(self::CACHE_FILER, [
+                'value' => $filters
+            ]);
         }
-
-        foreach($filters as $filterName => $regex){
-            if(preg_match('/' . $regex . '/', $route)){
-                $this->container->get($filterName)->filtrate();
+        
+        foreach( $filters as $filterName => $regex ) {
+            if( preg_match( '/' . $regex . '/', $route ) ) {
+                $this->container->get( $filterName )->filtrate();
             }
         }
     }
-
-    private function getCache(): ?array
-    {
-        if(NOMESS_CONTEXT === 'PROD' && file_exists(self::CACHE)){
-            return require self::CACHE;
-        }
-
-        return NULL;
-    }
-
-    private function setCache(array $routes): void
-    {
-        file_put_contents(self::CACHE, '<?php return unserialize(\'' . serialize($routes) . '\');');
-    }
+    
 }
