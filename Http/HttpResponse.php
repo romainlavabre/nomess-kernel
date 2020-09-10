@@ -189,7 +189,7 @@ final class HttpResponse
         
         $routes = NULL;
         
-        if( $this->cacheHandler->get( self::CACHE_ROUTE_NAME, 'routes_match' ) === NULL ) {
+        if( ($routes = $this->cacheHandler->get( self::CACHE_ROUTE_NAME, 'routes_match' )) === NULL ) {
             $routes = Container::getInstance()->get( RouteBuilder::class )->build();
         }
         
@@ -281,10 +281,12 @@ final class HttpResponse
     {
         if( $this->configStore->has( self::CONFIG_TWIG ) ) {
             
-            $extensions = $this->configStore->get( self::CONFIG_TWIG );
+            $extensions = $this->configStore->get( self::CONFIG_TWIG )['extensions'];
             
-            foreach( $extensions as $extension ) {
-                $environment->addExtension( new $extension() );
+            if(is_array($extensions)) {
+                foreach( $extensions as $extension ) {
+                    $environment->addExtension( new $extension() );
+                }
             }
         }
     }
@@ -293,13 +295,7 @@ final class HttpResponse
     public function show(): void
     {
         foreach( $this->return as $data ) {
-            if( is_array( $data ) ) {
-                $controller = $data['param']['controller'];
-                $method     = $data['param']['method'];
-                $action     = $data['param']['action'];
-                
-                echo $data['template'];
-            } else {
+            if(is_string($data)) {
                 echo $data;
             }
         }

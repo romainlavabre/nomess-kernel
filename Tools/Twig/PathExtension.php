@@ -103,8 +103,11 @@ class PathExtension extends AbstractExtension
         /** @var CacheHandlerInterface $cacheHandler */
         $cacheHandler = Container::getInstance()->get( CacheHandler::class );
         
-        if( ( $route = $cacheHandler->get( self::CACHE_NAME, 'routes_match' ) ) == NULL ) {
+        if( ( $route = $cacheHandler->get( self::CACHE_NAME, 'routes_match' ) ) === NULL ) {
             return Container::getInstance()->get( RouteBuilder::class )->build();
         }
+        
+        
+        return $route;
     }
 }

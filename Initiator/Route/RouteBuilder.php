@@ -8,7 +8,7 @@ class RouteBuilder
 {
     use Scanner;
     private ConfigStoreInterface $configStore;
-    private array $routes = array();
+    private array $routes;
     private ?string $header = NULL;
     
     public function __construct(ConfigStoreInterface $configStore)
@@ -19,6 +19,7 @@ class RouteBuilder
     
     public function build(): array
     {
+        $this->routes = array();
         $tree = $this->scanRecursive(
             $this->configStore->get(ConfigStoreInterface::DEFAULT_NOMESS)['general']['path']['default_controller']
         );
@@ -74,7 +75,7 @@ class RouteBuilder
                     
                     if(isset($route[1])) {
                         $route = $this->header . $route[1];
-                        $this->isUniqueRoute($route);
+                        $this->isUniqueRoute($route, $reflectionMethod->getDeclaringClass());
                         
                         $this->routes[$route] = [
                             'name' => (isset($name[1])) ? $name[1] : NULL,
@@ -124,10 +125,10 @@ class RouteBuilder
         return "App\\Controller\\$filename";
     }
     
-    private function isUniqueRoute(string $route): void
+    private function isUniqueRoute(string $route, \ReflectionClass $reflectionClass): void
     {
         if(array_key_exists($route, $this->routes)){
-            throw new ConflictException('Router encountered an error: Your route "' . $route . '" is already used by ' .
+            throw new ConflictException('Your route "' . $route . '" declared in "' . $reflectionClass->getName() . '::class" is already used by ' .
             $this->routes[$route]['controller'] . ' for method ' . $this->routes[$route]['method']);
         }
     }

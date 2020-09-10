@@ -10,7 +10,7 @@ class RouteResolver
     
     use Scanner;
     
-    private const CACHE_NAME = 'route';
+    private const CACHE_NAME = 'routes';
     private CacheHandlerInterface $cacheHandler;
     private RouteBuilder          $routeBuilder;
     
@@ -28,13 +28,13 @@ class RouteResolver
     public function resolve(): ?array
     {
         $routes = $this->cacheHandler->get( self::CACHE_NAME, 'routes_match' );
-        
-        if( $routes === NULL ) {
+        if( empty($routes) ) {
             $routes = $this->routeBuilder->build();
             $this->cacheHandler->add( self::CACHE_NAME, [
                 'value' => $routes
             ] );
         }
+        
         
         
         foreach( $routes as $key => $route ) {

@@ -13,8 +13,6 @@ use ReflectionMethod;
 
 class Autowire
 {
-    private const CONFIGURATION         = ROOT . 'config/container.php';
-
     private array $instance = array();
     private array $configuration;
     public ?array $force = array();
@@ -29,8 +27,10 @@ class Autowire
 
     public function get(string $classname)
     {
-        if(array_key_exists($classname, $this->instance)){
+        if( array_key_exists( $classname, $this->instance ) ) {
             return $this->instance[$classname];
+        } elseif(array_key_exists($classname, $this->configuration) && array_key_exists($this->configuration[$classname], $this->instance)){
+            return $this->instance[$this->configuration[$classname]];
         }else{
             return $this->make($classname);
         }
@@ -45,6 +45,15 @@ class Autowire
     public function make(string $classname)
     {
         $reflectionClass = new \ReflectionClass($classname);
+        
+        if(!$reflectionClass->isInstantiable()){
+            if(array_key_exists($reflectionClass->getName(), $this->configuration)){
+                $reflectionClass = new \ReflectionClass($this->configuration[$reflectionClass->getName()]);
+                $classname = $reflectionClass->getName();
+            }else{
+                throw new MissingConfigurationException("Impossible of autowire the class $type, she's not instanciable");
+            }
+        }
 
         if($reflectionClass->getConstructor() !== NULL) {
             $this->constructorResolver($reflectionClass->getConstructor()->getParameters(), $reflectionClass);
@@ -143,7 +152,7 @@ class Autowire
             }
 
         }
-
+        
         if(isset($this->configuration[$type])){
 
             if(is_array($this->configuration[$type])){
@@ -279,10 +288,20 @@ class Autowire
         $config = $configHandler->get(ConfigStoreInterface::DEFAULT_CONTAINER)['services'];
         $initial = array();
         
-        array_push($initial, $config['framework'], $config['application']);
+        foreach($config['framework'] as $class => $value){
+            $initial[$class] = $value;
+        }
+        
+        if(is_array($config['application'])){
+            foreach($config['application'] as $class => $value){
+                $initial[$class] = $value;
+            }
+        }
         
         foreach($config['components'] as $filename){
-            array_push($initial, $yamlParser->parse($filename));
+            foreach($yamlParser->parse($filename) as $class => $value){
+                $initial[$class] = $value;
+            }
         }
         
         $this->configuration = $initial;

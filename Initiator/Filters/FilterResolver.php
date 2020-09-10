@@ -11,7 +11,7 @@ use Nomess\Container\Container;
 class FilterResolver
 {
     
-    private const CACHE_FILER = 'filter';
+    private const CACHE_FILER = 'filters';
     private Container             $container;
     private CacheHandlerInterface $cacheHandler;
     private ConfigStoreInterface  $configStore;

@@ -6,7 +6,6 @@ namespace Nomess\Initiator;
 use Nomess\Component\Config\ConfigStoreInterface;
 use Nomess\Component\Config\Exception\ConfigurationNotFoundException;
 use Nomess\Container\Container;
-use Nomess\Helpers\ResponseHelper;
 use Nomess\Http\HttpRequest;
 use Nomess\Http\HttpResponse;
 use Nomess\Http\HttpSession;
@@ -15,8 +14,6 @@ use Nomess\Initiator\Route\RouteResolver;
 
 class Initiator
 {
-    
-    use ResponseHelper;
     
     private Container    $container;
     private HttpRequest  $request;
@@ -42,18 +39,19 @@ class Initiator
         
         $arrayEntryPoint = $this->getRoute();
         $this->callFilters();
-        
-        if( $arrayEntryPoint !== NULL ) {
-            return $this->response->response_code( 404 );
-        }
-        
+    
         /** @var ConfigStoreInterface $config */
         $config = $this->container->get( ConfigStoreInterface::class );
-        
-        if( !$config->get( ConfigStoreInterface::DEFAULT_NOMESS )['general']['status'] ) {
+    
+        if( $config->get( ConfigStoreInterface::DEFAULT_NOMESS )['general']['status'] === 'disable' ) {
             return $this->response->response_code( 503 );
         }
         
+        if( empty($arrayEntryPoint) ) {
+            return $this->response->response_code( 404 );
+        }
+    
+    
         if( $arrayEntryPoint['request_method'] === NULL
             || strpos( $arrayEntryPoint['request_method'], $_SERVER['REQUEST_METHOD'] ) !== FALSE ) {
             
@@ -64,7 +62,8 @@ class Initiator
                 ];
             }
             
-            return $this->container->callController( $arrayEntryPoint['controller'], $arrayEntryPoint['method'] );
+            $this->container->callController( $arrayEntryPoint['controller'], $arrayEntryPoint['method'] );
+            return $this->response;
         }
         
         return $this->response->response_code( 405 );

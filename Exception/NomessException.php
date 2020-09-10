@@ -47,8 +47,12 @@ function customException( \Throwable $e )
 {
     report( $e->getMessage(), $e->getFile(), $e->getLine() );
     
-    /** @var HttpResponse $response */
-    Container::getInstance()->get( HttpResponse::class )->response_code( 500 )->show();
+    if(NOMESS_CONTEXT === 'PROD') {
+        /** @var HttpResponse $response */
+        Container::getInstance()->get( HttpResponse::class )->response_code( 500 )->show();
+    }else{
+        echo require ROOT . 'vendor/nomess/kernel/Tools/Exception/exception.php';
+    }
     die();
 }
 
@@ -56,7 +60,7 @@ function report( string $message, string $file, string $line )
 {
     $config = Container::getInstance()->get( ConfigStoreInterface::class );
     file_put_contents(
-        $config->get( ConfigStoreInterface::DEFAULT_NOMESS )['genral']['path']['default_error_log'],
+        $config->get( ConfigStoreInterface::DEFAULT_NOMESS )['general']['path']['default_error_log'],
         "[" . date( 'd/m/Y H:i:s' ) . "] Line " . $line . ": " . $file . "\nException: " . $message . "\n---------------------------------------------------------\n",
         FILE_APPEND );
 }

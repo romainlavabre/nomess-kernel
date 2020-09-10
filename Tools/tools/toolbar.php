@@ -98,31 +98,11 @@ $fileIndex = $function();
             <?php
         } ?>
         
-        <button class="nm_btn nm_rouge nm_no-radius">Time: <?php
+        <button class="nm_btn nm_vert nm_no-radius">Time: <?php
             echo number_format( $time, 3, '.', '' ) ?> sec
         </button>
-        <div class="nm_btn-group nm_dropup">
-            <button type="button" class="nm_btn nm_bleu nm_dropdown-toggle nm_no-radius" data-toggle="nm_dropdown"
-                    aria-haspopup="true" aria-expanded="false">
-                PHPUnit
-            </button>
-            <div class="nm_dropdown-menu">
-                
-                <?php
-                if( $fileIndex === NULL ) {
-                    echo '<button class="nm_btn nm_dropdown-item nm_vert nm_no-cursor">No report found</button>';
-                } else {
-                    echo '<button class="nm_btn nm_dropdown-item nm_vert" style="cursor: pointer;" data-toggle="nm_modal" data-target="#report">FullTest</button>';
-                }
-                ?>
-            </div>
-        </div>
         <div style="float: right">
             <div class="nm_btn-group nm_dropup">
-                <button type="button" class="nm_btn nm_vert nm_dropdown-toggle nm_no-radius" data-toggle="nm_dropdown"
-                        aria-haspopup="true" aria-expanded="false">
-                    Mods & Lib
-                </button>
                 <div class="nm_dropdown-menu">
                     <?php
                     try {
