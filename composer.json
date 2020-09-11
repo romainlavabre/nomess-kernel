@@ -22,7 +22,8 @@
         "nomess/parser": "*",
         "nomess/cache": "*",
         "nomess/parameter": "*",
-        "nomess/cli": "*"
+        "nomess/cli": "*",
+        "nomess/orm": "*"
     },
     "autoload": {
         "psr-4": {

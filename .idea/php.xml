@@ -44,6 +44,7 @@
       <path value="$PROJECT_DIR$/vendor/nomess/parser" />
       <path value="$PROJECT_DIR$/vendor/nomess/cache" />
       <path value="$PROJECT_DIR$/vendor/nomess/parameter" />
+      <path value="$PROJECT_DIR$/vendor/nomess/cli" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="7.4" />
