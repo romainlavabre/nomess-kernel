@@ -55,12 +55,11 @@ class Initiator
         if( $arrayEntryPoint['request_method'] === NULL
             || strpos( $arrayEntryPoint['request_method'], $_SERVER['REQUEST_METHOD'] ) !== FALSE ) {
             
-            if( NOMESS_CONTEXT === 'DEV' ) {
-                $_SESSION['app']['toolbar'] = [
-                    'controller' => basename( $arrayEntryPoint['controller'] ),
-                    'method'     => $arrayEntryPoint['method']
-                ];
-            }
+            $_SESSION['app']['toolbar'] = [
+                'controller' => basename( $arrayEntryPoint['controller'] ),
+                'method'     => $arrayEntryPoint['method']
+            ];
+            
             
             $this->container->callController( $arrayEntryPoint['controller'], $arrayEntryPoint['method'] );
             return $this->response;

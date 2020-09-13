@@ -128,9 +128,8 @@ final class HttpResponse
     {
         $time = 0;
         
-        if( NOMESS_CONTEXT === 'DEV' ) {
-            $time = xdebug_time_index();
-        }
+        $time = xdebug_time_index();
+        
         
         $loader = new FilesystemLoader( ROOT . 'templates' );
         
@@ -160,9 +159,8 @@ final class HttpResponse
         
         $this->return[] = $engine->render( $template, is_array( $this->data ) ? $this->data : [] );
         
-        if( NOMESS_CONTEXT === 'DEV' ) {
-            $this->getDevToolbar( $time );
-        }
+        $this->getDevToolbar( $time );
+        
         
         return $this;
     }
@@ -179,7 +177,7 @@ final class HttpResponse
      * @throws InvalidSendException
      * @throws ConfigurationNotFoundException
      */
-    public final function redirectToLocal( string $routeName, ?array $parameters ): HttpResponse
+    public final function redirectToLocal( string $routeName, ?array $parameters = NULL ): HttpResponse
     {
         
         if( isset( $this->data ) ) {
@@ -189,7 +187,7 @@ final class HttpResponse
         
         $routes = NULL;
         
-        if( ( $routes = $this->cacheHandler->get( self::CACHE_ROUTE_NAME, 'routes_match' ) ) === NULL ) {
+        if( ($routes = $this->cacheHandler->get( self::CACHE_ROUTE_NAME, 'routes_match' )) === NULL ) {
             $routes = Container::getInstance()->get( RouteBuilder::class )->build();
         }
         
@@ -236,7 +234,6 @@ final class HttpResponse
     public final function redirectToOutside( string $url ): HttpResponse
     {
         header( "Location: $url" );
-        
         return $this;
     }
     
@@ -286,7 +283,7 @@ final class HttpResponse
             
             $extensions = $this->configStore->get( self::CONFIG_TWIG )['extensions'];
             
-            if( is_array( $extensions ) ) {
+            if(is_array($extensions)) {
                 foreach( $extensions as $extension ) {
                     $environment->addExtension( new $extension() );
                 }
@@ -298,7 +295,7 @@ final class HttpResponse
     public function show(): void
     {
         foreach( $this->return as $data ) {
-            if( is_string( $data ) ) {
+            if(is_string($data)) {
                 echo $data;
             }
         }

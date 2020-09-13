@@ -2,6 +2,8 @@
 
 namespace Nomess\Http;
 
+use Nomess\Exception\InvalidParamException;
+
 class HttpRequest
 {
     
@@ -10,6 +12,11 @@ class HttpRequest
     public const  BOOLEAN      = 'bool';
     public const ARRAY         = 'array';
     public const  FLOAT        = 'float';
+    public const  STRING_NULL  = 'string_null';
+    public const  INTEGER_NULL = 'int_null';
+    public const  BOOLEAN_NULL = 'bool_null';
+    public const  ARRAY_NULL   = 'array_null';
+    public const  FLOAT_NULL   = 'float_null';
     private const SESSION_DATA = 'nomess_persiste_data';
     private ?array $error         = array();
     private ?array $success       = array();
@@ -40,10 +47,13 @@ class HttpRequest
      * Add an error
      *
      * @param string $message
+     * @return HttpRequest
      */
-    public function setError( string $message ): void
+    public function setError( string $message ): HttpRequest
     {
         $this->error[] = $message;
+        
+        return $this;
     }
     
     
@@ -51,12 +61,15 @@ class HttpRequest
      * Add an success
      *
      * @param string $message
+     * @return HttpRequest
      */
-    public function setSuccess( string $message ): void
+    public function setSuccess( string $message ): HttpRequest
     {
         if( !$this->block_success ) {
             $this->success[] = $message;
         }
+        
+        return $this;
     }
     
     
@@ -80,10 +93,13 @@ class HttpRequest
      *
      * @param mixed $key
      * @param mixed $value
+     * @return HttpRequest
      */
-    public function setParameter( $key, $value ): void
+    public function setParameter( $key, $value ): HttpRequest
     {
         $this->parameters[$key] = $value;
+        
+        return $this;
     }
     
     
@@ -98,7 +114,7 @@ class HttpRequest
      */
     public function getParameter( string $index, string $type = 'string', bool $escape = TRUE )
     {
-        if( isset( $_POST[$index] ) && $_POST[$index] !== '' ) {
+        if( isset( $_POST[$index] )) {
             
             if( $escape === TRUE ) {
                 if( is_array( $_POST[$index] ) ) {
@@ -108,12 +124,10 @@ class HttpRequest
                         $value = trim( $value );
                     } );
                 }
-                
-                
             }
             
-            return $this->cast($type, $_POST[$index]);
-        } elseif( isset( $_GET[$index] ) && $_GET[$index] !== '' ) {
+            return $this->cast( $type, $_POST[$index] );
+        } elseif( isset( $_GET[$index] )) {
             
             if( $escape === TRUE ) {
                 
@@ -128,27 +142,27 @@ class HttpRequest
                         $value = trim( $value );
                     } );
                 }
-                
             }
             
-            return $this->cast($type, $_GET[$index]);
-            
+            return $this->cast( $type, $_GET[$index] );
         } elseif( isset( $this->parameters[$index] ) ) {
-            return $this->cast($type, $this->parameters[$index]);
-        } else {
-            return NULL;
+            return $this->cast( $type, $this->parameters[$index] );
         }
+        
+        return $this->cast( $type, NULL);
+        
     }
     
     
     /**
      * Return true if request has received this parameter
+     *
      * @param string $index
      * @return bool
      */
-    public function hasParameter(string $index): bool
+    public function hasParameter( string $index ): bool
     {
-        return array_key_exists($index, $_POST) || array_key_exists($index, $_GET) || array_key_exists($index, $this->parameters);
+        return array_key_exists( $index, $_POST ) || array_key_exists( $index, $_GET ) || array_key_exists( $index, $this->parameters );
     }
     
     
@@ -300,15 +314,27 @@ class HttpRequest
     private function cast( string $type, $data )
     {
         if( $type === self::STRING ) {
-            return $data !== NULL ? (string)$data : NULL;
+            return (string)$data;
         } elseif( $type === self::INTEGER ) {
-            return $data !== NULL ? (int)$data : NULL;
+            return (int)$data;
         } elseif( $type === self::FLOAT ) {
+            return (float)$data;
+        } elseif( $type === self::ARRAY ) {
+            return (array)$data;
+        } elseif( $type === self::BOOLEAN ) {
+            return (bool)$data;
+        }elseif( $type === self::STRING_NULL ) {
+            return $data !== NULL ? (string)$data : NULL;
+        } elseif( $type === self::INTEGER_NULL ) {
+            return $data !== NULL ? (int)$data : NULL;
+        } elseif( $type === self::FLOAT_NULL ) {
             return $data !== NULL ? (float)$data : NULL;
-        } elseif( $type === self::ARRAY){
+        } elseif( $type === self::ARRAY_NULL ) {
             return $data !== NULL ? (array)$data : NULL;
-        }elseif($type === self::BOOLEAN){
+        } elseif( $type === self::BOOLEAN_NULL ) {
             return $data !== NULL ? (bool)$data : NULL;
         }
+    
+        throw new InvalidParamException('The type "' . $type . '" is not supported');
     }
 }
