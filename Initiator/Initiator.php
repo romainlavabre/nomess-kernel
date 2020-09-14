@@ -23,10 +23,9 @@ class Initiator
     public function __construct()
     {
         $this->container = Container::getInstance();
-        $this->request   = $this->container->get( HttpRequest::class );
-        $this->response  = $this->container->get( HttpResponse::class );
-        $session         = $this->container->get( HttpSession::class );
-        $session->initSession();
+        $this->container->get( HttpSession::class )->initSession();
+        $this->request  = $this->container->get( HttpRequest::class );
+        $this->response = $this->container->get( HttpResponse::class );
     }
     
     
@@ -39,19 +38,19 @@ class Initiator
         
         $arrayEntryPoint = $this->getRoute();
         $this->callFilters();
-    
+        
         /** @var ConfigStoreInterface $config */
         $config = $this->container->get( ConfigStoreInterface::class );
-    
+        
         if( $config->get( ConfigStoreInterface::DEFAULT_NOMESS )['general']['status'] === 'disable' ) {
             return $this->response->response_code( 503 );
         }
         
-        if( empty($arrayEntryPoint) ) {
+        if( empty( $arrayEntryPoint ) ) {
             return $this->response->response_code( 404 );
         }
-    
-    
+        
+        
         if( $arrayEntryPoint['request_method'] === NULL
             || strpos( $arrayEntryPoint['request_method'], $_SERVER['REQUEST_METHOD'] ) !== FALSE ) {
             
@@ -62,6 +61,7 @@ class Initiator
             
             
             $this->container->callController( $arrayEntryPoint['controller'], $arrayEntryPoint['method'] );
+            
             return $this->response;
         }
         
