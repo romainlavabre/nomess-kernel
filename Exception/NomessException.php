@@ -6,6 +6,7 @@ namespace Nomess\Exception;
 
 use Nomess\Component\Config\ConfigStoreInterface;
 use Nomess\Container\Container;
+use Nomess\Event\EventListenerInterface;
 use Nomess\Http\HttpResponse;
 
 class NomessException extends \ErrorException
@@ -33,6 +34,11 @@ class NomessException extends \ErrorException
                 break;
         }
         
+        /** @var EventListenerInterface $eventListener */
+        $eventListener = Container::getInstance()->get( EventListenerInterface::class );
+        
+        $eventListener->notify( EventListenerInterface::LAUNCH_EXCEPTION );
+        
         return '<strong>' . $type . '</strong> : [' . $this->code . '] ' . $this->message . '<br /><strong>' . $this->file . '</strong> à la ligne <strong>' . $this->line . '</strong><br>';
     }
 }
@@ -47,10 +53,10 @@ function customException( \Throwable $e )
 {
     report( $e->getMessage(), $e->getFile(), $e->getLine() );
     
-    if(NOMESS_CONTEXT === 'PROD') {
+    if( NOMESS_CONTEXT === 'PROD' ) {
         /** @var HttpResponse $response */
         Container::getInstance()->get( HttpResponse::class )->response_code( 500 )->show();
-    }else{
+    } else {
         echo require ROOT . 'vendor/nomess/kernel/Tools/Exception/exception.php';
     }
     die();
