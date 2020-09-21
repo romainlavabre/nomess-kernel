@@ -1,10 +1,10 @@
 <?php
 
 
-namespace NoMess\Event;
+namespace Nomess\Event;
 
 
-use NoMess\Exception\UnsupportedEventException;
+use Nomess\Exception\UnsupportedEventException;
 
 class EventListener implements EventListenerInterface
 {
@@ -13,9 +13,9 @@ class EventListener implements EventListenerInterface
     
     
     /**
-     * @param EventListenerInterface[] $eventListener
+     * @param EventSubscriberInterface[] $eventSubscriber
      */
-    public function __construct( array $eventListener )
+    public function __construct( array $eventSubscriber )
     {
     }
     
@@ -26,7 +26,6 @@ class EventListener implements EventListenerInterface
     public function notify( string $event, $value = NULL ): void
     {
         if( $this->isSupportedEvent( $event ) ) {
-            
             if( $this->hasSubscriber( $event ) ) {
                 /** @var EventSubscriberInterface $instance */
                 foreach( $this->subscriber[$event] as $instance ) {

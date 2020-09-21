@@ -7,10 +7,13 @@ namespace Nomess\Container;
 use Nomess\Component\Config\ConfigHandler;
 use Nomess\Component\Config\ConfigStoreInterface;
 use Nomess\Component\Parser\YamlParser;
+use Nomess\Event\EventListener;
+use Nomess\Event\EventListenerInterface;
 use Nomess\Event\EventSubscriberInterface;
 use Nomess\Exception\MissingConfigurationException;
 use Nomess\Exception\NotFoundException;
 use ReflectionMethod;
+use Stripe\Product;
 
 class Autowire
 {
@@ -31,13 +34,7 @@ class Autowire
     
     public function get( string $classname )
     {
-        if( array_key_exists( $classname, $this->instance ) ) {
-            return $this->instance[$classname];
-        } elseif( array_key_exists( $classname, $this->configuration ) && array_key_exists( $this->configuration[$classname], $this->instance ) ) {
-            return $this->instance[$this->configuration[$classname]];
-        } else {
-            return $this->make( $classname );
-        }
+        return $this->make( $classname );
     }
     
     
@@ -49,14 +46,22 @@ class Autowire
      */
     public function make( string $classname )
     {
+    
+        if( array_key_exists( $classname, $this->instance ) ) {
+            return $this->instance[$classname];
+        } elseif( array_key_exists( $classname, $this->configuration ) && array_key_exists( $this->configuration[$classname], $this->instance ) ) {
+            return $this->instance[$this->configuration[$classname]];
+        }
+        
         $reflectionClass = new \ReflectionClass( $classname );
+        
         
         if( !$reflectionClass->isInstantiable() ) {
             if( array_key_exists( $reflectionClass->getName(), $this->configuration ) ) {
                 $reflectionClass = new \ReflectionClass( $this->configuration[$reflectionClass->getName()] );
                 $classname       = $reflectionClass->getName();
             } else {
-                throw new MissingConfigurationException( "Impossible of autowire the class $type, she's not instanciable" );
+                throw new MissingConfigurationException( "Impossible of autowire the class $classname, she's not instanciable" );
             }
         }
         
@@ -88,7 +93,9 @@ class Autowire
             }
         }
         
-        $this->instance[$reflectionClass->getName()] = $reflectionClass->newInstanceArgs( $parameters );
+        if(!array_key_exists( $reflectionClass->getName(), $this->instance)) {
+            $this->instance[$reflectionClass->getName()] = $reflectionClass->newInstanceArgs( $parameters );
+        }
     }
     
     
@@ -256,12 +263,15 @@ class Autowire
         
         // If not found, trying with namespace of original class or if she's declared in configuration
         if( empty( $found ) ) {
-            if( class_exists( $reflectionClass->getNamespaceName() . '\\' . $classname ) ) {
+            if( class_exists( $reflectionClass->getNamespaceName() . '\\' . $classname )
+                || interface_exists( $reflectionClass->getNamespaceName() . '\\' . $classname) ) {
+                
                 return $reflectionClass->getNamespaceName() . '\\' . $classname;
             } elseif( isset( $this->configuration[$classname] ) ) {
+                
                 return $classname;
             } else {
-                throw new NotFoundException( 'Autowiring encountered an error: class ' . $classname . ' cannot be resolved, mentioned in ' . $reflectionClass->getName() );
+                throw new NotFoundException( 'Autowiring encountered an error: class ' . $reflectionClass->getNamespaceName() . '\\' . $classname . ' cannot be resolved, mentioned in ' . $reflectionClass->getName() );
             }
         } elseif( count( $found ) === 1 ) {
             return $found[0];
@@ -286,11 +296,13 @@ class Autowire
     
     private function purgeForce( ReflectionMethod $reflectionMethod ): void
     {
-        if( $this->force['method'] === $reflectionMethod->getName()
-            && $this->force['class'] === $reflectionMethod->getDeclaringClass()->getName() ) {
-            
-            $this->force['method'] = NULL;
-            $this->force['class']  = NULL;
+        if(!empty( $this->force)) {
+            if( $this->force['method'] === $reflectionMethod->getName()
+                && $this->force['class'] === $reflectionMethod->getDeclaringClass()->getName() ) {
+        
+                $this->force['method'] = NULL;
+                $this->force['class']  = NULL;
+            }
         }
     }
     

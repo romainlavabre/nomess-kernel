@@ -4,7 +4,7 @@
 namespace Nomess\Event;
 
 
-use NoMess\Exception\UnsupportedEventException;
+use Nomess\Exception\UnsupportedEventException;
 
 interface EventListenerInterface
 {
