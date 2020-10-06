@@ -10,11 +10,11 @@ use Twig\TwigFunction;
 class FieldExtension extends \Twig\Extension\AbstractExtension
 {
     
-    private bool           $bootstrap           = TRUE;
-    private bool           $first               = TRUE;
-    private ?string        $last_id             = NULL;
-    private ?string        $last_label          = NULL;
-    private ?string        $last_type           = NULL;
+    private bool           $bootstrap  = TRUE;
+    private bool           $first      = TRUE;
+    private ?string        $last_id    = NULL;
+    private ?string        $last_label = NULL;
+    private ?string        $last_type  = NULL;
     private ValueExtension $value_extension;
     
     
@@ -69,7 +69,6 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
     
     public function select( array $option_select = [], array $data = [], $valueExtension = NULL ): void
     {
-        
         $this->show(
             $this->addBootstrap(
                 $this->addLabel(
@@ -91,11 +90,12 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
         );
     }
     
+    
     private function addLabel( string $field ): string
     {
         $label = NULL;
         
-        if( !empty($this->last_label) ) {
+        if( !empty( $this->last_label ) ) {
             $label = str_replace( '<!--for-->', 'for="' . $this->last_id . '"', $this->last_label );
             
             if( $this->labelBefore() ) {
@@ -123,6 +123,7 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
         return $content;
     }
     
+    
     private function labelBefore(): bool
     {
         $type = $this->last_type;
@@ -145,7 +146,7 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
     
     private function engineInput( array $options, $valueExtension ): string
     {
-        $metadata = $this->getMetadata($options, 'input');
+        $metadata       = $this->getMetadata( $options, 'input' );
         $valueExtension = $this->getValueExtension( $options, $valueExtension );
         
         return '<input ' . $this->getAttribute( $metadata, $options ) . ( is_array( $valueExtension ) ? 'value="' . call_user_func_array( [ $this->value_extension, 'value' ], $valueExtension ) . '"' : NULL ) . '>';
@@ -154,7 +155,7 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
     
     private function engineSelect( array $options, array $data, $valueExtension ): string
     {
-        $metadata = $this->getMetadata($options, 'select');
+        $metadata       = $this->getMetadata( $options, 'select' );
         $valueExtension = $this->getValueExtension( $options, $valueExtension, TRUE );
         
         $content = '<select ' . $this->getAttribute( $metadata, $options ) . ">\n\t";
@@ -190,11 +191,12 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
     
     private function engineTextarea( array $options, $valueExtension ): string
     {
-        $metadata = $this->getMetadata($options, 'textarea');
+        $metadata       = $this->getMetadata( $options, 'textarea' );
         $valueExtension = $this->getValueExtension( $options, $valueExtension );
         
         return '<textarea ' . $this->getAttribute( $metadata, $options, 'value' ) . '>' . ( isset( $metadata['value'] ) ? $metadata['value'] : ( is_array( $valueExtension ) ? call_user_func_array( [ $this->value_extension, 'value' ], $valueExtension ) : NULL ) ) . '</textarea>';
     }
+    
     
     private function getClassFor( ?string $type, array $options ): ?string
     {
@@ -224,7 +226,7 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
             return 'form-control';
         }
         
-        return null;
+        return NULL;
     }
     
     
@@ -249,7 +251,7 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
     private function buildId( array $options ): ?string
     {
         if( array_key_exists( 'name', $options ) ) {
-            return $this->last_id = 'form_' . str_replace('[]', '', $options['name']);
+            return $this->last_id = 'form_' . str_replace( '[]', '', $options['name'] );
         }
         
         return NULL;
@@ -259,8 +261,8 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
     private function getValueExtension( array $options, $valueExtension, bool $select = FALSE )
     {
         if( !isset( $options['value'] ) ) {
-            if(!isset($options['name'])){
-                throw new MissingConfigurationException('A select miss a name property, please, add name property or disable the value extension');
+            if( !isset( $options['name'] ) ) {
+                throw new MissingConfigurationException( 'A select miss a name property, please, add name property or disable the value extension' );
             }
             
             if( is_null( $valueExtension ) ) {
@@ -285,13 +287,14 @@ class FieldExtension extends \Twig\Extension\AbstractExtension
         return $valueExtension;
     }
     
-    private function getMetadata(array $options, string $type): array
+    
+    private function getMetadata( array $options, string $type ): array
     {
         return [
             'required' => TRUE,
-            'class' => $this->getClassFor($type, $options),
-            'id' => $this->buildId($options),
-            'type' => $type === 'input' ? 'text' : NULL
+            'class'    => $this->getClassFor( $type, $options ),
+            'id'       => $this->buildId( $options ),
+            'type'     => $type === 'input' ? 'text' : NULL
         ];
     }
 }

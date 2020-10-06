@@ -13,32 +13,26 @@ class Container implements ContainerInterface
     
     private function __construct()
     {
+        if( !isset( $this->autowire ) ) {
+            $this->autowire = new Autowire( $this );
+        }
     }
     
     
     public function get( string $classname )
     {
-        $this->initAutowire();
-        
         return $this->autowire->get( $classname );
     }
     
     
     public function make( string $className )
     {
-        $this->initAutowire();
-        
         return $this->autowire->make( $className );
     }
     
-    
-    public function callController( string $classname, string $methodName )
+    public function getByReflectionParameter(\ReflectionParameter $reflectionParameter)
     {
-        $this->initAutowire();
-        $this->autowire->force['method'] = $methodName;
-        $this->autowire->force['class']  = $classname;
-        
-        return $this->autowire->make( $classname );
+        return $this->autowire->getByReflectionParameter( $reflectionParameter);
     }
     
     
@@ -49,13 +43,5 @@ class Container implements ContainerInterface
         }
         
         return self::$instance;
-    }
-    
-    
-    private function initAutowire(): void
-    {
-        if( !isset( $this->autowire ) ) {
-            $this->autowire = new Autowire( $this );
-        }
     }
 }

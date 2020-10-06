@@ -4,6 +4,10 @@
 namespace Nomess\Tools\Twig\Form;
 
 
+use Nomess\Component\Orm\Cache\CacheHandlerInterface;
+use Nomess\Component\Orm\Entity\Entity;
+use Nomess\Component\Orm\Handler\Find\FindRelation;
+use Nomess\Container\Container;
 use Twig\TwigFunction;
 
 class ComposeExtension extends \Twig\Extension\AbstractExtension
@@ -66,13 +70,13 @@ class ComposeExtension extends \Twig\Extension\AbstractExtension
                 foreach( $array_key as $toReplace => $propertyName ) {
                     $reflectionProperty = $this->getReflectionProperty( $classname, $propertyName );
                     
-                    $composed_key = str_replace( $toReplace, $reflectionProperty->getValue( $object ), $composed_key );
+                    $composed_key = str_replace( $toReplace, $this->getValue( $object, $reflectionProperty), $composed_key );
                 }
                 
                 foreach( $array_value as $toReplace => $propertyName ) {
                     $reflectionProperty = $this->getReflectionProperty( $classname, $propertyName );
                     
-                    $composed_value = str_replace( $toReplace, $reflectionProperty->getValue( $object ), $composed_value );
+                    $composed_value = str_replace( $toReplace, $this->getValue( $object, $reflectionProperty), $composed_value );
                 }
                 
                 $composed["$composed_key"] = $composed_value;
@@ -98,7 +102,7 @@ class ComposeExtension extends \Twig\Extension\AbstractExtension
                         $reflectionProperty = $this->getReflectionProperty( $classname, $search[$classname] );
                         
                         if( $reflectionProperty->isInitialized( $value ) ) {
-                            $data = array_merge( $data, $this->takeDataForCompose( $reflectionProperty->getValue( $value ), $search ) );
+                            $data = array_merge( $data, $this->takeDataForCompose( $this->getValue( $value, $reflectionProperty), $search ) );
                         }
                     } else {
                         $data[] = $value;
@@ -113,7 +117,7 @@ class ComposeExtension extends \Twig\Extension\AbstractExtension
                 $reflectionProperty = $this->getReflectionProperty( $classname, $search[$classname] );
                 
                 if( $reflectionProperty->isInitialized( $contains ) ) {
-                    $data = array_merge( $data, $this->takeDataForCompose( $reflectionProperty->getValue( $contains ), $search ) );
+                    $data = array_merge( $data, $this->takeDataForCompose( $this->getValue( $contains, $reflectionProperty), $search ) );
                 }
             } else {
                 $data[] = $contains;
@@ -136,5 +140,21 @@ class ComposeExtension extends \Twig\Extension\AbstractExtension
         }
         
         return $this->reflection_property[$classname][$propertyName] = $reflectionProperty;
+    }
+    
+    
+    private function getValue( object $object, \ReflectionProperty $reflectionProperty )
+    {
+        if( ( new \ReflectionClass( $object ) )->isSubclassOf( Entity::class )
+            && !$object->isPropertyLoaded( $reflectionProperty->getName() )
+            && Container::getInstance()->get( CacheHandlerInterface::class )->getCache(
+                get_class( $object ))[CacheHandlerInterface::ENTITY_METADATA][$reflectionProperty->getName()][CacheHandlerInterface::ENTITY_RELATION] !== NULL ) {
+            
+            /** @var FindRelation $findRelation */
+            $findRelation = Container::getInstance()->get( FindRelation::class );
+            $findRelation->load( $object, $reflectionProperty->getName() );
+        }
+        
+        return $reflectionProperty->getValue( $object );
     }
 }

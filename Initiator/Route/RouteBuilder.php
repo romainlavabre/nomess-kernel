@@ -1,135 +1,211 @@
 <?php
+
 namespace Nomess\Initiator\Route;
+
+use Nomess\Annotations\Route;
 use Nomess\Component\Config\ConfigStoreInterface;
+use Nomess\Component\Parser\AnnotationParserInterface;
 use Nomess\Exception\ConflictException;
+use Nomess\Exception\MissingConfigurationException;
+use Nomess\Installer\InstallerHandlerInterface;
 use Nomess\Internal\Scanner;
 
+/**
+ * This class build the routes of application
+ *
+ * @author Romain Lavabre <webmaster@newwebsouth.fr>
+ */
 class RouteBuilder
 {
-    use Scanner;
-    private ConfigStoreInterface $configStore;
-    private array $routes;
-    private ?string $header = NULL;
     
-    public function __construct(ConfigStoreInterface $configStore)
+    use Scanner;
+    
+    private ConfigStoreInterface      $configStore;
+    private InstallerHandlerInterface $installerHandler;
+    private AnnotationParserInterface $annotationParser;
+    private array                     $routes;
+    
+    
+    public function __construct(
+        ConfigStoreInterface $configStore,
+        InstallerHandlerInterface $installerHandler,
+        AnnotationParserInterface $annotationParser )
     {
-        $this->configStore = $configStore;
+        $this->configStore      = $configStore;
+        $this->installerHandler = $installerHandler;
+        $this->annotationParser = $annotationParser;
     }
     
     
+    /**
+     * General methods, scan the target directory (recurive) and call the other configurations
+     *
+     * @return array
+     * @throws MissingConfigurationException
+     * @throws \Nomess\Component\Config\Exception\ConfigurationNotFoundException
+     * @throws \ReflectionException
+     */
     public function build(): array
     {
         $this->routes = array();
-        $tree = $this->scanRecursive(
-            $this->configStore->get(ConfigStoreInterface::DEFAULT_NOMESS)['general']['path']['default_controller']
+        $tree         = $this->scanRecursive(
+            $this->configStore->get( ConfigStoreInterface::DEFAULT_NOMESS )['general']['path']['default_controller']
         );
-
-        foreach($tree as $directory){
-
-            $content = scandir($directory);
-
-            foreach($content as $file) {
+        
+        foreach( $tree as $directory ) {
+            
+            $content = scandir( $directory );
+            
+            foreach( $content as $file ) {
                 $this->header = NULL;
-                if($file !== '.' && $file !== '..' && strpos($file, '.php') !== FALSE) {
-
-                    $reflectionClass = new \ReflectionClass($this->getNamespace($directory . $file));
-
-                    $this->getHeader($reflectionClass);
-                    $this->getAnnotations($reflectionClass->getMethods());
+                
+                if( strpos( $file, '.php' ) !== FALSE ) {
+                    
+                    $reflectionClass = new \ReflectionClass( $this->getNamespace( $directory . $file ) );
+                    
+                    $this->getAnnotations( $reflectionClass->getMethods(), $this->getHeader( $reflectionClass ) );
                 }
             }
         }
-
-        return $this->routes;
-    }
-
-    private function getHeader(\ReflectionClass $reflectionClass): void
-    {
-        $comment = $reflectionClass->getDocComment();
-
-        if(strpos($comment, '@Route') !== FALSE){
-            preg_match('/@Route\("([a-z\/0-9-_]+)"\)/', $comment, $routeHeader);
-
-            if(isset($routeHeader[1])){
-                $this->header = $routeHeader[1];
+        
+        foreach( $this->installerHandler->getPackages() as $nomessInstaller ) {
+            foreach( $nomessInstaller->controller() as $classname ) {
+                $reflectionClass = new \ReflectionClass( $classname );
+                
+                $this->getAnnotations( $reflectionClass->getMethods(), $this->getHeader( $reflectionClass ) );
             }
         }
+        
+        return $this->routes;
     }
-
+    
+    
+    /**
+     * Return the base of route
+     *
+     * @param \ReflectionClass $reflectionClass
+     * @return string|null
+     * @throws MissingConfigurationException
+     */
+    private function getHeader( \ReflectionClass $reflectionClass ): ?string
+    {
+        
+        if( $this->annotationParser->has( 'Route', $reflectionClass ) ) {
+            $value = $this->annotationParser->getValue( 'Route', $reflectionClass );
+            
+            if( array_key_exists( 0, $value ) ) {
+                return $value[0];
+            }
+            
+            throw new MissingConfigurationException( 'You have a invalid configuration for class header in "' . $reflectionClass->getName() . '"' );
+        }
+        
+        return NULL;
+    }
+    
+    
     /**
      * @param \ReflectionMethod[]|null $reflectionMethods
      */
-    private function getAnnotations(?array $reflectionMethods): void
+    private function getAnnotations( ?array $reflectionMethods, ?string $header ): void
     {
-        if(!empty($reflectionMethods)){
-            foreach($reflectionMethods as $reflectionMethod){
-                $comment = $reflectionMethod->getDocComment();
-
-                preg_match('/@Route\(.+\)/', $comment, $annotation);
-
-                if(!empty($annotation)){
-                    preg_match('/"([a-z\/0-9-_{}]+)"/', $annotation[0], $route);
-                    preg_match('/name="([A-Za-z._-]+)"/', $annotation[0], $name);
-                    preg_match('/methods="([GETPOSUDL,]+)"/', $annotation[0], $requestMethod);
-                    preg_match('/requirements=\[(".+" *=> *".+",? ?)\]/', $annotation[0], $requirements);
+        if( !empty( $reflectionMethods ) ) {
+            foreach( $reflectionMethods as $reflectionMethod ) {
+                
+                if( $this->annotationParser->has( 'Route', $reflectionMethod ) ) {
+                    $value        = $this->annotationParser->getValue( 'Route', $reflectionMethod );
+                    $route        = ( array_key_exists( 0, $value ) ) ? $value[0] : ( array_key_exists( 'path', $value ) ? $value['path'] : NULL );
+                    $methods      = ( array_key_exists( 'methods', $value ) ) ? $value['methods'] : NULL;
+                    $requirements = ( array_key_exists( 'requirements', $value ) ) ? $value['requirements'] : NULL;
+                    $name         = ( array_key_exists( 'name', $value ) ) ? $value['name'] : $this->generateName( $route, $methods );
                     
-                    if(isset($route[1])) {
-                        $route = $this->header . $route[1];
-                        $this->isUniqueRoute($route, $reflectionMethod->getDeclaringClass());
-                        
-                        $this->routes[$route] = [
-                            'name' => (isset($name[1])) ? $name[1] : NULL,
-                            'request_method' => (isset($requestMethod[1])) ? $requestMethod[1] : NULL,
-                            'method' => $reflectionMethod->getName(),
-                            'controller' => $reflectionMethod->getDeclaringClass()->getName(),
-                            'requirements' => $this->requirementsToArray($requirements)
-                        ];
+                    if( $route === NULL ) {
+                        throw new MissingConfigurationException( 'The path for method "' . $reflectionMethod->getName() . '" in "' .
+                                                                 $reflectionMethod->getDeclaringClass()->getName() . '" was not found' );
                     }
+                    
+                    $route = $header . $route;
+                    $this->isUniqueRoute( $route, $methods, $reflectionMethod->getDeclaringClass() );
+                    $this->isUniqueName( $name );
+                    
+                    $this->routes[$name] = [
+                        RouteHandlerInterface::ROUTE           => $route,
+                        RouteHandlerInterface::NAME            => $name,
+                        RouteHandlerInterface::REQUEST_METHODS => $methods,
+                        RouteHandlerInterface::METHOD          => $reflectionMethod->getName(),
+                        RouteHandlerInterface::CONTROLLER      => $reflectionMethod->getDeclaringClass()->getName(),
+                        RouteHandlerInterface::REQUIREMENTS    => $requirements,
+                        RouteHandlerInterface::HAS_PARAMETERS  => preg_match( '/\{.+\}/', $route )
+                    ];
                 }
             }
         }
-    }
-
-    private function requirementsToArray(array $requirements): array
-    {
-        $list = array();
-
-        if(isset($requirements[1])){
-            $str = preg_replace(['/ ?=> ?/', '/,/', '/ */'], '', $requirements[1]);
-            $str = str_replace('""', '|', $str);
-            $str = str_replace('"', '', $str);
-
-            $key = NULL;
-
-            foreach(explode('|', $str) as $data){
-                if($key === NULL){
-                    $list[$data] = NULL;
-                    $key = $data;
-                }else{
-                    $list[$key] = $data;
-                    $key = NULL;
-                }
-            }
-        }
-        return $list;
-    }
-
-    private function getNamespace(string $filename): string
-    {
-        $filename = str_replace([
-            $this->configStore->get(ConfigStoreInterface::DEFAULT_NOMESS)['general']['path']['default_controller'],
-            '.php'
-                                ], '', $filename);
-        $filename = str_replace('/', '\\', $filename);
-
-        return "App\\Controller\\$filename";
     }
     
-    private function isUniqueRoute(string $route, \ReflectionClass $reflectionClass): void
+    
+    private function generateName( string $route, ?array $methods ): string
     {
-        if(array_key_exists($route, $this->routes)){
-            throw new ConflictException('Your route "' . $route . '" declared in "' . $reflectionClass->getName() . '::class" is already used by ' .
-            $this->routes[$route]['controller'] . ' for method ' . $this->routes[$route]['method']);
+        if( empty( $methods ) ) {
+            return $route . '_ALLMETHODS';
+        }
+        
+        foreach( $methods as $method ) {
+            $route .= '_' . $methods;
+        }
+        
+        return $route;
+    }
+    
+    
+    private function getNamespace( string $filename ): string
+    {
+        $lines = file( $filename);
+        
+        foreach($lines as $line){
+            if(preg_match( '/^namespace *([a-zA-Z0-9\\\_-]+);.*/', $line, $output)){
+                $shortName = explode( '/', $filename);
+                
+                return $output[1] . '\\' . str_replace('.php', '', $shortName[count( $shortName) - 1]);
+            }
+        }
+    
+        throw new \ParseError('Impossible to resolve the namespace of file "' . $filename . '"');
+    }
+    
+    
+    private function isUniqueRoute( string $route, ?array $methods, \ReflectionClass $reflectionClass ): void
+    {
+        
+        foreach( $this->routes as $array ) {
+            if( $array[RouteHandlerInterface::ROUTE] === $route ) {
+                
+                if( !empty( $methods ) ) {
+                    $found = FALSE;
+                    
+                    foreach( $array[RouteHandlerInterface::REQUEST_METHODS] as $method ) {
+                        if( in_array( $method, $methods ) ) {
+                            $found = TRUE;
+                            
+                            break;
+                        }
+                    }
+                    
+                    if( !$found ) {
+                        return;
+                    }
+                }
+                
+                throw new ConflictException( 'Your route "' . $route . '" declared in "' . $reflectionClass->getName() . '::class" is already used by ' .
+                                             $array[RouteHandlerInterface::CONTROLLER] . ' for method ' . $array[RouteHandlerInterface::METHOD] );
+            }
+        }
+    }
+    
+    
+    private function isUniqueName( string $name ): void
+    {
+        if( array_key_exists( $name, $this->routes ) ) {
+            throw new ConflictException( 'Your route with name "' . $name . '" is already used' );
         }
     }
 }

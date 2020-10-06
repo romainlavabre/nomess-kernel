@@ -2,6 +2,10 @@
 
 $version = '3.0';
 
+global $controllerShortName, $method;
+
+$controller = $controllerShortName;
+$action = $_SERVER['REQUEST_METHOD'];
 
 $tabOpcache = NULL;
 $tabStatus  = NULL;
@@ -30,7 +34,7 @@ $fileIndex = $function();
 </style>
 <div id="nm_toolbar">
     <div class="nm_container-fluid nm_fixed-bottom" style="background: #333;">
-        <button class="nm_btn nm_noir nm_no-radius nm_no-cursor">Dev</button>
+        <button class="nm_btn nm_noir nm_no-radius nm_no-cursor"><?php echo NOMESS_CONTEXT ?></button>
         <div class="nm_btn-group nm_dropup">
             <button type="button" class="nm_btn nm_rouge nm_no-radius" data-toggle="dropdown" aria-haspopup="true"
                     aria-expanded="false">
@@ -52,7 +56,7 @@ $fileIndex = $function();
                             data-target="#cache">Dashboard
                     </button>
                     <form method="post" action="<?php
-                    echo $_GET['p']; ?>">
+                    echo $_SERVER['REQUEST_URI']; ?>">
                         <input name="resetCache" type="hidden">
                         <input type="submit" value="Vider le cache" class="nm_btn nm_dropdown-item nm_rouge">
                     </form>
@@ -235,7 +239,7 @@ $fileIndex = $function();
 											<tr>
 												<th>' . $key . '</th>
 												<td>
-													<form method="post" action="' . $_GET['p'] . '">
+													<form method="post" action="' . $_SERVER['REQUEST_URI'] . '">
 														<input type="hidden" name="invalide" value="' . $key . '">
 														<input type="submit" class="nm_btn nm_btn-sm nm_no-radius nm_rouge" value="Invalider">
 													</form>

@@ -9,7 +9,6 @@ class RouteResolver
 {
     
     use Scanner;
-    
     private const CACHE_NAME = 'routes';
     private CacheHandlerInterface $cacheHandler;
     private RouteBuilder          $routeBuilder;
@@ -28,90 +27,69 @@ class RouteResolver
     public function resolve(): ?array
     {
         $routes = $this->cacheHandler->get( self::CACHE_NAME, 'routes_match' );
-        if( empty($routes) ) {
+        if( empty( $routes ) ) {
             $routes = $this->routeBuilder->build();
             $this->cacheHandler->add( self::CACHE_NAME, [
                 'value' => $routes
             ] );
         }
         
-        
-        
-        foreach( $routes as $key => $route ) {
+        foreach( $routes as $routeName => $route ) {
             
-            
-            if( $key === '/' . $_GET['p'] ) {
-                return $route;
+            if( !in_array( $_SERVER['REQUEST_METHOD'], is_array( $route[RouteHandlerInterface::REQUEST_METHODS] ) ? $route[RouteHandlerInterface::REQUEST_METHODS] : [] )
+                && is_array( $route[RouteHandlerInterface::REQUEST_METHODS] ) ) {
+                
+                continue;
             }
             
-            $arrayRoute = explode( '/', $key );
-            $arrayUrl   = explode( '/', $_GET['p'] );
+            if( !$route[RouteHandlerInterface::HAS_PARAMETERS] ) {
+                
+                if( parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ) === $route[RouteHandlerInterface::ROUTE] ) {
+                    return $route;
+                }
+                
+                continue;
+            }
             
-            unset( $arrayRoute[0] );
-            
-            $success = TRUE;
-            $i       = 0;
-            
+            $arrayRoute = explode( '/', $route[RouteHandlerInterface::ROUTE] );
+            $arrayUri   = explode( '/', parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ));
+    
+            unset( $arrayRoute[0], $arrayUri[0] );
+    
+            if( count( $arrayRoute ) !== count( $arrayUri ) ) {
+                continue;
+            }
+    
+            $match = TRUE;
+    
             foreach( $arrayRoute as $key => $section ) {
-                if( !empty( $section ) ) {
-                    if( strpos( $section, '{' ) === FALSE ) {
-                        
-                        if( isset( $arrayUrl[$i] ) ) {
-                            if( strpos( $arrayUrl[$i], '?' ) !== FALSE ) {
-                                $arrayUrl[$i] = explode( '?', $arrayUrl[$i] )[0];
-                            }
-                            
-                            if( strpos( $arrayUrl[$i], '&' ) !== FALSE ) {
-                                $arrayUrl[$i] = explode( '&', $arrayUrl[$i] )[0];
-                            }
-                            
-                            if( ( isset( $arrayUrl[$i] ) && $section !== $arrayUrl[$i] )
-                                || !isset( $arrayUrl[$i] ) ) {
-                                
-                                $success = FALSE;
-                                break 1;
-                            }
-                        } else {
-                            $success = FALSE;
-                            break 1;
-                        }
-                    } else {
-                        if( empty( $arrayUrl[$i] ) ) {
-                            $success = FALSE;
-                            break 1;
-                        }
-                        
-                        $sectionPurged = $this->getIdSection( $section );
-                        
-                        if( isset( $route['requirements'][$sectionPurged] ) ) {
-                            if( !preg_match( '/' . $route['requirements'][$sectionPurged] . '/', $arrayUrl[$i] ) ) {
-                                $success = FALSE;
-                                break 1;
-                            }
-                        }
-                        
-                        $_GET[$sectionPurged] = $arrayUrl[$i];
-                    }
-                    
-                    unset( $arrayUrl[$i] );
-                    $i++;
-                } else {
-                    $success = FALSE;
+    
+                if( empty( $arrayUri[$key] ) || ($section !== $arrayUri[$key] && strpos( $section, '{') === FALSE) ) {
+                    $match = FALSE;
                     break 1;
                 }
+    
+                if( strpos( $section, '{' ) === FALSE ) {
+                    continue;
+                }
+    
+                $param = str_replace( [ '{', '}' ], '', $section );
+    
+                if( isset( $route[RouteHandlerInterface::REQUIREMENTS][$param] ) ) {
+                    if( !preg_match( '/' . $route[RouteHandlerInterface::REQUIREMENTS][$param] . '/', $arrayUri[$key] ) ) {
+                        $match = FALSE;
+                        break 1;
+                    }
+                }
+                
+                $_GET[$param] = $arrayUri[$key];
             }
             
-            if( $success === TRUE && empty( $arrayUrl ) ) {
+            if( $match ) {
                 return $route;
             }
         }
         
         return NULL;
-    }
-    
-    
-    private function getIdSection( string $section ): string
-    {
-        return str_replace( [ '{', '}' ], '', $section );
     }
 }

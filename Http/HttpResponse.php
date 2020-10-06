@@ -3,14 +3,11 @@
 namespace Nomess\Http;
 
 
-use InvalidArgumentException;
 use Nomess\Component\Cache\CacheHandlerInterface;
-use Nomess\Component\Cache\Exception\InvalidSendException;
 use Nomess\Component\Config\ConfigStoreInterface;
-use Nomess\Component\Config\Exception\ConfigurationNotFoundException;
 use Nomess\Container\Container;
 use Nomess\Exception\NotFoundException;
-use Nomess\Initiator\Route\RouteBuilder;
+use Nomess\Initiator\Route\RouteHandlerInterface;
 use Nomess\Tools\Twig\Form\ComposeExtension;
 use Nomess\Tools\Twig\Form\CsrfExtension;
 use Nomess\Tools\Twig\Form\FieldExtension;
@@ -119,16 +116,21 @@ final class HttpResponse
             $this->template( $tabError[$code] );
         }
         
+        die();
         
         return $this;
     }
     
     
-    public function template( string $template ): HttpResponse
+    public function template( string $template, int $response_code = 200 ): HttpResponse
     {
+        http_response_code( $response_code );
+        
         $time = 0;
         
-        $time = xdebug_time_index();
+        if( function_exists( 'xdebug_time_index' ) ) {
+            $time = xdebug_time_index();
+        }
         
         
         $loader = new FilesystemLoader( ROOT . 'templates' );
@@ -172,54 +174,29 @@ final class HttpResponse
      *
      * @param string $routeName
      * @param array|null $parameters
-     * @return void
+     * @param int $response_code
+     * @return HttpResponse
      * @throws NotFoundException
-     * @throws InvalidSendException
-     * @throws ConfigurationNotFoundException
      */
-    public final function redirectToLocal( string $routeName, ?array $parameters = NULL ): HttpResponse
+    public final function redirectToLocal( string $routeName, array $parameters = [], int $response_code = 302 ): HttpResponse
     {
+        http_response_code( $response_code );
         
         if( isset( $this->data ) ) {
             unset( $this->data['POST'], $this->data['GET'] );
             $_SESSION[self::SESSION_DATA] = $this->data;
         }
         
-        $routes = NULL;
+        /** @var RouteHandlerInterface $routeHandler */
+        $routeHandler = Container::getInstance()->get( RouteHandlerInterface::class );
         
-        if( ($routes = $this->cacheHandler->get( self::CACHE_ROUTE_NAME, 'routes_match' )) === NULL ) {
-            $routes = Container::getInstance()->get( RouteBuilder::class )->build();
+        header( 'Location: ' . $route = $routeHandler->getUri( $routeName, $parameters ) );
+        
+        if( $route === NULL ) {
+            throw new NotFoundException( 'Your route "' . $routeName . '" was not found' );
         }
         
-        foreach( $routes as $key => $route ) {
-            if( $route['name'] === $routeName ) {
-                if( strpos( $key, '{' ) !== FALSE ) {
-                    $sections = explode( '/', $key );
-                    
-                    foreach( $sections as &$section ) {
-                        
-                        if( strpos( $section, '{' ) !== FALSE ) {
-                            if( !empty( $parameters ) && array_key_exists( str_replace( [ '{', '}' ], '', $section ), $parameters ) ) {
-                                $section = $parameters[str_replace( [ '{', '}' ], '', $section )];
-                            } else {
-                                throw new InvalidArgumentException( 'Missing an dynamic data in your url' );
-                            }
-                        }
-                    }
-                    
-                    $key = implode( '/', $sections );
-                }
-                
-                if( strpos( $key, '{' ) ) {
-                    throw new InvalidArgumentException( 'Missing an dynamic data in your url' );
-                }
-                
-                header( "Location: $key" );
-                die;
-            }
-        }
-        
-        throw new NotFoundException( "Your route $routeName has not found" );
+        die();
         
         return $this;
     }
@@ -229,17 +206,23 @@ final class HttpResponse
      * Redirects to an external resource, if the forward method is called, pending operations will be executed
      *
      * @param string $url
-     * @return void
+     * @param int $response_code
+     * @return HttpResponse
      */
-    public final function redirectToOutside( string $url ): HttpResponse
+    public final function redirectToOutside( string $url, int $response_code = 302 ): HttpResponse
     {
-        header( "Location: $url" );
+        
+        header( "Location: $url", TRUE, $response_code );
+        
+        die();
+        
         return $this;
     }
     
     
-    public final function json( array $data ): HttpResponse
+    public final function json( array $data, int $response_code = 200 ): HttpResponse
     {
+        http_response_code( $response_code );
         $this->return[] = json_encode( $data );
         
         return $this;
@@ -254,23 +237,13 @@ final class HttpResponse
             return;
         }
         
-        $controller = NULL;
-        $method     = NULL;
-        $action     = NULL;
-        
-        if( isset( $_SESSION['app']['toolbar'] ) ) {
-            $controller = $_SESSION['app']['toolbar']['controller'];
-            $method     = $_SESSION['app']['toolbar']['method'];
-            $action     = $_SERVER['REQUEST_METHOD'];
-            
-            unset( $_SESSION['app']['toolbar'] );
-        }
+        global $controllerShortName, $method;
         
         $this->return[] = [
             'param'    => [
-                'controller' => $controller,
+                'controller' => $controllerShortName,
                 'method'     => $method,
-                'action'     => $action
+                'action'     => $_SERVER['REQUEST_METHOD']
             ],
             'template' => require ROOT . 'vendor/nomess/kernel/Tools/tools/toolbar.php'
         ];
@@ -283,7 +256,7 @@ final class HttpResponse
             
             $extensions = $this->configStore->get( self::CONFIG_TWIG )['extensions'];
             
-            if(is_array($extensions)) {
+            if( is_array( $extensions ) ) {
                 foreach( $extensions as $extension ) {
                     $environment->addExtension( new $extension() );
                 }
@@ -295,7 +268,7 @@ final class HttpResponse
     public function show(): void
     {
         foreach( $this->return as $data ) {
-            if(is_string($data)) {
+            if( is_string( $data ) ) {
                 echo $data;
             }
         }

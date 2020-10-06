@@ -17,30 +17,22 @@ class HttpSession
     private const RECOVERY_CONFIG = 'recovery_config';
     private const SESSION_SET_LIFE_TIME = 'session_set_life_time';
     
-    
-    /**
-     * Initialize an session
-     *
-     * @throws NomessException
-     */
-    public function initSession(): void
+    public function __construct()
     {
-        
         if (session_status() === 1) {
-            
-            ini_set('session.gc_maxlifetime', getenv('NM_SESSION_LIFETIME'));
+        
             session_start();
             if (!isset($_SESSION[self::ID_MODULE_SECURITY])) {
                 $_SESSION[self::ID_MODULE_SECURITY] = array();
             }
-            
+        
             $this->securityInitialized();
-            
+        
             if (isset($_SESSION[self::ID_MODULE_SECURITY][self::MODULE_USER_AGENT])) {
                 $this->executedModule();
             }
-            
-            
+        
+        
         } else if (session_status() === 0) {
             throw new NomessException('Please active the session');
         }

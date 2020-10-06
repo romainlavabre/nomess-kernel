@@ -4,6 +4,10 @@
 namespace Nomess\Tools\Twig\Form;
 
 
+use Nomess\Component\Orm\Cache\CacheHandlerInterface;
+use Nomess\Component\Orm\Entity\Entity;
+use Nomess\Component\Orm\Handler\Find\FindRelation;
+use Nomess\Container\Container;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
@@ -74,8 +78,8 @@ class ValueExtension extends AbstractExtension
                     $reflectionProperty->setAccessible( TRUE );
                 }
                 
-                if( !is_object( $reflectionProperty->getValue( $this->instance ) ) ) {
-                    return $reflectionProperty->getValue( $this->instance );
+                if( !is_object( $value = $this->getValue( $this->instance, $reflectionProperty ) ) ) {
+                    return $value;
                 }
             }
         }
@@ -107,13 +111,13 @@ class ValueExtension extends AbstractExtension
                 
                 $reflectionProperty = NULL;
                 
-                try {
-                    if( $propertyName != NULL ) {
-                        $reflectionProperty = $this->reflectionClass->getProperty( $propertyName );
-                    } else {
-                        $reflectionProperty = $this->reflectionClass->getProperty( $name );
-                    }
-                } catch( \Throwable $e ) {
+                if( $propertyName != NULL
+                    && property_exists( get_class( $this->instance ), $propertyName ) ) {
+                    
+                    $reflectionProperty = $this->reflectionClass->getProperty( $propertyName );
+                } elseif( property_exists( get_class( $this->instance ), $name ) ) {
+                    
+                    $reflectionProperty = $this->reflectionClass->getProperty( $name );
                 }
                 
                 if( $reflectionProperty !== NULL ) {
@@ -121,7 +125,7 @@ class ValueExtension extends AbstractExtension
                         $reflectionProperty->setAccessible( TRUE );
                     }
                     
-                    $valueProperty = $reflectionProperty->getValue( $this->instance );
+                    $valueProperty = $this->getValue( $this->instance, $reflectionProperty );
                     
                     if( is_array( $valueProperty ) ) {
                         foreach( $valueProperty as $data ) {
@@ -166,5 +170,21 @@ class ValueExtension extends AbstractExtension
         }
         
         return $name;
+    }
+    
+    
+    private function getValue( object $object, \ReflectionProperty $reflectionProperty )
+    {
+        if( ( new \ReflectionClass( $object ) )->isSubclassOf( Entity::class )
+            && !$object->isPropertyLoaded( $reflectionProperty->getName() )
+            && Container::getInstance()->get( CacheHandlerInterface::class )->getCache(
+                get_class( $object ))[CacheHandlerInterface::ENTITY_METADATA][$reflectionProperty->getName()][CacheHandlerInterface::ENTITY_RELATION] !== NULL ) {
+            
+            /** @var FindRelation $findRelation */
+            $findRelation = Container::getInstance()->get( FindRelation::class );
+            $findRelation->load( $object, $reflectionProperty->getName() );
+        }
+        
+        return $reflectionProperty->getValue( $object );
     }
 }

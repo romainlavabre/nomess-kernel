@@ -4,23 +4,31 @@
 namespace Nomess\Container;
 
 
+use Nomess\Component\Cache\Builder\CacheBuilder;
+use Nomess\Component\Cache\CacheHandler;
+use Nomess\Component\Cache\CacheHandlerInterface;
 use Nomess\Component\Config\ConfigHandler;
 use Nomess\Component\Config\ConfigStoreInterface;
 use Nomess\Component\Parser\YamlParser;
 use Nomess\Event\EventListener;
 use Nomess\Event\EventListenerInterface;
+use Nomess\Event\EventSubscriber;
 use Nomess\Event\EventSubscriberInterface;
+use Nomess\Exception\ConflictException;
 use Nomess\Exception\MissingConfigurationException;
 use Nomess\Exception\NotFoundException;
+use Nomess\Initiator\Route\RouteHandler;
+use Nomess\Initiator\Route\RouteHandlerInterface;
+use Nomess\Installer\InstallerHandler;
+use Nomess\Installer\InstallerHandlerInterface;
 use ReflectionMethod;
-use Stripe\Product;
 
 class Autowire
 {
     
-    private array $instance = array();
-    private array $configuration;
-    public ?array $force    = array();
+    private const CACHE_NAME = 'container';
+    private array $instance      = [];
+    private array $configuration = [];
     
     
     public function __construct( Container $container )
@@ -28,13 +36,51 @@ class Autowire
         $this->instance[Container::class]     = $container;
         $this->instance[ConfigHandler::class] = new ConfigHandler();
         $this->instance[YamlParser::class]    = new YamlParser();
-        $this->initConfig( $this->instance[ConfigHandler::class], $this->instance[YamlParser::class] );
+        $this->instance[CacheBuilder::class]  = new CacheBuilder( $this->instance[ConfigHandler::class], $this->instance[Container::class] );
+        $this->instance[CacheHandler::class]  = new CacheHandler(
+            $this->instance[ConfigHandler::class],
+            $this->instance[Container::class],
+            $this->instance[CacheBuilder::class]
+        );
+        $this->initConfig( $this->instance[ConfigHandler::class] );
     }
     
     
     public function get( string $classname )
     {
+        if( array_key_exists( $classname, $this->instance ) ) {
+            return $this->instance[$classname];
+        } elseif( array_key_exists( $classname, $this->configuration )
+                  && ( is_string( $this->configuration[$classname] ) || is_int( $this->configuration[$classname] ) )
+                  && array_key_exists( $this->configuration[$classname], $this->instance ) ) {
+            return $this->instance[$this->configuration[$classname]];
+        }
+        
         return $this->make( $classname );
+    }
+    
+    
+    public function getByReflectionParameter( \ReflectionParameter $reflectionParameter )
+    {
+        if( array_key_exists( $classname = $reflectionParameter->getType()->getName(), $this->configuration ) ) {
+            if( is_array( $this->configuration[$classname] ) ) {
+                if( array_key_exists( $reflectionParameter->getName(), $this->configuration[$classname] ) ) {
+                    return $this->get( $this->configuration[$classname][$reflectionParameter->getName()] );
+                } else {
+                    $result = [];
+                    
+                    foreach( $this->configuration[$classname] as $class ) {
+                        $result[] = $this->get( $class );
+                    }
+                    
+                    return $result;
+                }
+            }
+            
+            return $this->get( $this->configuration[$classname] );
+        }
+        
+        return $this->get( $classname );
     }
     
     
@@ -46,15 +92,7 @@ class Autowire
      */
     public function make( string $classname )
     {
-    
-        if( array_key_exists( $classname, $this->instance ) ) {
-            return $this->instance[$classname];
-        } elseif( array_key_exists( $classname, $this->configuration ) && array_key_exists( $this->configuration[$classname], $this->instance ) ) {
-            return $this->instance[$this->configuration[$classname]];
-        }
-        
         $reflectionClass = new \ReflectionClass( $classname );
-        
         
         if( !$reflectionClass->isInstantiable() ) {
             if( array_key_exists( $reflectionClass->getName(), $this->configuration ) ) {
@@ -93,7 +131,7 @@ class Autowire
             }
         }
         
-        if(!array_key_exists( $reflectionClass->getName(), $this->instance)) {
+        if( !array_key_exists( $reflectionClass->getName(), $this->instance ) ) {
             $this->instance[$reflectionClass->getName()] = $reflectionClass->newInstanceArgs( $parameters );
         }
     }
@@ -107,12 +145,8 @@ class Autowire
     {
         foreach( $reflectionMethods as $reflectionMethod ) {
             
-            if( $this->hasAnnotation( $reflectionMethod )
-                || ( !empty( $this->force )
-                     && ( $reflectionMethod->getName() === $this->force['method']
-                          && $reflectionMethod->getDeclaringClass()->getName() === $this->force['class'] ) ) ) {
-                $this->purgeForce( $reflectionMethod );
-                $parameters = array();
+            if( $this->hasAnnotation( $reflectionMethod ) ) {
+                $parameters = [];
                 
                 $reflectionParameters = $reflectionMethod->getParameters();
                 
@@ -264,7 +298,7 @@ class Autowire
         // If not found, trying with namespace of original class or if she's declared in configuration
         if( empty( $found ) ) {
             if( class_exists( $reflectionClass->getNamespaceName() . '\\' . $classname )
-                || interface_exists( $reflectionClass->getNamespaceName() . '\\' . $classname) ) {
+                || interface_exists( $reflectionClass->getNamespaceName() . '\\' . $classname ) ) {
                 
                 return $reflectionClass->getNamespaceName() . '\\' . $classname;
             } elseif( isset( $this->configuration[$classname] ) ) {
@@ -294,58 +328,93 @@ class Autowire
     }
     
     
-    private function purgeForce( ReflectionMethod $reflectionMethod ): void
+    private function initConfig( ConfigHandler $configHandler ): void
     {
-        if(!empty( $this->force)) {
-            if( $this->force['method'] === $reflectionMethod->getName()
-                && $this->force['class'] === $reflectionMethod->getDeclaringClass()->getName() ) {
+        /** @var CacheHandlerInterface $cacheHandler */
+        $cacheHandler = $this->get( CacheHandler::class );
         
-                $this->force['method'] = NULL;
-                $this->force['class']  = NULL;
-            }
+        if( !empty( $cache = $cacheHandler->get( self::CACHE_NAME, self::CACHE_NAME ) ) ) {
+            $this->configuration = array_merge( $this->configuration, $cache );
+            
+            return;
         }
-    }
-    
-    
-    private function initConfig( ConfigHandler $configHandler, YamlParser $yamlParser ): void
-    {
+        
         $config = $configHandler->get( ConfigStoreInterface::DEFAULT_CONTAINER )['services'];
         
-        foreach( $config['framework'] as $class => $value ) {
-            $this->addClass( $class, $value );
+        $this->addClass( EventListenerInterface::class, EventListener::class )
+             ->addClass( EventSubscriberInterface::class, EventSubscriber::class )
+             ->addClass( ConfigStoreInterface::class, ConfigHandler::class )
+             ->addClass( InstallerHandlerInterface::class, InstallerHandler::class )
+             ->addClass( ContainerInterface::class, Container::class )
+             ->addClass( RouteHandlerInterface::class, RouteHandler::class );
+        
+        /** @var InstallerHandlerInterface $installHandler */
+        $installHandler = new InstallerHandler( $this->instance[ConfigHandler::class] );
+        
+        foreach( $installHandler->getPackages() as $nomessInstaller ) {
+            foreach( $nomessInstaller->container() as $interface => $mapping ) {
+                $this->addClass( $interface, $mapping );
+            }
         }
         
-        if( is_array( $config['application'] ) ) {
-            foreach( $config['application'] as $class => $value ) {
+        if( is_array( $config ) ) {
+            foreach( $config as $class => $value ) {
                 $this->addClass( $class, $value );
             }
         }
         
-        foreach( $config['components'] as $filename ) {
-            foreach( $yamlParser->parse( $filename ) as $class => $value ) {
-                
-                $this->addClass( $class, $value );
-            }
-        }
+        $cacheHandler->add( self::CACHE_NAME, [
+            'value' => $this->configuration
+        ] );
     }
     
     
-    private function addClass( string $class, $value ): void
+    private function addClass( string $class, $value ): self
     {
-        if( $class === EventSubscriberInterface::class ) {
-            if( !array_key_exists( $class, $this->configuration ) ) {
-                $this->configuration[$class] = [];
+        if( $this->isException( $class, $value ) ) {
+            return $this;
+        }
+        
+        if( array_key_exists( $class, $this->configuration ) ) {
+            if( is_array( $this->configuration[$class] ) ) {
+                if( is_array( $value ) ) {
+                    foreach( $value as $param => $classname ) {
+                        if( is_string( $param ) ) {
+                            if( array_key_exists( $param, $this->configuration[$class] ) ) {
+                                throw new ConflictException( 'The parameter name "' . $param . '" already exists for "' . $class . '::class"' );
+                            }
+                            
+                            $this->configuration[$class][$param] = $classname;
+                            continue;
+                        }
+                        
+                        $this->configuration[$class][] = $classname;
+                    }
+                } else {
+                    $currentValue = $this->configuration[$class];
+                    
+                    $this->configuration[$class][] = $currentValue;
+                    $this->configuration[$class][] = $value;
+                }
             }
             
-            if( is_array( $value ) ) {
-                foreach( $value as $item ) {
-                    $this->configuration[$class][] = $item;
-                }
-            } else {
-                $this->configuration[$class][] = $value;
-            }
-        } else {
-            $this->configuration[$class] = $value;
+            return $this;
         }
+        
+        $this->configuration[$class] = $value;
+        
+        return $this;
+    }
+    
+    
+    private function isException( string $class, $value ): bool
+    {
+        if( $class === EventSubscriberInterface::class ) {
+            $this->configuration[$class][] = $value;
+            
+            return TRUE;
+        }
+        
+        return FALSE;
     }
 }
