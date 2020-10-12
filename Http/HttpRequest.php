@@ -21,6 +21,7 @@ class HttpRequest
     private ?array $error         = array();
     private ?array $success       = array();
     private ?array $parameters    = array();
+    private RequestHeaderInterface $headers;
     private bool   $block_success = FALSE;
     
     
@@ -282,6 +283,19 @@ class HttpRequest
         $data = [ file_get_contents( 'php://input' ) ];
         
         return call_user_func_array( 'json_decode', array_push( $data, $options ) );
+    }
+    
+    
+    /**
+     * @return RequestHeaderInterface
+     */
+    public function getHeaderHandler(): RequestHeaderInterface
+    {
+        if(!isset( $this->headers)){
+            $this->headers = new HttpHeader();
+        }
+        
+        return $this->headers;
     }
     
     

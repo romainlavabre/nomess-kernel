@@ -104,9 +104,9 @@ class Autowire
         }
         
         if( $reflectionClass->getConstructor() !== NULL ) {
-            $this->constructorResolver( $reflectionClass->getConstructor()->getParameters(), $reflectionClass );
+            $this->constructorResolver( $reflectionClass->getConstructor()->getParameters(), $reflectionClass, TRUE );
         } else {
-            $this->constructorResolver( NULL, $reflectionClass );
+            $this->constructorResolver( NULL, $reflectionClass, TRUE );
         }
         
         $this->propertyResolver( $reflectionClass->getProperties(), $this->instance[$classname] );
@@ -121,7 +121,7 @@ class Autowire
      * @param \ReflectionClass $reflectionClass
      * @return void
      */
-    private function constructorResolver( ?array $reflectionParameters, \ReflectionClass $reflectionClass ): void
+    private function constructorResolver( ?array $reflectionParameters, \ReflectionClass $reflectionClass, bool $force = FALSE ): void
     {
         $parameters = array();
         
@@ -131,7 +131,7 @@ class Autowire
             }
         }
         
-        if( !array_key_exists( $reflectionClass->getName(), $this->instance ) ) {
+        if( !array_key_exists( $reflectionClass->getName(), $this->instance ) || $force) {
             $this->instance[$reflectionClass->getName()] = $reflectionClass->newInstanceArgs( $parameters );
         }
     }

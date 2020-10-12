@@ -10,6 +10,7 @@ use Nomess\Container\Container;
 use Nomess\Event\EventListenerInterface;
 use NoMess\Exception\UnsupportedEventException;
 use Nomess\Helpers\ReportHelper;
+use Nomess\Http\HttpHeader;
 use Nomess\Http\HttpRequest;
 use Nomess\Http\HttpResponse;
 use Nomess\Http\HttpSession;
@@ -59,11 +60,11 @@ class Initiator
         $config = $this->container->get( ConfigStoreInterface::class );
         
         if( $config->get( ConfigStoreInterface::DEFAULT_NOMESS )['general']['status'] === 'disable' ) {
-            return $this->response->response_code( 503 );
+            return $this->response->response_code( HttpHeader::HTTP_SERVICE_UNAVAILABLE );
         }
         
         if( empty( $arrayEntryPoint ) ) {
-            return $this->response->response_code( 404 );
+            return $this->response->response_code( HttpHeader::HTTP_NOT_FOUND );
         }
         
         
@@ -89,7 +90,7 @@ class Initiator
             return $this->response;
         }
         
-        return $this->response->response_code( 405 );
+        return $this->response->response_code( HttpHeader::HTTP_METHOD_NOT_ALLOWED );
     }
     
     
