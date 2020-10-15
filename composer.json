@@ -23,7 +23,8 @@
         "nomess/cache": "*",
         "nomess/parameter": "*",
         "nomess/cli": "*",
-        "nomess/orm": "*"
+        "nomess/orm": "*",
+        "ext-http": "*"
     },
     "autoload": {
         "psr-4": {

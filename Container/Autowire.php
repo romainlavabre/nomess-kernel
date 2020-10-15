@@ -50,9 +50,11 @@ class Autowire
     {
         if( array_key_exists( $classname, $this->instance ) ) {
             return $this->instance[$classname];
-        } elseif( array_key_exists( $classname, $this->configuration )
-                  && ( is_string( $this->configuration[$classname] ) || is_int( $this->configuration[$classname] ) )
-                  && array_key_exists( $this->configuration[$classname], $this->instance ) ) {
+        }
+        
+        if( array_key_exists( $classname, $this->configuration )
+            && ( is_string( $this->configuration[$classname] ) || is_int( $this->configuration[$classname] ) )
+            && array_key_exists( $this->configuration[$classname], $this->instance ) ) {
             return $this->instance[$this->configuration[$classname]];
         }
         
@@ -66,15 +68,15 @@ class Autowire
             if( is_array( $this->configuration[$classname] ) ) {
                 if( array_key_exists( $reflectionParameter->getName(), $this->configuration[$classname] ) ) {
                     return $this->get( $this->configuration[$classname][$reflectionParameter->getName()] );
-                } else {
-                    $result = [];
-                    
-                    foreach( $this->configuration[$classname] as $class ) {
-                        $result[] = $this->get( $class );
-                    }
-                    
-                    return $result;
                 }
+                
+                $result = [];
+                
+                foreach( $this->configuration[$classname] as $class ) {
+                    $result[] = $this->get( $class );
+                }
+                
+                return $result;
             }
             
             return $this->get( $this->configuration[$classname] );
@@ -131,7 +133,7 @@ class Autowire
             }
         }
         
-        if( !array_key_exists( $reflectionClass->getName(), $this->instance ) || $force) {
+        if( !array_key_exists( $reflectionClass->getName(), $this->instance ) || $force ) {
             $this->instance[$reflectionClass->getName()] = $reflectionClass->newInstanceArgs( $parameters );
         }
     }
@@ -165,7 +167,6 @@ class Autowire
     /**
      * @param \ReflectionProperty[]|null $reflectionProperties
      * @param object $object
-     * @throws MissingConfigurationException
      */
     private function propertyResolver( ?array $reflectionProperties, object $object ): void
     {
@@ -205,10 +206,11 @@ class Autowire
             if( is_array( $this->configuration[$type] ) ) {
                 if( array_key_exists( $paramName, $this->configuration[$type] ) ) {
                     return $this->getInstance( $this->configuration[$type][$paramName] );
-                } else { // If is not array, send and array of parameter
-                    foreach( $this->configuration[$type] as $class ) {
-                        $list[] = $this->getInstance( $class );
-                    }
+                }
+                
+                // If is not array, send and array of parameter
+                foreach( $this->configuration[$type] as $class ) {
+                    $list[] = $this->getInstance( $class );
                 }
             } else {
                 return $this->getInstance( $this->configuration[$type] );
@@ -232,9 +234,9 @@ class Autowire
         if( $reflectionClass->isInstantiable() ) {
             
             return $this->make( $type );
-        } else {
-            throw new MissingConfigurationException( "Impossible of autowire the class $type, she's not instanciable" );
         }
+        
+        throw new MissingConfigurationException( "Impossible of autowire the class $type, she's not instanciable" );
     }
     
     
@@ -242,12 +244,18 @@ class Autowire
     {
         if( strpos( $reflector->getDocComment(), '@Inject' ) !== FALSE ) {
             return TRUE;
-        } else {
-            return FALSE;
         }
+        
+        return FALSE;
     }
     
     
+    /**
+     * @param string $paramName
+     * @param ReflectionMethod $reflectionMethod
+     * @return string
+     * @throws NotFoundException
+     */
     private function getTypeAnnotationParameter( string $paramName, ReflectionMethod $reflectionMethod ): string
     {
         preg_match( '/@param ([A-Za-z0-1_\\\]+)\[?\]?[|null]* \$' . $paramName . '/', $reflectionMethod->getDocComment(), $output );
@@ -255,12 +263,12 @@ class Autowire
         if( isset( $output[1] ) ) {
             if( class_exists( $output[1] ) ) {
                 return $output[1];
-            } else {
-                return $this->criticalClassResolver( $output[1], $reflectionMethod->getDeclaringClass() );
             }
-        } else {
-            throw new \InvalidArgumentException( "The argument $$paramName in " . $reflectionMethod->getDeclaringClass() . ' for method ' . $reflectionMethod->getName() . ' has unresolved' );
+            
+            return $this->criticalClassResolver( $output[1], $reflectionMethod->getDeclaringClass() );
         }
+        
+        throw new \InvalidArgumentException( "The argument $$paramName in " . $reflectionMethod->getDeclaringClass() . ' for method ' . $reflectionMethod->getName() . ' has unresolved' );
     }
     
     
@@ -271,12 +279,12 @@ class Autowire
         if( isset( $output[1] ) ) {
             if( class_exists( $output[1] ) ) {
                 return $output[1];
-            } else {
-                return $this->criticalClassResolver( $output[1], $reflectionProperty->getDeclaringClass() );
             }
-        } else {
-            throw new \InvalidArgumentException( "The argument $$paramName in " . $reflectionProperty->getDeclaringClass()->getName() . ' has unresolved' );
+            
+            return $this->criticalClassResolver( $output[1], $reflectionProperty->getDeclaringClass() );
         }
+        
+        throw new \InvalidArgumentException( "The argument $$paramName in " . $reflectionProperty->getDeclaringClass()->getName() . ' has unresolved' );
     }
     
     
@@ -285,7 +293,6 @@ class Autowire
         //Search for class in used namespace
         $file  = file( $reflectionClass->getFileName() );
         $found = array();
-        
         
         foreach( $file as $line ) {
             if( strpos( $line, $classname ) !== FALSE && strpos( $line, 'use' ) !== FALSE ) {
@@ -301,30 +308,34 @@ class Autowire
                 || interface_exists( $reflectionClass->getNamespaceName() . '\\' . $classname ) ) {
                 
                 return $reflectionClass->getNamespaceName() . '\\' . $classname;
-            } elseif( isset( $this->configuration[$classname] ) ) {
+            }
+            
+            if( isset( $this->configuration[$classname] ) ) {
                 
                 return $classname;
-            } else {
-                throw new NotFoundException( 'Autowiring encountered an error: class ' . $reflectionClass->getNamespaceName() . '\\' . $classname . ' cannot be resolved, mentioned in ' . $reflectionClass->getName() );
             }
-        } elseif( count( $found ) === 1 ) {
+            
+            throw new NotFoundException( 'Autowiring encountered an error: class ' . $reflectionClass->getNamespaceName() . '\\' . $classname . ' cannot be resolved, mentioned in ' . $reflectionClass->getName() );
+        }
+        
+        if( count( $found ) === 1 ) {
             return $found[0];
-        } else {
-            // If it has been found several times, search in configuration, if all definition match, class is unresolved
-            $defined = array();
-            
-            foreach( $found as $fullname ) {
-                if( isset( $this->configuration[$fullname] ) ) {
-                    $defined[] = $fullname;
-                }
-            }
-            
-            if( empty( $defined ) || count( $defined ) > 1 ) {
-                throw new NotFoundException( 'Autowiring encountered an error: impossible of resolved the class ' . $classname . ' mentionned in ' . $reflectionClass->getName() );
-            } else {
-                return $defined[0];
+        }
+        
+        // If it has been found several times, search in configuration, if all definition match, class is unresolved
+        $defined = array();
+        
+        foreach( $found as $fullname ) {
+            if( isset( $this->configuration[$fullname] ) ) {
+                $defined[] = $fullname;
             }
         }
+        
+        if( empty( $defined ) || count( $defined ) > 1 ) {
+            throw new NotFoundException( 'Autowiring encountered an error: impossible of resolved the class ' . $classname . ' mentionned in ' . $reflectionClass->getName() );
+        }
+        
+        return $defined[0];
     }
     
     

@@ -73,7 +73,7 @@ class EventListener implements EventListenerInterface
             EventListenerInterface::LAUNCH_EXCEPTION
         ];
         
-        return in_array( $event, $events );
+        return in_array( $event, $events, TRUE );
     }
     
     

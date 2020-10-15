@@ -11,9 +11,7 @@ use Nomess\Event\EventListenerInterface;
 use NoMess\Exception\UnsupportedEventException;
 use Nomess\Helpers\ReportHelper;
 use Nomess\Http\HttpHeader;
-use Nomess\Http\HttpRequest;
 use Nomess\Http\HttpResponse;
-use Nomess\Http\HttpSession;
 use Nomess\Initiator\Filters\FilterResolver;
 use Nomess\Initiator\Route\RouteHandlerInterface;
 use Nomess\Initiator\Route\RouteResolver;
@@ -24,7 +22,6 @@ class Initiator
     use ReportHelper;
     
     private Container              $container;
-    private HttpRequest            $request;
     private HttpResponse           $response;
     private EventListenerInterface $eventListener;
     private ConfigStoreInterface   $configStore;
@@ -33,7 +30,6 @@ class Initiator
     public function __construct()
     {
         $this->container     = Container::getInstance();
-        $this->request       = $this->container->get( HttpRequest::class );
         $this->response      = $this->container->get( HttpResponse::class );
         $this->eventListener = $this->container->get( EventListenerInterface::class );
         $this->eventListener->notify( EventListenerInterface::AFTER_CONTAINER_INITIALIZER );
@@ -69,19 +65,18 @@ class Initiator
         
         
         if( $arrayEntryPoint[RouteHandlerInterface::REQUEST_METHODS] === NULL
-            || in_array( $_SERVER['REQUEST_METHOD'], $arrayEntryPoint[RouteHandlerInterface::REQUEST_METHODS] ) ) {
+            || in_array( $_SERVER['REQUEST_METHOD'], $arrayEntryPoint[RouteHandlerInterface::REQUEST_METHODS], TRUE ) ) {
             
             $toolbarActive = $this->configStore->get( ConfigStoreInterface::DEFAULT_NOMESS )['general']['toolbar'];
             
             if( ( $toolbarActive === 'auto' && NOMESS_CONTEXT === 'DEV' ) || $toolbarActive === 'enable' ) {
                 global $controllerShortName, $method;
-    
+                
                 $controllerShortName = ( new \ReflectionClass( $arrayEntryPoint[RouteHandlerInterface::CONTROLLER] ) )->getShortName();
                 $method              = $arrayEntryPoint[RouteHandlerInterface::METHOD];
-            
             }
-    
-    
+            
+            
             $controller = $this->container->get( $arrayEntryPoint[RouteHandlerInterface::CONTROLLER] );
             $this->eventListener->notify( EventListenerInterface::BEFORE_CALL_CONTROLLER );
             call_user_func_array( [ $controller, $arrayEntryPoint[RouteHandlerInterface::METHOD] ], $this->getArgumentController( $arrayEntryPoint ) );

@@ -14,21 +14,21 @@ use Nomess\Tools\Twig\Form\FieldExtension;
 use Nomess\Tools\Twig\Form\ValueExtension;
 use Nomess\Tools\Twig\PathExtension;
 use Twig\Environment;
+use Twig\Extension\DebugExtension;
 use Twig\Loader\FilesystemLoader;
 
 class HttpResponse
 {
     
-    private const CACHE_ROUTE_NAME       = 'routes';
     private const CONFIG_TWIG            = 'twig';
     private const SESSION_NOMESS_SCURITY = 'nomess_session_security';
     private const SESSION_DATA           = 'nomess_persiste_data';
-    private HttpRequest            $request;
-    private CacheHandlerInterface  $cacheHandler;
-    private ConfigStoreInterface   $configStore;
+    private HttpRequest             $request;
+    private CacheHandlerInterface   $cacheHandler;
+    private ConfigStoreInterface    $configStore;
     private ResponseHeaderInterface $headers;
-    private array                  $return = array();
-    private ?array                 $data   = array();
+    private array                   $return = array();
+    private ?array                  $data   = array();
     
     
     /**
@@ -44,7 +44,7 @@ class HttpResponse
         $this->request      = $request;
         $this->cacheHandler = $cacheHandler;
         $this->configStore  = $configStore;
-        $this->headers = new HttpHeader();
+        $this->headers      = new HttpHeader();
     }
     
     
@@ -54,15 +54,14 @@ class HttpResponse
      * @param HttpRequest|null $request
      * @return self
      */
-    public final function forward( ?HttpRequest $request ): self
+    final public function forward( ?HttpRequest $request ): self
     {
         
         if( $request !== NULL ) {
             $this->data = $request->getParameters();
             
-            if(isset( $_SESSION[self::SESSION_NOMESS_SCURITY])){
+            if( isset( $_SESSION[self::SESSION_NOMESS_SCURITY] ) ) {
                 unset( $_SESSION[self::SESSION_NOMESS_SCURITY] );
-    
             }
         }
         
@@ -82,7 +81,7 @@ class HttpResponse
      * @param bool $httponly
      * @return HttpResponse
      */
-    public final function addCookie( string $name, $value = "", int $expires = 0, string $path = "", string $domain = "", bool $secure = FALSE, bool $httponly = FALSE ): HttpResponse
+    final public function addCookie( string $name, $value = "", int $expires = 0, string $path = "", string $domain = "", bool $secure = FALSE, bool $httponly = FALSE ): HttpResponse
     {
         if( is_array( $value ) ) {
             foreach( $value as $key => $val ) {
@@ -102,7 +101,7 @@ class HttpResponse
      * @param string $index
      * @return HttpResponse
      */
-    public final function removeCookie( string $index ): HttpResponse
+    final public function removeCookie( string $index ): HttpResponse
     {
         setcookie( $index, NULL, -1, '/' );
         
@@ -112,7 +111,7 @@ class HttpResponse
     
     public function response_code( int $code ): HttpResponse
     {
-        $this->headers->responseCode( $code);
+        $this->headers->responseCode( $code );
         $config       = $this->configStore->get( ConfigStoreInterface::DEFAULT_NOMESS );
         $tabError     = $config['error_pages']['codes'];
         $pathTemplate = $config['general']['path']['default_template'];
@@ -129,7 +128,7 @@ class HttpResponse
     public function template( string $template, int $response_code = 200 ): HttpResponse
     {
         
-        $this->headers->responseCode( $response_code);
+        $this->headers->responseCode( $response_code );
         
         $time = 0;
         
@@ -138,10 +137,10 @@ class HttpResponse
         }
         
         
-        $loader = new FilesystemLoader( $this->configStore->get( ConfigStoreInterface::DEFAULT_NOMESS)['general']['path']['default_template'] );
-    
+        $loader = new FilesystemLoader( $this->configStore->get( ConfigStoreInterface::DEFAULT_NOMESS )['general']['path']['default_template'] );
+        
         $engine = new Environment( $loader, [
-            'debug' => NOMESS_CONTEXT === 'DEV' ? TRUE : FALSE,
+            'debug' => NOMESS_CONTEXT === 'DEV',
             'cache' => NOMESS_CONTEXT === 'DEV' ? FALSE : ROOT . 'var/cache/twig/',
         ] );
         
@@ -166,7 +165,7 @@ class HttpResponse
      * @return HttpResponse
      * @throws NotFoundException
      */
-    public final function redirectToLocal( string $routeName, array $parameters = [], int $response_code = 302 ): HttpResponse
+    final public function redirectToLocal( string $routeName, array $parameters = [], int $response_code = 302 ): HttpResponse
     {
         $this->headers->responseCode( $response_code );
         
@@ -177,7 +176,7 @@ class HttpResponse
         
         /** @var RouteHandlerInterface $routeHandler */
         $routeHandler = Container::getInstance()->get( RouteHandlerInterface::class );
-        $this->headers->set( HttpHeader::LOCATION, $route = $routeHandler->getUri( $routeName, $parameters ));
+        $this->headers->set( HttpHeader::LOCATION, $route = $routeHandler->getUri( $routeName, $parameters ) );
         
         if( $route === NULL ) {
             throw new NotFoundException( 'Your route "' . $routeName . '" was not found' );
@@ -194,20 +193,20 @@ class HttpResponse
      * @param int $response_code
      * @return HttpResponse
      */
-    public final function redirectToOutside( string $url, int $response_code = 302 ): HttpResponse
+    final public function redirectToOutside( string $url, int $response_code = 302 ): HttpResponse
     {
-        $this->headers->responseCode( $response_code);
-        $this->headers->set( HttpHeader::LOCATION, $url);
+        $this->headers->responseCode( $response_code );
+        $this->headers->set( HttpHeader::LOCATION, $url );
         
         return $this;
     }
     
     
-    public final function json( array $data, int $response_code = 200 ): HttpResponse
+    final public function json( array $data, int $response_code = 200 ): HttpResponse
     {
-        $this->headers->responseCode( $response_code);
+        $this->headers->responseCode( $response_code );
         
-        $this->return[] = json_encode( $data );
+        $this->return[] = json_encode( $data, JSON_THROW_ON_ERROR );
         
         return $this;
     }
@@ -237,13 +236,13 @@ class HttpResponse
     private function addTwigExtension( Environment $environment ): void
     {
         if( NOMESS_CONTEXT === 'DEV' ) {
-            $environment->addExtension( new \Twig\Extension\DebugExtension() );
+            $environment->addExtension( new DebugExtension() );
         }
-    
+        
         $environment->addExtension( new PathExtension() );
         $environment->addExtension( new CsrfExtension() );
         $environment->addExtension( new ComposeExtension() );
-    
+        
         if( is_array( $this->data ) ) {
             $environment->addExtension( $valueExtension = new ValueExtension( $this->data['POST'] ) );
             $environment->addExtension( new FieldExtension( $valueExtension ) );

@@ -210,7 +210,7 @@ class HttpHeader implements RequestHeaderInterface, ResponseHeaderInterface
     public function getRequestHeader( string $header ): ?string
     {
         foreach( http_get_request_headers() as $requestHeader ) {
-            if( strpos( mb_strtolower( $requestHeader ), mb_strtolower( $header ) . ':' ) ) {
+            if( stripos( $requestHeader, mb_strtolower( $header ) . ':' ) ) {
                 return $requestHeader;
             }
         }
@@ -228,7 +228,7 @@ class HttpHeader implements RequestHeaderInterface, ResponseHeaderInterface
     public function getResponseHeader( string $header ): ?string
     {
         foreach( headers_list() as $responseHeader ) {
-            if( strpos( mb_strtolower( $responseHeader ), mb_strtolower( $header ) . ':' ) ) {
+            if( stripos( $responseHeader, mb_strtolower( $header ) . ':' ) ) {
                 return $responseHeader;
             }
         }

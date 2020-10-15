@@ -5,7 +5,6 @@ namespace Nomess\Initiator\Filters;
 
 
 use Nomess\Component\Cache\CacheHandlerInterface;
-use Nomess\Component\Config\ConfigStoreInterface;
 use Nomess\Container\Container;
 
 class FilterResolver
@@ -14,20 +13,17 @@ class FilterResolver
     private const CACHE_FILER = 'filters';
     private Container             $container;
     private CacheHandlerInterface $cacheHandler;
-    private ConfigStoreInterface  $configStore;
     private FilterBuilder         $filterBuilder;
     
     
     public function __construct(
         Container $container,
         CacheHandlerInterface $cacheHandler,
-        ConfigStoreInterface $configStore,
         FilterBuilder $filterBuilder
     )
     {
         $this->container     = $container;
         $this->cacheHandler  = $cacheHandler;
-        $this->configStore   = $configStore;
         $this->filterBuilder = $filterBuilder;
     }
     
@@ -38,9 +34,9 @@ class FilterResolver
         
         if( $filters === NULL ) {
             $filters = $this->filterBuilder->build();
-            $this->cacheHandler->add(self::CACHE_FILER, [
+            $this->cacheHandler->add( self::CACHE_FILER, [
                 'value' => $filters
-            ]);
+            ] );
         }
         
         foreach( $filters as $filterName => $regex ) {
@@ -49,5 +45,4 @@ class FilterResolver
             }
         }
     }
-    
 }

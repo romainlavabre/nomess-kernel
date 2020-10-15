@@ -18,11 +18,11 @@ class HttpRequest
     public const  ARRAY_NULL   = 'array_null';
     public const  FLOAT_NULL   = 'float_null';
     private const SESSION_DATA = 'nomess_persiste_data';
-    private ?array $error         = array();
-    private ?array $success       = array();
-    private ?array $parameters    = array();
+    private ?array                 $error         = array();
+    private ?array                 $success       = array();
+    private ?array                 $parameters    = array();
     private RequestHeaderInterface $headers;
-    private bool   $block_success = FALSE;
+    private bool                   $block_success = FALSE;
     
     
     public function __construct()
@@ -115,7 +115,7 @@ class HttpRequest
      */
     public function getParameter( string $index, string $type = 'string', bool $escape = TRUE )
     {
-        if( isset( $_POST[$index] )) {
+        if( isset( $_POST[$index] ) ) {
             
             if( $escape === TRUE ) {
                 if( is_array( $_POST[$index] ) ) {
@@ -128,7 +128,9 @@ class HttpRequest
             }
             
             return $this->cast( $type, $_POST[$index] );
-        } elseif( isset( $_GET[$index] )) {
+        }
+        
+        if( isset( $_GET[$index] ) ) {
             
             if( $escape === TRUE ) {
                 
@@ -146,12 +148,13 @@ class HttpRequest
             }
             
             return $this->cast( $type, $_GET[$index] );
-        } elseif( isset( $this->parameters[$index] ) ) {
+        }
+        
+        if( isset( $this->parameters[$index] ) ) {
             return $this->cast( $type, $this->parameters[$index] );
         }
         
-        return $this->cast( $type, NULL);
-        
+        return $this->cast( $type, NULL );
     }
     
     
@@ -163,7 +166,9 @@ class HttpRequest
      */
     public function hasParameter( string $index ): bool
     {
-        return array_key_exists( $index, $_POST ) || array_key_exists( $index, $_GET ) || array_key_exists( $index, $this->parameters );
+        return array_key_exists( $index, $_POST )
+               || array_key_exists( $index, $_GET )
+               || array_key_exists( $index, $this->parameters );
     }
     
     
@@ -198,7 +203,9 @@ class HttpRequest
                 }
                 
                 return NULL;
-            } elseif( !empty( $_FILES[$index]['name'] ) ) {
+            }
+            
+            if( !empty( $_FILES[$index]['name'] ) ) {
                 return $_FILES[$index];
             }
         }
@@ -217,9 +224,9 @@ class HttpRequest
     {
         if( isset( $_COOKIE[$index] ) && !empty( $_COOKIE[$index] ) ) {
             return $_COOKIE[$index];
-        } else {
-            return NULL;
         }
+        
+        return NULL;
     }
     
     
@@ -291,7 +298,7 @@ class HttpRequest
      */
     public function getHeaderHandler(): RequestHeaderInterface
     {
-        if(!isset( $this->headers)){
+        if( !isset( $this->headers ) ) {
             $this->headers = new HttpHeader();
         }
         
@@ -302,16 +309,14 @@ class HttpRequest
     public function isValidToken(): bool
     {
         if( isset( $_POST['_token'] ) ) {
-            if( isset( $_SESSION['app']['_token'] ) ) {
-                if( $_POST['_token'] === $_SESSION['app']['_token'] ) {
-                    return TRUE;
-                }
+            if( isset( $_SESSION['app']['_token'] )
+                && $_POST['_token'] === $_SESSION['app']['_token'] ) {
+                return TRUE;
             }
         } elseif( isset( $_GET['_token'] ) ) {
-            if( isset( $_SESSION['app']['_token'] ) ) {
-                if( $_GET['_token'] === $_SESSION['app']['_token'] ) {
-                    return TRUE;
-                }
+            if( isset( $_SESSION['app']['_token'] )
+                && $_GET['_token'] === $_SESSION['app']['_token'] ) {
+                return TRUE;
             }
         }
         
@@ -329,26 +334,44 @@ class HttpRequest
     {
         if( $type === self::STRING ) {
             return (string)$data;
-        } elseif( $type === self::INTEGER ) {
+        }
+        
+        if( $type === self::INTEGER ) {
             return (int)$data;
-        } elseif( $type === self::FLOAT ) {
+        }
+        
+        if( $type === self::FLOAT ) {
             return (float)$data;
-        } elseif( $type === self::ARRAY ) {
+        }
+        
+        if( $type === self::ARRAY ) {
             return (array)$data;
-        } elseif( $type === self::BOOLEAN ) {
+        }
+        
+        if( $type === self::BOOLEAN ) {
             return (bool)$data;
-        }elseif( $type === self::STRING_NULL ) {
+        }
+        
+        if( $type === self::STRING_NULL ) {
             return $data !== NULL ? (string)$data : NULL;
-        } elseif( $type === self::INTEGER_NULL ) {
+        }
+        
+        if( $type === self::INTEGER_NULL ) {
             return $data !== NULL ? (int)$data : NULL;
-        } elseif( $type === self::FLOAT_NULL ) {
+        }
+        
+        if( $type === self::FLOAT_NULL ) {
             return $data !== NULL ? (float)$data : NULL;
-        } elseif( $type === self::ARRAY_NULL ) {
+        }
+        
+        if( $type === self::ARRAY_NULL ) {
             return $data !== NULL ? (array)$data : NULL;
-        } elseif( $type === self::BOOLEAN_NULL ) {
+        }
+        
+        if( $type === self::BOOLEAN_NULL ) {
             return $data !== NULL ? (bool)$data : NULL;
         }
-    
-        throw new InvalidParamException('The type "' . $type . '" is not supported');
+        
+        throw new InvalidParamException( 'The type "' . $type . '" is not supported' );
     }
 }

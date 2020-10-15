@@ -2,7 +2,6 @@
 
 namespace Nomess\Initiator\Route;
 
-use Nomess\Annotations\Route;
 use Nomess\Component\Config\ConfigStoreInterface;
 use Nomess\Component\Parser\AnnotationParserInterface;
 use Nomess\Exception\ConflictException;
@@ -57,8 +56,6 @@ class RouteBuilder
             $content = scandir( $directory );
             
             foreach( $content as $file ) {
-                $this->header = NULL;
-                
                 if( strpos( $file, '.php' ) !== FALSE ) {
                     
                     $reflectionClass = new \ReflectionClass( $this->getNamespace( $directory . $file ) );
@@ -115,8 +112,8 @@ class RouteBuilder
                 if( $this->annotationParser->has( 'Route', $reflectionMethod ) ) {
                     $value        = $this->annotationParser->getValue( 'Route', $reflectionMethod );
                     $route        = ( array_key_exists( 0, $value ) ) ? $value[0] : ( array_key_exists( 'path', $value ) ? $value['path'] : NULL );
-                    $methods      = ( array_key_exists( 'methods', $value ) ) ? $value['methods'] : NULL;
-                    $requirements = ( array_key_exists( 'requirements', $value ) ) ? $value['requirements'] : NULL;
+                    $methods      = $value['methods'] ?? NULL;
+                    $requirements = $value['requirements'] ?? NULL;
                     $name         = ( array_key_exists( 'name', $value ) ) ? $value['name'] : $this->generateName( $route, $methods );
                     
                     if( $route === NULL ) {
@@ -159,17 +156,17 @@ class RouteBuilder
     
     private function getNamespace( string $filename ): string
     {
-        $lines = file( $filename);
+        $lines = file( $filename );
         
-        foreach($lines as $line){
-            if(preg_match( '/^namespace *([a-zA-Z0-9\\\_-]+);.*/', $line, $output)){
-                $shortName = explode( '/', $filename);
+        foreach( $lines as $line ) {
+            if( preg_match( '/^namespace *([a-zA-Z0-9\\\_-]+);.*/', $line, $output ) ) {
+                $shortName = explode( '/', $filename );
                 
-                return $output[1] . '\\' . str_replace('.php', '', $shortName[count( $shortName) - 1]);
+                return $output[1] . '\\' . str_replace( '.php', '', $shortName[count( $shortName ) - 1] );
             }
         }
-    
-        throw new \ParseError('Impossible to resolve the namespace of file "' . $filename . '"');
+        
+        throw new \ParseError( 'Impossible to resolve the namespace of file "' . $filename . '"' );
     }
     
     
@@ -183,7 +180,7 @@ class RouteBuilder
                     $found = FALSE;
                     
                     foreach( $array[RouteHandlerInterface::REQUEST_METHODS] as $method ) {
-                        if( in_array( $method, $methods ) ) {
+                        if( in_array( $method, $methods, TRUE ) ) {
                             $found = TRUE;
                             
                             break;
