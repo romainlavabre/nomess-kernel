@@ -8,5 +8,8 @@ namespace Nomess\Annotations;
  */
 class Route
 {
-
+    
+    private string $name;
+    private array  $methods;
+    private array  $requirements;
 }
