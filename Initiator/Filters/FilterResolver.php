@@ -40,7 +40,7 @@ class FilterResolver
         }
         
         foreach( $filters as $filterName => $regex ) {
-            if( preg_match( '/' . $regex . '/', $route ) ) {
+            if( preg_match( '/' . str_replace('/', '\/', $regex) . '/', $route ) ) {
                 $this->container->get( $filterName )->filtrate();
             }
         }

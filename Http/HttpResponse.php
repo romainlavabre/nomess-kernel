@@ -116,7 +116,9 @@ class HttpResponse
         $tabError     = $config['error_pages']['codes'];
         $pathTemplate = $config['general']['path']['default_template'];
         
-        if( file_exists( $pathTemplate . $tabError[$code] ) ) {
+        if( array_key_exists( $code, $tabError )
+            && file_exists( $pathTemplate . $tabError[$code] ) ) {
+            
             $this->template( $tabError[$code] );
             $this->show();
         }
@@ -204,7 +206,8 @@ class HttpResponse
     
     final public function json( array $data, int $response_code = 200 ): HttpResponse
     {
-        $this->headers->responseCode( $response_code );
+        $this->headers->set( HttpHeader::CONTENT_TYPE, 'application/json' )
+                      ->responseCode( $response_code );
         
         $this->return[] = json_encode( $data, JSON_THROW_ON_ERROR );
         

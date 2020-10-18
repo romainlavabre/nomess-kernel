@@ -48,17 +48,18 @@ class Autowire
     
     public function get( string $classname )
     {
+    
         if( array_key_exists( $classname, $this->instance ) ) {
             return $this->instance[$classname];
         }
-        
+    
         if( array_key_exists( $classname, $this->configuration )
             && ( is_string( $this->configuration[$classname] ) || is_int( $this->configuration[$classname] ) )
             && array_key_exists( $this->configuration[$classname], $this->instance ) ) {
             return $this->instance[$this->configuration[$classname]];
         }
         
-        return $this->make( $classname );
+        return $this->make( $classname, FALSE );
     }
     
     
@@ -92,13 +93,14 @@ class Autowire
      * @throws MissingConfigurationException
      * @throws \ReflectionException
      */
-    public function make( string $classname )
+    public function make( string $classname, bool $force = TRUE )
     {
+        
         $reflectionClass = new \ReflectionClass( $classname );
         
         if( !$reflectionClass->isInstantiable() ) {
-            if( array_key_exists( $reflectionClass->getName(), $this->configuration ) ) {
-                $reflectionClass = new \ReflectionClass( $this->configuration[$reflectionClass->getName()] );
+            if( array_key_exists( $classname, $this->configuration ) ) {
+                $reflectionClass = new \ReflectionClass( $this->configuration[$classname] );
                 $classname       = $reflectionClass->getName();
             } else {
                 throw new MissingConfigurationException( "Impossible of autowire the class $classname, she's not instanciable" );
@@ -106,9 +108,9 @@ class Autowire
         }
         
         if( $reflectionClass->getConstructor() !== NULL ) {
-            $this->constructorResolver( $reflectionClass->getConstructor()->getParameters(), $reflectionClass, TRUE );
+            $this->constructorResolver( $reflectionClass->getConstructor()->getParameters(), $reflectionClass, $force );
         } else {
-            $this->constructorResolver( NULL, $reflectionClass, TRUE );
+            $this->constructorResolver( NULL, $reflectionClass, $force );
         }
         
         $this->propertyResolver( $reflectionClass->getProperties(), $this->instance[$classname] );
@@ -205,38 +207,21 @@ class Autowire
             
             if( is_array( $this->configuration[$type] ) ) {
                 if( array_key_exists( $paramName, $this->configuration[$type] ) ) {
-                    return $this->getInstance( $this->configuration[$type][$paramName] );
+                    return $this->get( $this->configuration[$type][$paramName] );
                 }
                 
                 // If is not array, send and array of parameter
                 foreach( $this->configuration[$type] as $class ) {
-                    $list[] = $this->getInstance( $class );
+                    $list[] = $this->get( $class );
                 }
             } else {
-                return $this->getInstance( $this->configuration[$type] );
+                return $this->get( $this->configuration[$type] );
             }
         } else {
-            return $this->getInstance( $type );
+            return $this->get( $type );
         }
         
         return $list;
-    }
-    
-    
-    private function getInstance( string $type )
-    {
-        $reflectionClass = new \ReflectionClass( $type );
-        
-        if( array_key_exists( $type, $this->instance ) ) {
-            return $this->instance[$type];
-        }
-        
-        if( $reflectionClass->isInstantiable() ) {
-            
-            return $this->make( $type );
-        }
-        
-        throw new MissingConfigurationException( "Impossible of autowire the class $type, she's not instanciable" );
     }
     
     

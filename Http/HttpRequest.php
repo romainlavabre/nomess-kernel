@@ -296,7 +296,7 @@ class HttpRequest
     /**
      * @return RequestHeaderInterface
      */
-    public function getHeaderHandler(): RequestHeaderInterface
+    public function getHeaders(): RequestHeaderInterface
     {
         if( !isset( $this->headers ) ) {
             $this->headers = new HttpHeader();

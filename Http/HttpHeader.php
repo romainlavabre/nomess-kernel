@@ -4,6 +4,8 @@
 namespace Nomess\Http;
 
 
+use http\Env;
+
 /**
  * This class manage the request header and response header
  *
@@ -186,7 +188,7 @@ class HttpHeader implements RequestHeaderInterface, ResponseHeaderInterface
      */
     public function getRequestHeaders(): array
     {
-        return http_get_request_headers();
+        return \http\Env::getRequestHeader();
     }
     
     
@@ -209,7 +211,7 @@ class HttpHeader implements RequestHeaderInterface, ResponseHeaderInterface
      */
     public function getRequestHeader( string $header ): ?string
     {
-        foreach( http_get_request_headers() as $requestHeader ) {
+        foreach( \http\Env::getRequestHeader() as $requestHeader ) {
             if( stripos( $requestHeader, mb_strtolower( $header ) . ':' ) ) {
                 return $requestHeader;
             }
